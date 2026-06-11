@@ -1,0 +1,29 @@
+{
+  "phase": "V172-Q116",
+  "repairPhaseUnderTest": "V172-Q115",
+  "postQ115StructuralCaretAnchorGeometryRepairRetested": true,
+  "labDeviceRunCaptured": false,
+  "mainDeviceRunCaptured": false,
+  "structuralCaretMisalignmentAbsent": false,
+  "blockingFailureCount": 0,
+  "scenarioResults": {
+    "empty-placeholder-tap-leading-caret": false,
+    "fraction-numerator-denominator-routing": false,
+    "sqrt-radicand-routing": false,
+    "power-exponent-routing": false,
+    "subscript-routing": false,
+    "sin-300-continuous-argument-entry": false,
+    "tan-long-expression-navigation": false,
+    "log-base-and-body-separation": false,
+    "integral-lower-upper-body-differential-routing": false,
+    "backspace-delete-structural-editing": false,
+    "long-expression-horizontal-scroll-and-tap": false,
+    "focus-loss-restore-and-keyboard-latency": false
+  },
+  "failureSummary": "Fill this only with real post-Q115 phone observations. Do not mark PASS unless the caret no longer overlaps boxes and no longer detaches from slots.",
+  "observedFailureClass": null,
+  "mayClaimCursorPass": false,
+  "maySwitchMainEditor": false,
+  "mayDeleteLegacyCursor": false,
+  "notes": "Copy this template to tool/reports/mathlive_post_q115_cursor_court_rerun_capture.json after the real-device Q116 rerun."
+}

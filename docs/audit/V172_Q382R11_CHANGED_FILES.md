@@ -1,0 +1,12 @@
+# V172-Q382R11 Changed Files
+
+- README.md
+- assets/mathlive/manifest.json
+- docs/audit/V172_Q382R11_CHANGED_FILES.md
+- docs/audit/V172_Q382R11_WORKSPACE_CONTEXT_MENU_ANALYZE_Q239B_COPY_EXPECTATION_REPAIR_AUDIT_REPORT.md
+- lib/features/workspace/workspace_expression_context_menu_q382_policy.dart
+- test/v172_q239b_camera_permission_capture_shell_test.dart
+- test/v172_q239c_formula_crop_scan_frame_test.dart
+- test/v172_q277r1_camera_ocr_runtime_premium_regression_log_repair_test.dart
+- test/v172_q382_workspace_expression_context_menu_test.dart
+- tool/verify_workspace_expression_context_menu_analyze_q239b_copy_v172_q382r11.mjs

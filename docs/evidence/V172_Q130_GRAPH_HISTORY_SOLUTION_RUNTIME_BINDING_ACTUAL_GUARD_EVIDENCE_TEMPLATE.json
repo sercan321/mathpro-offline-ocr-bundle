@@ -1,0 +1,18 @@
+{
+  "phase": "V172-Q130",
+  "templateOnly": true,
+  "expectedStatus": "Q130_GRAPH_HISTORY_SOLUTION_RUNTIME_BINDING_ACTUAL_PACKAGE_READY_BUT_MAIN_APP_EVIDENCE_BLOCKED",
+  "evidenceComplete": false,
+  "mayClaimCursorPass": false,
+  "mayClaimReleasePass": false,
+  "maySwitchDefaultEditor": false,
+  "mayDeleteLegacyCursor": false,
+  "required": [
+    "Q129 main-app runtime court evidence",
+    "flutter analyze PASS",
+    "flutter test PASS",
+    "MathLive Lab real-device run",
+    "main app real-device run",
+    "explicit Q130 approval"
+  ]
+}

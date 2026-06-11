@@ -1,0 +1,29 @@
+GRAPH HISTORY V18 STATIC CHECK
+
+Input log showed:
+- flutter pub get completed.
+- flutter analyze: No issues found.
+- flutter test: failed due graph overflow, history id collisions, scrollable action tapping, and keyboard visibility/test-contract drift.
+
+Static repairs performed:
+- Graph action Row overflow replaced by Wrap.
+- HistoryController _newId made monotonic-suffix safe.
+- Keyboard dock removed immediately while history is visible.
+- History action test scrolls actions into view before tapping.
+- Graph keyboard test corrected to frozen Cebir markers: MORE, =, ↵.
+
+Keyboard source files unchanged:
+- key_config.dart SHA256 1f512b6d96a528a0363d00b2d9ac9006ca3f10e9892f7f2a10b513af1d380144
+- math_keyboard.dart SHA256 f4f2a9acdc226cdc9838a265a96f2539a5b9ecf1f4feccd5fbb76745370b7ad2
+- bottom_dock.dart SHA256 e2063efc93b7b7470ba5940db8da1a49ded633cd8c31619f2659132c82d243a7
+- long_press_popup.dart SHA256 a7f7c8a0d2c6df9efa02cb984f9109f090992e944145f124d8c258059d3f7d75
+
+Local packaging environment:
+- flutter not available
+- dart not available
+
+Required user-machine validation:
+- flutter pub get
+- flutter analyze
+- flutter test
+- flutter run -d 23106RN0DA

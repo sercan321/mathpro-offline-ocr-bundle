@@ -1,0 +1,74 @@
+{
+  "phase": "V172-Q121",
+  "title": "Legacy Cursor Physical Cleanup Planning Gate Draft",
+  "planningGateOnly": true,
+  "physicalCleanupImplementedInThisPackage": false,
+  "legacyCursorPhysicalDeletionImplementedInThisPackage": false,
+  "legacyMainPathRetirementImplementedInThisPackage": false,
+  "mathLiveDefaultSwitchImplementedInThisPackage": false,
+  "mainWorkspaceMountImplementedInThisPackage": false,
+  "selectedDefaultEngine": "legacyFlutterSlotEditor",
+  "candidateEngine": "mathlive",
+  "rollbackEngine": "legacyFlutterSlotEditor",
+  "prerequisitePhase": "V172-Q120",
+  "requiresQ120RetirementReviewEvidence": true,
+  "requiresQ120HumanReview": true,
+  "requiresExplicitPhysicalCleanupPlanningApproval": true,
+  "requiresFlutterAnalyze": true,
+  "requiresFlutterTest": true,
+  "requiresLabDeviceRun": true,
+  "requiresMainDeviceRun": true,
+  "requiresGraphRuntimeEvidence": true,
+  "requiresHistoryRuntimeEvidence": true,
+  "requiresSolutionRuntimeEvidence": true,
+  "requiresPostActivationSoak": true,
+  "mayProceedToPhysicalCleanupExecutionReview": false,
+  "mayDeleteLegacyCursorNow": false,
+  "mayRetireLegacyMainPathNow": false,
+  "maySwitchDefaultEditorNow": false,
+  "mayClaimCursorPass": false,
+  "mayClaimReleasePass": false,
+  "fakeRuntimeEvidenceAllowed": false,
+  "fakeDeviceEvidenceAllowed": false,
+  "fakePlanningApprovalAllowed": false,
+  "deletedFilesInThisPackage": [],
+  "categories": {
+    "mustKeepProtectedSurface": [
+      "lib/features/keyboard/key_config.dart",
+      "lib/features/keyboard/math_keyboard.dart",
+      "lib/features/keyboard/bottom_dock.dart",
+      "lib/features/keyboard/long_press_popup.dart",
+      "lib/features/keyboard/premium_key.dart",
+      "lib/features/workspace/math_label.dart",
+      "lib/features/workspace/template_tray.dart",
+      "lib/app/app_shell.dart",
+      "lib/features/solution/solution_steps_panel.dart",
+      "lib/features/graph/graph_card.dart",
+      "lib/features/history/history_controller.dart",
+      "lib/features/history/history_panel.dart"
+    ],
+    "mustKeepRollbackUntilPostCleanupRegression": [
+      "lib/features/editor_adapter/legacy_flutter_slot_editor_adapter.dart",
+      "lib/features/editor_adapter/legacy_cursor_main_path_retirement_actual_gate_policy.dart",
+      "lib/features/editor_adapter/legacy_main_path_retirement_review_gate_policy.dart",
+      "lib/features/editor_adapter/legacy_cursor_physical_cleanup_planning_gate_policy.dart"
+    ],
+    "mustKeepSharedEditorDataPath": [
+      "lib/features/editor/math_node.dart",
+      "lib/features/editor/node_factory.dart",
+      "lib/features/editor/editor_commands.dart",
+      "lib/features/editor/slot_registry.dart",
+      "lib/features/editor/tex_serializer.dart",
+      "lib/features/formula_engine/slot_geometry_bundle_authority.dart",
+      "lib/features/formula_engine/structural_cursor_release_hardening_policy.dart",
+      "lib/features/workspace/editor_caret_overlay.dart"
+    ],
+    "cleanupCandidateAfterExplicitExecutionApproval": [
+      "No file is approved for deletion in Q121. Candidate list requires Q120 evidence completion, Q121 human approval, and a later Q122 execution manifest."
+    ],
+    "manualReviewRequiredBeforeDeletion": [
+      "Every legacy cursor import must be traced from main app, Lab, Graph, History, Solution, tests, and rollback paths before deletion.",
+      "Any file deletion requires explicit user approval in a later execution phase, not this package."
+    ]
+  }
+}

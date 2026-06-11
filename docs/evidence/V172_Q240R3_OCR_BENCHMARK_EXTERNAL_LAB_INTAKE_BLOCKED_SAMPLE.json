@@ -1,0 +1,24 @@
+{
+  "phase": "V172-Q240R3",
+  "fullPhase": "V172-Q240R3-OCR-BENCHMARK-EXTERNAL-LAB-INTAKE-VALIDATION-GATE",
+  "sourceSchemaPhase": "V172-Q240R2",
+  "schemaVersion": "gauss-ocr-benchmark-external-lab-v1",
+  "expectedDecision": "unsafeActionBlocked",
+  "containsForbiddenUnsafeKeys": true,
+  "reportFragment": {
+    "autoSolve": true,
+    "directSolveAllowed": true,
+    "mathLiveReviewRequired": false,
+    "sampleResults": []
+  },
+  "expectedBlockingReasons": [
+    "forbidden unsafe action key present",
+    "direct solve was requested",
+    "MathLive editable review was not required",
+    "sample coverage is insufficient"
+  ],
+  "productionRuntimeBindingAllowed": false,
+  "winnerSelectionAllowed": false,
+  "directSolveFromCameraAllowed": false,
+  "mathLiveReviewRequired": true
+}

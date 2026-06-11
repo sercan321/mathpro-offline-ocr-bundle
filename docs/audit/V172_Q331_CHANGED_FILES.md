@@ -1,0 +1,119 @@
+# V172-Q331 Changed Files
+
+## Added Files
+
+```text
+lib/features/camera/gauss_native_package_hash_evidence_acceptance_bundle_permission_gate_q331_policy.dart
+lib/features/camera/gauss_native_package_hash_evidence_acceptance_bundle_permission_gate_q331.dart
+test/v172_q331_native_package_hash_evidence_acceptance_bundle_permission_gate_test.dart
+tool/verify_native_package_hash_evidence_acceptance_bundle_permission_gate_v172_q331.mjs
+docs/audit/V172_Q331_NATIVE_PACKAGE_HASH_EVIDENCE_ACCEPTANCE_BUNDLE_PERMISSION_GATE_AUDIT.md
+docs/audit/V172_Q331_CHANGED_FILES.md
+```
+
+## Modified Files
+
+```text
+assets/mathlive/manifest.json
+README.md
+android/app/src/main/kotlin/com/mathpro/flutter/MainActivity.kt
+test/v172_q313r1_flutter_log_repair_q295_path_escape_q152_successor_aware_test.dart
+test/v172_q313r2_flutter_analyze_info_hygiene_test.dart
+test/v172_q313r3_flutter_test_successor_aware_hygiene_repair_test.dart
+test/v172_q314_real_ocr_implementation_readiness_artifact_acquisition_plan_test.dart
+test/v172_q315_controlled_model_artifact_download_hash_capture_test.dart
+test/v172_q315r1_controlled_model_artifact_download_hash_capture_flutter_test_repair_test.dart
+test/v172_q316_runtime_dependency_feasibility_trial_default_off_test.dart
+test/v172_q317_android_native_bridge_minimal_healthcheck_behind_flag_test.dart
+test/v172_q318_private_model_download_storage_real_implementation_test.dart
+test/v172_q319_verified_artifact_load_smoke_on_device_test.dart
+test/v172_q320_runtime_startup_smoke_on_device_test.dart
+test/v172_q321_dummy_input_runtime_call_test.dart
+test/v172_q322_first_image_to_latex_inference_envelope_test.dart
+test/v172_q323_runtime_dependency_model_loader_decision_test.dart
+test/v172_q324_approved_runtime_dependency_trial_test.dart
+test/v172_q325_runtime_dependency_coordinate_selection_build_trial_gate_test.dart
+test/v172_q326_native_library_build_trial_approval_abi_packaging_preflight_test.dart
+test/v172_q327_native_library_source_package_approval_abi_matrix_lock_test.dart
+test/v172_q328_native_library_package_file_hash_intake_no_bundle_evidence_gate_test.dart
+test/v172_q329_native_package_hash_evidence_review_binary_bundle_approval_gate_test.dart
+test/v172_q330_binary_bundle_trial_jnilibs_paddlepredictor_default_off_test.dart
+tool/verify_flutter_analyze_info_hygiene_v172_q313r2.mjs
+tool/verify_flutter_log_repair_q295_path_escape_q152_successor_aware_v172_q313r1.mjs
+tool/verify_full_camera_ocr_real_device_regression_gate_v172_q313.mjs
+tool/verify_flutter_test_successor_aware_hygiene_repair_v172_q313r3.mjs
+tool/verify_real_ocr_implementation_readiness_artifact_acquisition_plan_v172_q314.mjs
+tool/verify_controlled_model_artifact_download_hash_capture_v172_q315.mjs
+tool/verify_controlled_model_artifact_download_hash_capture_flutter_test_repair_v172_q315r1.mjs
+tool/verify_runtime_dependency_feasibility_trial_default_off_v172_q316.mjs
+tool/verify_android_native_bridge_minimal_healthcheck_behind_flag_v172_q317.mjs
+tool/verify_private_model_download_storage_real_implementation_v172_q318.mjs
+tool/verify_verified_artifact_load_smoke_on_device_v172_q319.mjs
+tool/verify_runtime_startup_smoke_on_device_v172_q320.mjs
+tool/verify_dummy_input_runtime_call_v172_q321.mjs
+tool/verify_first_image_to_latex_inference_envelope_v172_q322.mjs
+tool/verify_runtime_dependency_model_loader_decision_v172_q323.mjs
+tool/verify_approved_runtime_dependency_trial_v172_q324.mjs
+tool/verify_runtime_dependency_coordinate_selection_build_trial_gate_v172_q325.mjs
+tool/verify_native_library_build_trial_approval_abi_packaging_preflight_v172_q326.mjs
+tool/verify_native_library_source_package_approval_abi_matrix_lock_v172_q327.mjs
+tool/verify_native_library_package_file_hash_intake_no_bundle_evidence_gate_v172_q328.mjs
+tool/verify_native_package_hash_evidence_review_binary_bundle_approval_gate_v172_q329.mjs
+tool/verify_binary_bundle_trial_jnilibs_paddlepredictor_default_off_v172_q330.mjs
+```
+
+## Protected Runtime Files Not Modified
+
+The following protected runtime/UI surfaces were not modified in Q331:
+
+```text
+pubspec.yaml
+android/app/src/main/AndroidManifest.xml
+Gradle files
+lib/features/keyboard/key_config.dart
+lib/features/keyboard/math_keyboard.dart
+lib/features/keyboard/bottom_dock.dart
+lib/features/keyboard/long_press_popup.dart
+lib/features/workspace/template_tray.dart
+assets/mathlive/main_editor_prod.html
+assets/mathlive/mathlive_prod_bridge.js
+lib/features/mathlive/mathlive_production_editor_surface.dart
+lib/features/workspace/workspace_panel.dart
+lib/features/camera/gauss_camera_capture_shell.dart
+lib/features/graph/graph_card.dart
+lib/features/solution/solution_steps_panel.dart
+lib/features/history/history_panel.dart
+lib/app/app_shell.dart
+lib/main.dart
+lib/app/gauss_splash_screen.dart
+```
+
+## Protected Runtime File Intentionally Modified
+
+```text
+android/app/src/main/kotlin/com/mathpro/flutter/MainActivity.kt
+```
+
+Reason: Q331 adds only the default-off `nativePackageHashEvidenceAcceptance` bridge envelope method.
+
+## Explicit Non-Changes
+
+```text
+No .so bundled
+No .jar bundled
+No .aar bundled
+No jniLibs directory created
+No android/app/libs directory created
+No Gradle mutation
+No pubspec mutation
+No AndroidManifest mutation
+No System.loadLibrary call
+No Paddle Lite instantiation
+No model loader
+No runtime startup
+No dummy execution
+No image-to-LaTeX inference
+No MathLive review
+No workspace import
+No OCR PASS claim
+```

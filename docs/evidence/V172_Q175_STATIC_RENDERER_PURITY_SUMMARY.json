@@ -1,0 +1,25 @@
+{
+  "phase": "V172-Q175",
+  "evidenceType": "static_html_bridge_runtime_probe_without_browser_execution",
+  "browserProbeRun": false,
+  "browserProbeBlockedReason": "Assistant container browser navigation was blocked; no Android or browser PASS is claimed.",
+  "htmlMarkers": {
+    "defaultRendererPurity": true,
+    "q175CssVariable": true,
+    "diagnosticOverlayDisabled": true
+  },
+  "activeStylePrivateGlyphSelectorsPresent": [],
+  "chromeOnlyMlSelectorsPresent": [
+    ".ML__keyboard-toggle",
+    ".ML__menu-toggle",
+    ".ML__virtual-keyboard-toggle",
+    ".ML__menu",
+    ".ML__popover",
+    ".ML__tooltip",
+    ".ML__badge",
+    ".ML__toggles"
+  ],
+  "runtimeVerifierExpected": "PASS from node tool/verify_mathlive_runtime.mjs",
+  "officialRuntimeVerifierExpected": "PASS from node tool/verify_mathlive_official_runtime_bundle.mjs",
+  "devicePremiumPassClaimed": false
+}

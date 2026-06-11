@@ -1,0 +1,24 @@
+# V172-Q205R1 Changed Files Manifest
+
+- `lib/app/app_shell.dart`
+- `lib/features/mathlive/mathlive_main_editor_surface.dart`
+- `lib/features/mathlive/mathlive_real_device_evidence_intake_verifier_suite_hygiene_policy.dart`
+- `lib/features/mathlive/mathlive_only_main_editor_analyze_test_hygiene_policy.dart`
+- `test/v172_q139r5_mathlive_main_editor_template_polish_test.dart`
+- `test/v172_q142_mathlive_semantic_template_coverage_test.dart`
+- `test/v172_q151_mathlive_extended_template_court_test.dart`
+- `test/v172_q153_mathlive_flutter_test_contract_repair_test.dart`
+- `test/v172_q154_mathlive_flutter_analyze_contract_repair_test.dart`
+- `test/v172_q155_mathlive_flutter_test_metadata_contract_repair_test.dart`
+- `test/v172_q199_production_command_contract_finalization_test.dart`
+- `test/v172_q204r3_real_device_evidence_intake_verifier_suite_hygiene_test.dart`
+- `test/widget_test.dart`
+- `test/v172_q205r1_mathlive_only_main_editor_analyze_test_hygiene_test.dart`
+- `tool/mathlive_verifier_suite_hygiene_shared_v172_q204r3.mjs`
+- `tool/verify_mathlive_real_device_evidence_intake_verifier_suite_hygiene_v172_q204r3.mjs`
+- `tool/verify_mathlive_only_main_editor_physical_cleanup_v172_q205.mjs`
+- `tool/verify_mathlive_only_main_editor_analyze_test_hygiene_v172_q205r1.mjs`
+- `assets/mathlive/manifest.json`
+- `README.md`
+- `pubspec.yaml`
+- `tool/verify_mathpro_contract.py`

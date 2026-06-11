@@ -1,0 +1,7 @@
+PASS — f(□) long-press has no parçalı option
+PASS — Σ long-press has no exact seri option
+PASS — Σ long-press has common series labels
+PASS — Taylor and seri name-call insertion removed
+PASS — limit placeholder TeX exists
+PASS — two-line cases TeX exists
+PASS — long-press popup uses FittedBox normalization

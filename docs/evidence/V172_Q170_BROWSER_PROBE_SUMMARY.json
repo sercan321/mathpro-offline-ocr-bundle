@@ -1,0 +1,33 @@
+{
+  "phase": "V172-Q170-browser-probe",
+  "readyState": "complete",
+  "premiumMarker": "V172-Q170",
+  "hasMathLive": true,
+  "customDefined": true,
+  "hasBridge": true,
+  "fieldExists": true,
+  "mount": true,
+  "commandLatex": "5",
+  "lastInsertSucceeded": true,
+  "lastInsertCommitted": true,
+  "lastValueNonEmpty": true,
+  "nativePaintState": "ok",
+  "nativePaintOwner": "mathlive-native-field",
+  "nativePaintProofValuePath": "native-getValue-latex-expanded",
+  "q169FailureReason": "none",
+  "compactLatex": "5",
+  "compactMounted": true,
+  "compactLastJsCommandStatus": "ok",
+  "compactLastInsertSucceeded": true,
+  "compactLastInsertCommitted": true,
+  "compactLastValueNonEmpty": true,
+  "compactNativePaintState": "ok",
+  "compactNativePaintOwner": "mathlive-native-field",
+  "compactNativePaintProofValuePath": "native-getValue-latex-expanded",
+  "compactFailureReason": "none",
+  "fieldRect": {
+    "w": 760,
+    "h": 72
+  },
+  "fieldValue": "5"
+}

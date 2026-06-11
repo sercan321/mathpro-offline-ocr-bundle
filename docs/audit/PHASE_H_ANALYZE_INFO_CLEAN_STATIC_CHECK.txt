@@ -1,0 +1,35 @@
+Static local checks performed in this environment:
+
+1. Searched for old analyzer patterns from the user's output:
+   - final lowerStart =
+   - return '\\' +
+   - redundant dart:ui import in viewport_coordinate_transform.dart
+   - final upper/body/outer/inner = SlotEntry in tests
+   - final sharedVisual = const
+   - deprecated cascades ..translate( in tests
+   - deprecated cascades ..scale( in tests
+
+Result: no matches for those old patterns.
+
+2. Keyboard source hash comparison against previous package:
+   - key_config.dart: unchanged
+   - key_model.dart: unchanged
+   - math_keyboard.dart: unchanged
+   - bottom_dock.dart: unchanged
+   - premium_key.dart: unchanged
+   - long_press_popup.dart: unchanged
+   - long_press_indicator.dart: unchanged
+
+Result: PASS.
+
+3. ZIP hygiene forbidden artifact scan:
+   - build/
+   - .dart_tool/
+   - .gradle/
+   - __pycache__/
+   - .pytest_cache/
+   - *.pyc
+
+Result: PASS.
+
+Flutter SDK is not installed in this environment, so flutter analyze/test/run must be executed on the user's Windows machine.

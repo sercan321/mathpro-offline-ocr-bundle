@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+# MathPro Gradle wrapper delegate.
+# Prefer the checked-in wrapper jar so Flutter can bootstrap Gradle without a
+# machine-wide Gradle installation. Falls back to system Gradle only when the jar
+# is missing.
+set -e
+APP_HOME="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+cd "$APP_HOME"
+if [ -f "$WRAPPER_JAR" ]; then
+  if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
+    JAVA_EXE="$JAVA_HOME/bin/java"
+  else
+    JAVA_EXE="java"
+  fi
+  exec "$JAVA_EXE" -cp "$WRAPPER_JAR" org.gradle.wrapper.GradleWrapperMain "$@"
+fi
+if command -v gradle >/dev/null 2>&1; then
+  exec gradle "$@"
+fi
+echo "Gradle wrapper jar is missing and no system Gradle was found." >&2
+echo "Expected: $WRAPPER_JAR" >&2
+exit 1

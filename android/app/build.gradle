@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'dev.flutter.flutter-gradle-plugin'
+}
+
+android {
+    namespace 'com.mathpro.flutter'
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    defaultConfig {
+        applicationId 'com.mathpro.flutter'
+        minSdk 23
+        targetSdk flutter.targetSdkVersion
+        versionCode flutter.versionCode
+        versionName flutter.versionName
+
+        // V172-Q385: keep the base camera/OCR runtime delivery arm64-only.
+        // The PP-FormulaNet-S model remains download-only; native runtime is not
+        // downloaded as arbitrary code and ONNX Runtime is not reintroduced.
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+}
+
+// V172-Q345: package the approved Paddle Lite Java API jar; native .so files remain in src/main/jniLibs.
+// V172-Q384: ONNX Runtime trial AAR is intentionally removed from the base APK/AAB.
+// OCR stays download-only: camera/model-download UI remains, but ONNX runtime/model artifacts must not be bundled.
+// V172-Q385: release packaging is constrained to arm64-v8a for the base Paddle Lite runtime.
+dependencies {
+    implementation files('libs/PaddlePredictor.jar')
+}
+
+flutter {
+    source '../..'
+}

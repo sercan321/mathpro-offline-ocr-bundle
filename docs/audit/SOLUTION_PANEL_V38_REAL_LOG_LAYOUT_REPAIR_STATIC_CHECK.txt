@@ -1,0 +1,15 @@
+lib/features/workspace/workspace_panel.dart: paren 224/224; braces 49/49; brackets 12/12
+test/widget_test.dart: paren 1067/1067; braces 91/91; brackets 7/7
+UNCHANGED lib/features/keyboard/key_config.dart
+UNCHANGED lib/features/keyboard/bottom_dock.dart
+UNCHANGED lib/features/keyboard/math_keyboard.dart
+UNCHANGED lib/features/keyboard/premium_key.dart
+UNCHANGED lib/features/keyboard/long_press_popup.dart
+UNCHANGED lib/features/keyboard/long_press_indicator.dart
+UNCHANGED lib/features/keyboard/key_model.dart
+UNCHANGED lib/features/graph/graph_card.dart
+UNCHANGED lib/features/history/history_panel.dart
+UNCHANGED lib/app/app_shell.dart
+UNCHANGED lib/features/solution/solution_steps_panel.dart
+UNCHANGED lib/features/solution/solution_step_models.dart
+Forbidden residue count: 0

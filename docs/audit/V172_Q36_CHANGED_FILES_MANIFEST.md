@@ -1,0 +1,35 @@
+# V172-Q36 Changed Files Manifest
+
+- `CHANGED` `README.md`
+- `ADDED` `docs/audit/V172_Q30_FILE_DIFF_VS_P6.csv`
+- `ADDED` `docs/audit/V172_Q30_P6_BASELINE_CURSOR_ONLY_RESTORE_AUDIT_REPORT.md`
+- `ADDED` `docs/audit/V172_Q31_FILE_DIFF_VS_P6.csv`
+- `ADDED` `docs/audit/V172_Q31_LEGACY_AUDIT_TRACE_CLEANUP_REPORT.md`
+- `ADDED` `docs/audit/V172_Q31_SELF_CHECK_REPORT.md`
+- `ADDED` `docs/audit/V172_Q32_FILE_DIFF_VS_P6.csv`
+- `ADDED` `docs/audit/V172_Q32_P6_LOCKED_ROLE_AWARE_CURSOR_GEOMETRY_REPAIR_REPORT.md`
+- `ADDED` `docs/audit/V172_Q33_CHANGED_FILES_MANIFEST.md`
+- `ADDED` `docs/audit/V172_Q33_CURSOR_ENGINE_INVENTORY.csv`
+- `ADDED` `docs/audit/V172_Q33_FAILURE_MAP_AND_PLUS95_PATH.md`
+- `ADDED` `docs/audit/V172_Q33_P6_LOCKED_CURSOR_ENGINE_INVENTORY.md`
+- `ADDED` `docs/audit/V172_Q34_CHANGED_FILES_MANIFEST.md`
+- `ADDED` `docs/audit/V172_Q34_DETERMINISTIC_SLOT_GEOMETRY_REGISTRY_AUDIT_REPORT.md`
+- `ADDED` `docs/audit/V172_Q34_FILE_DIFF_VS_P6.csv`
+- `ADDED` `docs/audit/V172_Q35_CHANGED_FILES_MANIFEST.md`
+- `ADDED` `docs/audit/V172_Q35_FILE_DIFF_VS_P6.csv`
+- `ADDED` `docs/audit/V172_Q35_PLACEHOLDER_SAFE_CURSOR_ENGINE_AUDIT_REPORT.md`
+- `ADDED` `docs/audit/V172_Q36_CHANGED_FILES_MANIFEST.md`
+- `ADDED` `docs/audit/V172_Q36_FILE_DIFF_VS_P6.csv`
+- `ADDED` `docs/audit/V172_Q36_ROLE_BASED_CURSOR_SIZE_AUDIT_REPORT.md`
+- `ADDED` `docs/audit/V172_Q36_SELF_CHECK_REPORT.md`
+- `CHANGED` `lib/features/editor/render/mathjax_render_surface.dart`
+- `CHANGED` `lib/features/editor/selection_controller.dart`
+- `ADDED` `lib/features/formula_engine/deterministic_slot_geometry_registry.dart`
+- `CHANGED` `lib/features/formula_engine/premium_cursor_visual_polish_policy.dart`
+- `CHANGED` `lib/features/formula_engine/render_mapped_slot_hit_test.dart`
+- `CHANGED` `lib/features/workspace/editor_caret_overlay.dart`
+- `CHANGED` `lib/logic/mathpro_package_contract.dart`
+- `CHANGED` `pubspec.yaml`
+- `CHANGED` `tool/verify_mathpro_contract.py`
+- `CHANGED` `tool/verify_mathpro_contract_report.json`
+- `CHANGED` `tool/verify_mathpro_contract_report.md`

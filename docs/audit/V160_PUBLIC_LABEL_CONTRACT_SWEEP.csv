@@ -1,0 +1,222 @@
+label,behavior,status,sources
+%,textInsert,primitive_render_node,keyboard
+(,textInsert,primitive_render_node,keyboard
+(x+y)²,textInsert,premium_spec,MORE
+),textInsert,primitive_render_node,keyboard
++,textInsert,primitive_render_node,keyboard
++∞,textInsert,premium_spec,longPress
+",",textInsert,primitive_render_node,"keyboard,longPress"
+.,textInsert,primitive_render_node,keyboard
+0,textInsert,primitive_render_node,keyboard
+0 matris,structureInsert,premium_spec,"longPress,MORE"
+1,textInsert,primitive_render_node,keyboard
+10^□,structureInsert,premium_spec,longPress
+2,textInsert,primitive_render_node,keyboard
+2D vektör,structureInsert,premium_spec,longPress
+2×2,structureInsert,premium_spec,"longPress,MORE"
+2×2 Matris,textInsert,premium_spec,MORE
+3,textInsert,primitive_render_node,keyboard
+3D vektör,structureInsert,premium_spec,longPress
+3×3,structureInsert,premium_spec,"longPress,MORE"
+4,textInsert,primitive_render_node,keyboard
+4×4,structureInsert,premium_spec,"longPress,MORE"
+5,textInsert,primitive_render_node,keyboard
+6,textInsert,primitive_render_node,keyboard
+7,textInsert,primitive_render_node,keyboard
+8,textInsert,primitive_render_node,keyboard
+9,textInsert,primitive_render_node,keyboard
+;,textInsert,primitive_render_node,longPress
+<,textInsert,primitive_render_node,longPress
+=,textInsert,primitive_render_node,"keyboard,longPress"
+>,textInsert,primitive_render_node,longPress
+A,textInsert,primitive_render_node,"keyboard,longPress,MORE"
+Ans,command,command,keyboard
+Arg(□),structureInsert,premium_spec,"longPress,MORE"
+Asal mı?,structureInsert,premium_spec,MORE
+Aᵀ,textInsert,premium_spec,longPress
+A⁻¹,textInsert,premium_spec,longPress
+A₁,textInsert,premium_spec,longPress
+A₂,textInsert,premium_spec,longPress
+B,textInsert,primitive_render_node,"keyboard,longPress,MORE"
+Binom,structureInsert,premium_spec,"longPress,MORE"
+Bᵀ,textInsert,premium_spec,longPress
+B⁻¹,textInsert,premium_spec,longPress
+B₁,textInsert,premium_spec,longPress
+B₂,textInsert,premium_spec,longPress
+C,command,command,keyboard
+EBOB,structureInsert,premium_spec,MORE
+EKOK,structureInsert,premium_spec,MORE
+Eşlenik,structureInsert,premium_spec,longPress
+Geometrik,structureInsert,premium_spec,"longPress,MORE"
+I,textInsert,primitive_render_node,"keyboard,longPress,MORE"
+Im(□),structureInsert,premium_spec,"keyboard,MORE"
+I₂,textInsert,premium_spec,longPress
+I₃,textInsert,premium_spec,longPress
+Iₙ,structureInsert,premium_spec,longPress
+Kalan,textInsert,premium_spec,MORE
+Kuadratik,textInsert,premium_spec,MORE
+MORE,command,command,keyboard
+Maclaurin,structureInsert,premium_spec,"longPress,MORE"
+Moore-Penrose,structureInsert,premium_spec,longPress
+Mutlak,textInsert,premium_spec,MORE
+RREF,textInsert,premium_spec,MORE
+Rank,textInsert,premium_spec,MORE
+Re(□),structureInsert,premium_spec,"keyboard,MORE"
+Taylor,structureInsert,premium_spec,"longPress,MORE"
+Yuvarla,textInsert,premium_spec,MORE
+[,textInsert,primitive_render_node,keyboard
+[□ □],structureInsert,premium_spec,"keyboard,longPress,MORE"
+[□],structureInsert,premium_spec,"keyboard,longPress,MORE"
+],textInsert,primitive_render_node,keyboard
+a,textInsert,primitive_render_node,keyboard
+arctan serisi,structureInsert,premium_spec,"longPress,MORE"
+arg(□),structureInsert,premium_spec,"keyboard,longPress,MORE"
+b,textInsert,primitive_render_node,keyboard
+birim vektör,structureInsert,premium_spec,longPress
+c,textInsert,primitive_render_node,keyboard
+cis(□),structureInsert,premium_spec,"longPress,MORE"
+cos,structureInsert,premium_spec,"keyboard,longPress,MORE"
+cos serisi,structureInsert,premium_spec,"longPress,MORE"
+cos(□),structureInsert,premium_spec,longPress
+cosh(□),structureInsert,premium_spec,"longPress,MORE"
+cosh⁻¹(□),structureInsert,premium_spec,"longPress,MORE"
+cos⁻¹(□),structureInsert,premium_spec,"longPress,MORE"
+cot(□),structureInsert,premium_spec,MORE
+coth(□),structureInsert,premium_spec,MORE
+cot⁻¹(□),structureInsert,premium_spec,MORE
+csc(□),structureInsert,premium_spec,MORE
+d/dx,structureInsert,premium_spec,"keyboard,longPress,MORE"
+d/dx(□),structureInsert,premium_spec,longPress
+deg,textInsert,primitive_render_node,"longPress,MORE"
+det(□),structureInsert,premium_spec,"keyboard,longPress,MORE"
+dt,textInsert,premium_spec,longPress
+dx,textInsert,premium_spec,"keyboard,longPress"
+dy,textInsert,premium_spec,longPress
+dy/dx,structureInsert,premium_spec,longPress
+d²/dx²(□),structureInsert,premium_spec,"longPress,MORE"
+d²y/dx²,structureInsert,premium_spec,longPress
+d³/dx³(□),structureInsert,premium_spec,longPress
+dθ,textInsert,premium_spec,longPress
+e,textInsert,primitive_render_node,"keyboard,longPress"
+e^(i□),structureInsert,premium_spec,"longPress,MORE"
+e^□,structureInsert,premium_spec,"keyboard,longPress,MORE"
+eˣ serisi,structureInsert,premium_spec,"longPress,MORE"
+f(□),structureInsert,premium_spec,"keyboard,longPress,MORE"
+"f(□,□)",structureInsert,premium_spec,"longPress,MORE"
+f∘g,structureInsert,premium_spec,"longPress,MORE"
+g(□),structureInsert,premium_spec,"longPress,MORE"
+h(□),structureInsert,premium_spec,"longPress,MORE"
+i,textInsert,primitive_render_node,"keyboard,longPress,MORE"
+i²,textInsert,premium_spec,"longPress,MORE"
+k,textInsert,primitive_render_node,"keyboard,longPress"
+karma çarpım,structureInsert,premium_spec,longPress
+kofaktör,structureInsert,premium_spec,longPress
+lim,structureInsert,premium_spec,"keyboard,longPress,MORE"
+lim sin(x)/x,textInsert,premium_spec,MORE
+lim x→0⁺,structureInsert,premium_spec,"longPress,MORE"
+lim x→0⁻,structureInsert,premium_spec,"longPress,MORE"
+lim x→∞,structureInsert,premium_spec,"longPress,MORE"
+lim x→□,structureInsert,premium_spec,longPress
+ln,structureInsert,premium_spec,"keyboard,longPress"
+ln serisi,structureInsert,premium_spec,"longPress,MORE"
+ln(□),structureInsert,premium_spec,"longPress,MORE"
+log,structureInsert,premium_spec,"keyboard,longPress"
+log_□(□),structureInsert,premium_spec,"longPress,MORE"
+log₁₀(□),structureInsert,premium_spec,"longPress,MORE"
+log₂(□),structureInsert,premium_spec,"longPress,MORE"
+m,textInsert,primitive_render_node,keyboard
+mesafe,structureInsert,premium_spec,longPress
+minör,structureInsert,premium_spec,longPress
+m×n,structureInsert,premium_spec,"longPress,MORE"
+n,textInsert,primitive_render_node,keyboard
+nD vektör,structureInsert,premium_spec,longPress
+projeksiyon,structureInsert,premium_spec,longPress
+r,textInsert,primitive_render_node,"keyboard,longPress,MORE"
+rad,textInsert,primitive_render_node,"longPress,MORE"
+satır vektörü,structureInsert,premium_spec,longPress
+sec(□),structureInsert,premium_spec,MORE
+sin,structureInsert,premium_spec,"keyboard,longPress,MORE"
+sin serisi,structureInsert,premium_spec,"longPress,MORE"
+sin(□),structureInsert,premium_spec,longPress
+sinh(□),structureInsert,premium_spec,"longPress,MORE"
+sinh⁻¹(□),structureInsert,premium_spec,"longPress,MORE"
+sin⁻¹(□),structureInsert,premium_spec,"longPress,MORE"
+sütun vektörü,structureInsert,premium_spec,longPress
+tan,structureInsert,premium_spec,"keyboard,longPress,MORE"
+tan(□),structureInsert,premium_spec,longPress
+tanh(□),structureInsert,premium_spec,"longPress,MORE"
+tanh⁻¹(□),structureInsert,premium_spec,"longPress,MORE"
+tan⁻¹(□),structureInsert,premium_spec,"longPress,MORE"
+x,textInsert,primitive_render_node,"keyboard,longPress"
+x_□,structureInsert,premium_spec,longPress
+x₁,textInsert,premium_spec,longPress
+x₂,textInsert,premium_spec,longPress
+y,textInsert,primitive_render_node,"keyboard,longPress"
+y_□,structureInsert,premium_spec,longPress
+y′,textInsert,premium_spec,longPress
+y″,textInsert,premium_spec,longPress
+y‴,textInsert,premium_spec,longPress
+y⁽□⁾,structureInsert,premium_spec,longPress
+y₁,textInsert,premium_spec,longPress
+y₂,textInsert,premium_spec,longPress
+z,textInsert,primitive_render_node,"keyboard,longPress"
+z̄,textInsert,premium_spec,"keyboard,longPress,MORE"
+z₁,textInsert,premium_spec,longPress
+z₂,textInsert,premium_spec,longPress
+{3 denklem,structureInsert,premium_spec,longPress
+{n denklem,structureInsert,premium_spec,longPress
+{≤ sistem,structureInsert,premium_spec,longPress
+{□=□,structureInsert,premium_spec,"keyboard,longPress,MORE"
+|□|,wrapper,premium_spec,"keyboard,MORE"
+Çöz,textInsert,premium_spec,MORE
+Özdeğer,textInsert,premium_spec,MORE
+×,textInsert,primitive_render_node,keyboard
+÷,textInsert,primitive_render_node,keyboard
+İşaret,structureInsert,premium_spec,MORE
+Γ(□),structureInsert,premium_spec,MORE
+Π,structureInsert,premium_spec,"longPress,MORE"
+Σ,structureInsert,premium_spec,"keyboard,longPress,MORE"
+θ,textInsert,primitive_render_node,"keyboard,longPress,MORE"
+λ,textInsert,primitive_render_node,longPress
+μ,textInsert,primitive_render_node,longPress
+π,textInsert,primitive_render_node,"keyboard,longPress"
+ρ,textInsert,primitive_render_node,"longPress,MORE"
+φ,textInsert,primitive_render_node,longPress
+‖□‖,wrapper,premium_spec,"keyboard,longPress,MORE"
+↵,command,command,keyboard
+∂/∂x(□),structureInsert,premium_spec,"longPress,MORE"
+∂²/∂x²(□),structureInsert,premium_spec,"longPress,MORE"
+−,textInsert,primitive_render_node,keyboard
+−i,textInsert,premium_spec,"longPress,MORE"
+−∞,textInsert,premium_spec,longPress
+√□,structureInsert,premium_spec,"keyboard,longPress,MORE"
+∛□,structureInsert,premium_spec,longPress
+∞,textInsert,primitive_render_node,"keyboard,longPress"
+∫₀¹ f(x),textInsert,premium_spec,MORE
+∫ₐᵇ,structureInsert,premium_spec,"longPress,MORE"
+∫□dx,structureInsert,premium_spec,"keyboard,longPress,MORE"
+∬,structureInsert,premium_spec,"longPress,MORE"
+∭,structureInsert,premium_spec,"longPress,MORE"
+∮,structureInsert,premium_spec,longPress
+≈,textInsert,primitive_render_node,longPress
+≠,textInsert,primitive_render_node,longPress
+≡,textInsert,primitive_render_node,longPress
+≤,textInsert,primitive_render_node,longPress
+≥,textInsert,primitive_render_node,longPress
+⌈□⌉,structureInsert,premium_spec,MORE
+⌊□⌋,structureInsert,premium_spec,MORE
+⌫,command,command,keyboard
+□!,postfix,premium_spec,"keyboard,longPress,MORE"
+□/□,structureInsert,premium_spec,"keyboard,MORE"
+□C□,structureInsert,premium_spec,"longPress,MORE"
+□P□,structureInsert,premium_spec,"longPress,MORE"
+□^□,structureInsert,premium_spec,"keyboard,longPress,MORE"
+□²,structureInsert,premium_spec,longPress
+□³,structureInsert,premium_spec,longPress
+□·□,structureInsert,premium_spec,"keyboard,longPress,MORE"
+□×□,structureInsert,premium_spec,"keyboard,longPress"
+□ᴴ,postfix,premium_spec,"longPress,MORE"
+□ᵀ,postfix,premium_spec,"keyboard,longPress,MORE"
+□⁻¹,postfix,premium_spec,"keyboard,longPress,MORE"
+□ⁿ,structureInsert,premium_spec,longPress
+□√□,structureInsert,premium_spec,longPress

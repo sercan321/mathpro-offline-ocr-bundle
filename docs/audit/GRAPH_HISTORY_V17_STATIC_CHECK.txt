@@ -1,0 +1,32 @@
+# GRAPH_HISTORY_V17 — Static Check
+
+Packaging environment result: Flutter/Dart are not installed here; no fake PASS is claimed.
+
+User-side log repair target:
+- Fix `history_item_card.dart:388` undefined `widget` inside `_InlineActions`.
+- Fix `graph_settings_sheet.dart:368` deprecated `activeColor` info.
+
+Static checks performed:
+- old history handle in lib: OK
+- dead onPressed in lib: OK
+- dead onTap in lib: OK
+- deprecated activeColor in lib: OK
+- InlineActions uses entry/onGraphTap fields: OK
+- InlineActions invalid widget.* exact pill condition absent: OK
+- Graph settings activeThumbColor present: OK
+- Graph settings activeTrackColor present: OK
+- Dart bracket scan: OK
+- Relative import scan: OK
+- Forbidden artifact scan: OK
+
+Keyboard SHA256 freeze:
+- `lib/features/keyboard/key_config.dart` — `1f512b6d96a528a0363d00b2d9ac9006ca3f10e9892f7f2a10b513af1d380144`
+- `lib/features/keyboard/math_keyboard.dart` — `f4f2a9acdc226cdc9838a265a96f2539a5b9ecf1f4feccd5fbb76745370b7ad2`
+- `lib/features/keyboard/bottom_dock.dart` — `e2063efc93b7b7470ba5940db8da1a49ded633cd8c31619f2659132c82d243a7`
+- `lib/features/keyboard/long_press_popup.dart` — `a7f7c8a0d2c6df9efa02cb984f9109f090992e944145f124d8c258059d3f7d75`
+
+Commands not run in packaging environment:
+- `flutter pub get`
+- `flutter analyze`
+- `flutter test`
+- `flutter run -d 23106RN0DA`

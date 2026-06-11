@@ -1,0 +1,22 @@
+ELITE_PREMIUM_PLUS V75 STATIC VERIFICATION
+
+PASS fraction_longpress_removed
+PASS absolute_longpress_removed
+PASS factorial_exact_combo
+PASS f_longpress_parcali_removed
+PASS sigma_series_no_generic_seri
+PASS series_templates_not_name_calls
+PASS taylor_formula_exists
+PASS maclaurin_formula_exists
+PASS binom_formula_exists
+PASS limit_template_under_form
+PASS equation_system_cases
+PASS longpress_fittedbox
+PASS limit_mathlabel_glyph
+PASS system_mathlabel_glyph
+PASS flutter_missing
+
+Flutter/Dart availability:
+flutter: not available in this environment
+
+Runtime commands were NOT run in this environment.

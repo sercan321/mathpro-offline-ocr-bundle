@@ -1,0 +1,65 @@
+{
+  "phase": "V172-Q204",
+  "fullPhase": "V172-Q204-REAL-DEVICE-EVIDENCE-INTAKE-GATE",
+  "baseline": "V172-Q203-FINAL-STATIC-PRODUCTION-FREEZE",
+  "status": "TEMPLATE_ONLY_NOT_REAL_EVIDENCE",
+  "instructions": "Copy this file to tool/evidence/V172_Q204_REAL_DEVICE_EVIDENCE.json and fill it only with real user-side Flutter/Android evidence. Do not set any PASS field to true unless the corresponding real log/video/screenshot evidence exists.",
+  "environment": {
+    "deviceId": "23106RN0DA",
+    "deviceModel": "",
+    "androidVersion": "",
+    "flutterVersion": "",
+    "dartVersion": "",
+    "captureDateLocal": ""
+  },
+  "commands": {
+    "flutterCleanRan": false,
+    "flutterPubGetPassed": false,
+    "flutterAnalyzePassed": false,
+    "flutterTestPassed": false,
+    "flutterRunDevicePassed": false,
+    "verifierQ204Passed": false,
+    "verifierQ203Passed": false,
+    "verifierQ202Passed": false,
+    "verifierQ201Passed": false,
+    "verifierQ200Passed": false,
+    "verifierQ199Passed": false,
+    "verifyMathproContractPassed": false,
+    "rawTerminalLogFile": ""
+  },
+  "realDeviceEvidence": {
+    "androidAppLaunched": false,
+    "mathLiveProductionEditorVisible": false,
+    "keyboardTapsDoNotFreeze": false,
+    "nativeCaretCanBePlacedByTap": false,
+    "nativeCaretCanMoveAfterMultipleTaps": false,
+    "fractionTemplatePremiumVisible": false,
+    "rootTemplatePremiumVisible": false,
+    "powerTemplatePremiumVisible": false,
+    "sigmaTemplatePremiumVisible": false,
+    "integralTemplatePremiumVisible": false,
+    "limitTemplatePremiumVisible": false,
+    "taylorTemplatePremiumVisible": false,
+    "graphHistorySolutionNoFakeResultWithOpenSlots": false,
+    "screenshotFiles": [],
+    "videoFiles": []
+  },
+  "scenarioCounts": {
+    "caretScenariosPassed": 0,
+    "templateVisualScenariosPassed": 0,
+    "noFreezeTapScenariosPassed": 0,
+    "graphHistorySolutionScenariosPassed": 0,
+    "blockingFailures": 0
+  },
+  "passClaims": {
+    "flutterAnalyzePassClaimed": false,
+    "flutterTestPassClaimed": false,
+    "flutterRunPassClaimed": false,
+    "androidRealDevicePassClaimed": false,
+    "caretRealDevicePassClaimed": false,
+    "premiumVisualDevicePassClaimed": false,
+    "noFreezeDevicePassClaimed": false,
+    "graphHistorySolutionDevicePassClaimed": false,
+    "finalReleasePassClaimed": false
+  }
+}

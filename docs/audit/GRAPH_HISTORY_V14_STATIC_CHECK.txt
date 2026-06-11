@@ -1,0 +1,32 @@
+GRAPH_HISTORY_V14_STATIC_CHECK
+Generated: 2026-05-10
+Environment: Linux container; Flutter/Dart not installed.
+
+Flutter/Dart execution:
+- flutter pub get: NOT RUN (flutter command not found)
+- flutter analyze: NOT RUN (flutter command not found)
+- flutter test: NOT RUN (flutter command not found)
+- flutter run: NOT RUN (flutter command not found)
+
+Static repairs:
+OK: graph_painter trace x clamp uses 0.0 and remains double-safe
+OK: history_panel drag clamp uses 0.0 / -88.0 and remains double-safe
+OK: stale V8 analyzer/test/run wording corrected to NOT RUN / PASS not claimed
+
+Static checks executed:
+OK: string/comment-aware Dart bracket scan
+OK: required-this field declaration scan
+OK: runtime scan: old mathpro-history-handle absent from lib/
+OK: runtime scan: onPressed null absent from lib/
+OK: runtime scan: onTap null absent from lib/
+OK: forbidden artifact scan
+OK: ZIP reopen verification pending after final packaging
+
+Keyboard freeze hashes:
+lib/features/keyboard/key_config.dart        1f512b6d96a528a0363d00b2d9ac9006ca3f10e9892f7f2a10b513af1d380144
+lib/features/keyboard/math_keyboard.dart     f4f2a9acdc226cdc9838a265a96f2539a5b9ecf1f4feccd5fbb76745370b7ad2
+lib/features/keyboard/bottom_dock.dart       e2063efc93b7b7470ba5940db8da1a49ded633cd8c31619f2659132c82d243a7
+lib/features/keyboard/long_press_popup.dart  a7f7c8a0d2c6df9efa02cb984f9109f090992e944145f124d8c258059d3f7d75
+
+Closure status:
+CONDITIONAL PASS for static/package closure only. Real PASS requires Flutter SDK execution and physical-device validation.

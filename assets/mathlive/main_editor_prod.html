@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>MathPro Production MathLive Editor</title>
+  <!-- V172-Q185: production MathLive HTML finalization. Minimal runtime path only; no diagnostic court UI. -->
+  <!-- V172-Q190R2: production active-path hardening inlines MathLive static/font CSS before app surface CSS. -->
+  <!-- V172-Q190R8: production static asset truth strips missing local @font-face url(fonts/*.woff2) rules before inline load. -->
+  <!-- V172-Q192: native MathLive field owns caret/focus/slot selection; Flutter does not draw a replacement cursor overlay. -->
+  <!-- V172-Q196: official MathLive/KaTeX font files are bundled and embedded into inline CSS as data URLs. -->
+  <!-- V172-Q201: native MathLive math-field owns visible caret/focus/slot selection; Flutter mirror/overlay override is forbidden. -->
+  <!-- V172-Q203: final static production freeze marker; Android PASS remains external evidence. -->
+  <style id="mathpro-inline-mathlive-fonts-css">
+__MATHPRO_INLINE_MATHLIVE_FONTS_CSS__
+  </style>
+  <style id="mathpro-inline-mathlive-static-css">
+__MATHPRO_INLINE_MATHLIVE_STATIC_CSS__
+  </style>
+  <style>
+    :root {
+      color-scheme: dark;
+      --mathpro-accent: #7fc7b8;
+      --mathpro-bg: #0b0f12;
+      --mathpro-text: #f4fbf8;
+      --mathpro-muted: rgba(244, 251, 248, 0.62);
+    }
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--mathpro-bg);
+      color: var(--mathpro-text);
+      -webkit-text-size-adjust: 100%;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: contain;
+      touch-action: manipulation;
+      pointer-events: auto;
+    }
+    #mathpro-editor-host {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      min-height: 92px;
+      display: flex;
+      align-items: center;
+      justify-content: stretch;
+      padding: 9px 11px;
+      overflow: hidden;
+      min-width: 0;
+      pointer-events: auto;
+      background: var(--mathpro-bg);
+    }
+    math-field {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      min-height: 72px;
+      display: block;
+      color: var(--mathpro-text);
+      background: transparent;
+      border: 0;
+      outline: none;
+      font-family: KaTeX_Main, KaTeX_Math, "Noto Sans Math", "STIX Two Math", "Cambria Math", serif;
+      font-size: clamp(28px, 7.8vw, 38px);
+      line-height: 1.24;
+      padding: 8px 4px;
+      overflow-x: auto;
+      overflow-y: visible;
+      white-space: nowrap;
+      touch-action: auto;
+      pointer-events: auto;
+      -webkit-user-select: text;
+      user-select: text;
+      caret-color: var(--mathpro-accent);
+      --caret-color: var(--mathpro-accent);
+      --selection-background-color: rgba(127, 199, 184, 0.24);
+      --contains-highlight-background-color: rgba(127, 199, 184, 0.12);
+      --placeholder-color: rgba(244, 251, 248, 0.42);
+      --placeholder-background-color: rgba(127, 199, 184, 0.08);
+    }
+    math-field::part(root),
+    math-field::part(container),
+    math-field::part(editable) {
+      min-height: 62px;
+      overflow: visible;
+      touch-action: auto;
+    }
+    math-field::part(editable) {
+      min-width: 0;
+    }
+    math-field::part(menu-toggle),
+    math-field::part(virtual-keyboard-toggle) {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    .ML__keyboard,
+    .ML__keyboard-toggle,
+    .ML__menu-toggle,
+    .ML__popover,
+    .ML__tooltip,
+    math-virtual-keyboard,
+    virtual-keyboard {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+  </style>
+</head>
+<body data-mathpro-production-surface="V172-Q184" data-mathpro-production-html="V172-Q185" data-mathpro-caret-focus-slot-contract="V172-Q192" data-mathpro-official-font-bundle-closure="V172-Q196" data-mathpro-local-font-files-bundled="true" data-mathpro-official-font-data-urls="true" data-mathpro-hidden-chrome="true" data-mathpro-production-caret-focus-slot-finalization="V172-Q201"
+  data-mathpro-final-static-production-freeze="V172-Q203" data-mathpro-native-caret-authority="mathlive">
+  <div id="mathpro-editor-host">
+    <math-field id="mathlive-field" virtual-keyboard-mode="off" smart-mode smart-fence tabindex="0" data-mathpro-native-caret-authority="V172-Q201" data-mathpro-final-static-production-freeze="V172-Q203"></math-field>
+  </div>
+  <script>
+__MATHPRO_INLINE_MATHLIVE_RUNTIME__
+  </script>
+  <script>
+__MATHPRO_INLINE_PRODUCTION_BRIDGE__
+  </script>
+</body>
+</html>

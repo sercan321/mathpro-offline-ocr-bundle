@@ -1,0 +1,9 @@
+PREMIUM_KEYBOARD_V20_STATIC_CHECK
+
+PASS: TemplateTray converted to categorized MORE panel.
+PASS: MORE categories present: Yapı, Fonksiyon, Trig, Kalkülüs, Ayrık, Kompleks, Lineer.
+PASS: Legacy regression labels retained in Yapı category: Kuadratik, (x+y)², ∫₀¹ f(x), □·□, ‖□‖.
+PASS: KeyHandlers now recognizes ActionUtils premium templates and MORE category labels.
+PASS: key_config.dart duplicate const map key for □⁻¹ removed.
+PASS: No graph/history runtime files intentionally changed.
+CONDITIONAL: Flutter/Dart unavailable here; analyze/test/run must be executed by user.

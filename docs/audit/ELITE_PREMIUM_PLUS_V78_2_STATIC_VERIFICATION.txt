@@ -1,0 +1,19 @@
+V78.2 Static Verification
+
+Targeted real-log failure:
+- Expected: \\sqrt[\\Box]{\\Box}
+- Previous actual: \\Box\\sqrt{\\Box}
+
+Static checks:
+- Indexed root replacement now appears before generic square-root replacement in math_tex_serializer.dart.
+- `□√□` maps to `\\sqrt[\\Box]{\\Box}`.
+- `√□` still maps to `\\sqrt{\\Box}`.
+- `∛□` still maps to `\\sqrt[3]{\\Box}`.
+- pubspec version bumped to 0.78.2+782.
+- No locked keyboard/solution/evaluator file was changed.
+
+Runtime checks still required on user machine:
+- flutter pub get
+- flutter analyze
+- flutter test
+- flutter run -d 23106RN0DA

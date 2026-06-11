@@ -1,0 +1,25 @@
+MathPro Solution Panel V35 Phase 7 Static Check
+
+Prompt phase executed: FAZ 7 — Regresyon Kontrolü
+Runtime changed files vs V34: NONE
+Test changed files vs V34: ['test/widget_test.dart']
+Protected keyboard/graph/history/app shell/workspace/solution runtime files: UNCHANGED
+Three-dot behavior: UNCHANGED / NO-OP PLACEHOLDER
+Flutter available in container: NO
+Flutter analyze/test/run claimed: NO
+
+Delimiter count spot-check:
+- test/widget_test.dart: () 1069 / 1069; {} 91 / 91
+- workspace_panel.dart: () 238 / 238; {} 50 / 50
+- solution_steps_panel.dart: () 239 / 239; {} 45 / 45
+
+Out-of-prompt Phase 8/Faz 8 text still present in legacy audit docs only:
+test/core_editor_regression_test.dart
+docs/audit/GRAPH_HISTORY_V10_STATIC_CHECK.txt
+docs/audit/GRAPH_HISTORY_V8_REPORT.md
+docs/audit/PHASE9_CHANGED_FILES_MANIFEST.md
+docs/audit/PHASE9_STATIC_VERIFICATION.md
+docs/audit/PHASE9_TEST_REPORT.md
+docs/audit/SOLUTION_PANEL_V35_PHASE7_STATIC_CHECK.txt
+
+Note: legacy historical audit docs were not deleted because package history should not be silently rewritten.

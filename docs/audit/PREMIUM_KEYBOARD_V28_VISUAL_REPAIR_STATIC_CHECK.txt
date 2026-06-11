@@ -1,0 +1,20 @@
+MathPro Premium Keyboard V28 Static Check
+========================================
+lib/features/keyboard/long_press_popup.dart:_mathishChipLabels duplicate_values=[]
+lib/features/keyboard/premium_key.dart:_mathishLabels duplicate_values=[]
+template_tray_category_scroll_key=PASS
+template_tray_chip_scroll_key=PASS
+more_header_dot_title_present=PASS
+more_header_active_tab_pill_removed=PASS
+lineer_display_label_present=PASS
+long_press_indicator_subtle_opacity_present=PASS
+premium_key_indicator_filter_present=PASS
+long_press_adaptive_width_present=PASS
+long_press_close_chip_test_updated=PASS
+no_invalid_fontweight_w750=PASS
+key_config_tabs_contains_lineer_cebir= True
+sqrt_contract_source_present= True
+integral_contract_source_present= True
+cebir_integral_filter_present= True
+dirty_artifacts_count= 0
+result= STATIC_PASS

@@ -1,0 +1,7 @@
+V37 STATIC CHECK
+Forbidden residue count: 0
+test/widget_test.dart: paren 1069/1069; braces 91/91; brackets 7/7
+lib/features/workspace/workspace_panel.dart: paren 237/237; braces 50/50; brackets 11/11
+lib/features/solution/solution_steps_panel.dart: paren 257/257; braces 54/54; brackets 25/25
+Remaining "steps: const <SolutionStep>[" count in widget_test.dart: 0
+Long regression const snapshot count: 0

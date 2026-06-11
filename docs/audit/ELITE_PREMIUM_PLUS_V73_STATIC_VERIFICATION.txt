@@ -1,0 +1,26 @@
+# MathPro V73 — Static Verification
+
+```text
+=== tool availability ===
+flutter: not found
+dart: not found
+
+=== source tree counts ===
+77
+9
+425
+
+=== longpress static checks ===
+PASS: no fraction longpress map entry
+PASS: no absolute longpress map entry
+88:    '□!': ['□C□', '□P□'],
+369:    '□!': KeyBehaviorType.postfix,
+85:    'log': ['log₁₀(□)', 'log₂(□)', 'log_□(□)'],
+354:    'log': KeyBehaviorType.structureInsert,
+
+=== version ===
+4:version: 0.72.0+72
+
+=== dirty entries ===
+
+```

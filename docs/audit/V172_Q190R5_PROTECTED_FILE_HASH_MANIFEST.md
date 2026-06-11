@@ -1,0 +1,18 @@
+# V172-Q190R5 Protected File Hash Manifest
+
+Baseline: Q190R4 production bridge queue focus repair package.
+Result: PROTECTED_HASH_UNCHANGED
+
+| File | Q190R4 SHA256 | Q190R5 SHA256 | Status |
+|---|---:|---:|---|
+| lib/features/keyboard/key_config.dart | 4ecd7270e29a27d75bdd80d36aa5b6f1064a2c3a1d3360c3edd4856432d0f1a2 | 4ecd7270e29a27d75bdd80d36aa5b6f1064a2c3a1d3360c3edd4856432d0f1a2 | UNCHANGED |
+| lib/features/keyboard/math_keyboard.dart | f4f2a9acdc226cdc9838a265a96f2539a5b9ecf1f4feccd5fbb76745370b7ad2 | f4f2a9acdc226cdc9838a265a96f2539a5b9ecf1f4feccd5fbb76745370b7ad2 | UNCHANGED |
+| lib/features/keyboard/bottom_dock.dart | f75e70c490827baeeb6b71a59ccddeaabcdcafe851726d953db9ada0066022c8 | f75e70c490827baeeb6b71a59ccddeaabcdcafe851726d953db9ada0066022c8 | UNCHANGED |
+| lib/features/keyboard/premium_key.dart | 2d0941666300c4db73b8ae99d7554a2f7e6a38289e58fb0f9234fc853705c179 | 2d0941666300c4db73b8ae99d7554a2f7e6a38289e58fb0f9234fc853705c179 | UNCHANGED |
+| lib/features/keyboard/long_press_popup.dart | 5a119a0fd0c47b9dbbc8b7e82885f8b99657f7723b87687c6d4a9cef98bbbeec | 5a119a0fd0c47b9dbbc8b7e82885f8b99657f7723b87687c6d4a9cef98bbbeec | UNCHANGED |
+| lib/features/workspace/template_tray.dart | b58f05b9f6f8b089a4335554f062e0652929bd9c2f60d3fdbf79d4bc87aca678 | b58f05b9f6f8b089a4335554f062e0652929bd9c2f60d3fdbf79d4bc87aca678 | UNCHANGED |
+| lib/features/graph/graph_card.dart | ea1010e17627c4f1754a5e8ba2dc18004adbb98121ebd7da8a8cd876de8c1e4f | ea1010e17627c4f1754a5e8ba2dc18004adbb98121ebd7da8a8cd876de8c1e4f | UNCHANGED |
+| lib/features/graph/graph_controller.dart | 0ae7bdbf8eb999493dab18812180e0e35be5e13cf1ea26d8f041779631ebf0fa | 0ae7bdbf8eb999493dab18812180e0e35be5e13cf1ea26d8f041779631ebf0fa | UNCHANGED |
+| lib/features/history/history_controller.dart | 331a6d84dbe4a940f185a69bc5623c6aaa0f2b16f4198f2149a4f4b375be3f51 | 331a6d84dbe4a940f185a69bc5623c6aaa0f2b16f4198f2149a4f4b375be3f51 | UNCHANGED |
+| lib/features/history/history_panel.dart | fad987605894ffafc0069fa80f560908c6f529a05da81d2165e924524728537b | fad987605894ffafc0069fa80f560908c6f529a05da81d2165e924524728537b | UNCHANGED |
+| lib/features/solution/solution_steps_panel.dart | cefded355d74046a1d5252deebc06b0a8841a39265f5736d7f65865e092be08b | cefded355d74046a1d5252deebc06b0a8841a39265f5736d7f65865e092be08b | UNCHANGED |

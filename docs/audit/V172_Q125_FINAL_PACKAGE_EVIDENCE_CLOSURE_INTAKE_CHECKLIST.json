@@ -1,0 +1,33 @@
+{
+  "phase": "V172-Q125",
+  "purpose": "Final package evidence closure intake guard only; no release PASS or evidence closure is claimed.",
+  "requiresBeforeClosure": [
+    "Q124 release-freeze final review evidence complete",
+    "Q124 human review approval",
+    "Q124 release-freeze approval",
+    "flutter pub get PASS evidence",
+    "flutter analyze PASS evidence",
+    "flutter test PASS evidence",
+    "MathLive Lab real-device evidence",
+    "main app real-device evidence",
+    "Q108/Q116 real-device cursor court PASS evidence",
+    "Graph runtime evidence",
+    "History runtime evidence",
+    "Solution runtime evidence",
+    "rollback verification",
+    "final evidence ledger",
+    "frozen defect ledger",
+    "touched files manifest",
+    "selected verifier reports",
+    "explicit Q125 evidence-closure approval"
+  ],
+  "forbiddenInThisPackage": {
+    "finalPackageEvidenceClosed": false,
+    "releasePassClaimed": false,
+    "legacyCursorDeletion": false,
+    "legacyMainPathRetirement": false,
+    "mathLiveDefaultEditor": false,
+    "protectedUiMutation": false,
+    "fakeEvidenceClosure": false
+  }
+}

@@ -1,0 +1,25 @@
+Graph / Premium History V8 static check summary
+
+Environment limitation:
+- flutter: not available
+- dart: not available
+
+Static checks performed:
+- V7 full ZIP extracted successfully.
+- Graph/history module presence checked.
+- V3/V4/V5/V6/V7 scope preservation checked by file presence and targeted review.
+- Keyboard hashes checked and unchanged:
+  key_config.dart        1f512b6d96a528a0363d00b2d9ac9006ca3f10e9892f7f2a10b513af1d380144
+  math_keyboard.dart     f4f2a9acdc226cdc9838a265a96f2539a5b9ecf1f4feccd5fbb76745370b7ad2
+  bottom_dock.dart       e2063efc93b7b7470ba5940db8da1a49ded633cd8c31619f2659132c82d243a7
+  long_press_popup.dart  a7f7c8a0d2c6df9efa02cb984f9109f090992e944145f124d8c258059d3f7d75
+- V7 duplicate argument / extra brace drift repaired in edited files.
+- Edited Dart brace/parenthesis count checked.
+- Runtime lib scan found no `mathpro-history-handle`.
+- Runtime lib scan found no `onPressed: null`.
+- Forbidden package artifact scan completed before ZIP creation.
+
+Not claimed:
+- flutter analyze NOT RUN / PASS not claimed
+- flutter test NOT RUN / PASS not claimed
+- flutter run NOT RUN / PASS not claimed

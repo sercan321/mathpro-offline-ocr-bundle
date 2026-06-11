@@ -1,0 +1,8 @@
+MathPro Premium Keyboard V24 Analyze Repair — Static Check
+
+lib/features/keyboard/long_press_popup.dart:_mathishChipLabels duplicate_values=[]
+lib/features/keyboard/premium_key.dart:_mathishLabels duplicate_values=[]
+long_press_popup duplicate √□ count in _mathishChipLabels cannot be directly counted safely by full-file grep, see duplicate_values above.
+action_utils _templateExpression duplicate_case_labels=[]
+action_utils _defaultFocusRole duplicate_case_labels=[]
+result=STATIC_PASS

@@ -1,0 +1,68 @@
+class WorkspaceExpressionContextMenuQ382Policy {
+  const WorkspaceExpressionContextMenuQ382Policy._();
+
+  static const String phase = 'V172-Q382-WORKSPACE-EXPRESSION-CONTEXT-MENU-ACTION-INTENT';
+  static const String riskRepairPhase = 'V172-Q382R1-WORKSPACE-CONTEXT-MENU-RISK-REPAIR';
+  static const String handlerGuardRepairPhase = 'V172-Q382R2-WORKSPACE-CONTEXT-MENU-HANDLER-GUARD-REPAIR';
+  static const String solutionIntentInjectionRepairPhase = 'V172-Q382R3-WORKSPACE-CONTEXT-MENU-SOLUTION-INTENT-INJECTION-REPAIR';
+  static const String testSyntaxRepairPhase = 'V172-Q382R4-WORKSPACE-CONTEXT-MENU-TEST-SYNTAX-REPAIR';
+  static const String unsupportedActionAndEditorSemanticsRepairPhase = 'V172-Q382R5-WORKSPACE-CONTEXT-MENU-UNSUPPORTED-ACTION-AND-EDITOR-SEMANTICS-REPAIR';
+  static const String dismissAndHitZoneHardeningPhase = 'V172-Q382R6-WORKSPACE-CONTEXT-MENU-DISMISS-HITZONE-HARDENING';
+  static const String analyzeTestLogRepairPhase = 'V172-Q382R7-WORKSPACE-CONTEXT-MENU-ANALYZE-TEST-LOG-REPAIR';
+  static const String legacyOnnxExpectationRepairPhase = 'V172-Q382R8-WORKSPACE-CONTEXT-MENU-LEGACY-ONNX-EXPECTATION-REPAIR';
+  static const String legacyCameraReviewCopyExpectationRepairPhase = 'V172-Q382R9-WORKSPACE-CONTEXT-MENU-LEGACY-CAMERA-REVIEW-COPY-EXPECTATION-REPAIR';
+  static const String legacyCameraReviewFinalAnalyzeTestExpectationRepairPhase = 'V172-Q382R10-WORKSPACE-CONTEXT-MENU-FINAL-ANALYZE-TEST-EXPECTATION-REPAIR';
+  static const String analyzeQ239BCopyExpectationRepairPhase = 'V172-Q382R11-WORKSPACE-CONTEXT-MENU-ANALYZE-Q239B-COPY-EXPECTATION-REPAIR';
+  static const String kotlinCompileAndQ239BExpectationRepairPhase = 'V172-Q382R12-WORKSPACE-CONTEXT-MENU-KOTLIN-COMPILE-Q239B-EXPECTATION-REPAIR';
+  static const String baseline = 'V172-Q381R1-CAMERA-OCR-RUNTIME-RISK-REPAIR';
+  static const bool floatingOverlayDoesNotResizeWorkspace = true;
+  static const bool internalScrollWhenActionsOverflow = true;
+  static const bool clampsToSafeArea = true;
+  static const bool safeHitZonePreservesMathLiveCaretLongPress = true;
+  static const bool editorActionsEnabled = true;
+  static const bool semanticMathActionIntentShellEnabled = true;
+  static const bool selectedActionChipEnabled = true;
+  static const bool solutionMetadataRoutingEnabled = true;
+  static const bool fakeSolverResultsBlocked = true;
+  static const bool graphSolveHistoryAutoTriggerBlocked = true;
+  static const bool q381R1OcrSafetyPreserved = true;
+  static const bool overlayEntryRemovalGuarded = true;
+  static const bool menuMaxHeightNeverExceedsSafeArea = true;
+  static const bool unsupportedActionHandlerGuarded = true;
+  static const bool unsupportedActionDoesNotReuseGenericResultAsHandlerOutput = true;
+  static const bool selectedActionIntentStepInjectedExactlyOnce = true;
+  static const bool selectedActionIntentInjectionAvoidsObjectIdentityContains = true;
+  static const bool contextMenuTestClosureSyntaxRepaired = true;
+  static const bool q382R3VerifierRemainsBackwardCompatible = true;
+  static const bool unsupportedActionsDisabledBeforeSelection = true;
+  static const bool staleResultSuppressedForUnsupportedIntent = true;
+  static const bool editorReplacementActionsUseExplicitLabels = true;
+  static const bool selectAllShowsVisibleTargetChip = true;
+  static const bool contextMenuUsesAllResolvedActionsForInternalScroll = true;
+  static const bool mathLiveContextMenuSyncResultChecked = true;
+  static const bool androidBackDismissesOverlayBeforeRoutePop = true;
+  static const bool safeHitZoneUsabilityHardenedWithoutCoveringMathLive = true;
+  static const bool expressionEditClearsContextStateWithSetState = true;
+  static const bool q382R6WidgetContractsCoveredByTests = true;
+  static const bool q382R7AnalyzerWarningsRepaired = true;
+  static const bool q382R7LegacyTestExpectationsRepaired = true;
+  static const bool q382R7UnsupportedIntentNoFakeResultCopyPreserved = true;
+  static const bool q382R8LegacyOnnxRuntimeExpectationsGuarded = true;
+  static const bool q382R8Q352Q353Q354SuccessorAwarenessRepaired = true;
+  static const bool q382R8RuntimeBehaviorUnchanged = true;
+  static const bool q382R9LegacyCameraReviewCopyExpectationsGuarded = true;
+  static const bool q382R9Q239Q243Q277LegacyTestsSuccessorAware = true;
+  static const bool q382R9RuntimeBehaviorUnchanged = true;
+  static const bool q382R10PreferContainsAnalyzerRepairApplied = true;
+  static const bool q382R10Q239CLegacyOcrNextPhaseCopyGuarded = true;
+  static const bool q382R10RuntimeBehaviorUnchanged = true;
+  static const bool q382R11ConstDeclarationAnalyzerInfoRepaired = true;
+  static const bool q382R11Q239BWorkspaceCameraInvocationGuarded = true;
+  static const bool q382R11Q239CLegacyOcrCopyExpectationGuarded = true;
+  static const bool q382R11RuntimeBehaviorUnchanged = true;
+  static const bool q382R12KotlinVocabularySidecarBooleanPrecedenceRepaired = true;
+  static const bool q382R12Q239BMoreIconExpectationAllowsQ382ContextMenu = true;
+  static const bool q382R12RuntimeBehaviorUnchanged = true;
+}
+
+

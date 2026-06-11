@@ -1,0 +1,7 @@
+V77 static verification targets:
+- Series templates contain visible editable placeholders.
+- No Taylor(□), Maclaurin(□), Binom(□), or generic seri insertion is restored.
+- Taylor structural snapshot exposes seriesVariable, seriesIndex, seriesOrder, and seriesCenter roles.
+- MathTexSerializer returns mathematical TeX with \Box placeholders for all series templates.
+- No solution/solver/keyboard layout files changed by this phase.
+- Runtime Flutter analyze/test/run not executed in this environment.

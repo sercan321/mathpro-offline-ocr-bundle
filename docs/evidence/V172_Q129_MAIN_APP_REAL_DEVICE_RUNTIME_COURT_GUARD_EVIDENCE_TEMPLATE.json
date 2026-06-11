@@ -1,0 +1,18 @@
+{
+  "phase": "V172-Q129",
+  "templateOnly": true,
+  "expectedStatus": "Q129_MAIN_APP_REAL_DEVICE_RUNTIME_COURT_PACKAGE_READY_BUT_ACTIVATION_EVIDENCE_BLOCKED",
+  "evidenceComplete": false,
+  "mayClaimCursorPass": false,
+  "mayClaimReleasePass": false,
+  "maySwitchDefaultEditor": false,
+  "mayDeleteLegacyCursor": false,
+  "required": [
+    "Q128 flag-gated activation evidence",
+    "flutter analyze PASS",
+    "flutter test PASS",
+    "MathLive Lab real-device run",
+    "main app real-device run",
+    "explicit Q129 approval"
+  ]
+}

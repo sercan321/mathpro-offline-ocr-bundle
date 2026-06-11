@@ -1,0 +1,37 @@
+{
+  "summary": {
+    "readyState": "complete",
+    "hasMathLive": true,
+    "customDefined": true,
+    "hasBridge": true,
+    "fieldExists": true,
+    "mountResult": true,
+    "value": "5",
+    "rect": {
+      "width": 756,
+      "height": 72
+    },
+    "repair": {
+      "phase": "V172-Q169R36",
+      "observerMode": "debounced-childlist-only-no-attributes",
+      "chromeSuppressionDebounced": true
+    }
+  },
+  "compact": {
+    "mathfieldElementDefined": true,
+    "mathfieldInstanceMounted": true,
+    "lastInsertSucceeded": true,
+    "lastInsertCommitted": true,
+    "lastValueNonEmpty": true,
+    "lastJsCommandStatus": "ok",
+    "nativePaintState": "ok",
+    "nativePaintOwner": "mathlive-native-field",
+    "nativePaintProofValuePath": "native-getValue-latex-expanded",
+    "nativeMathfieldValue": "5",
+    "q169FailureReason": "none",
+    "lastPaintRectState": "rect-756x72",
+    "shadowObserverFeedbackLoopRepairPhase": null,
+    "q169R36ChromeObserverMode": null,
+    "q169R36ChromeSuppressionPasses": null
+  }
+}

@@ -1,0 +1,12 @@
+MATHPRO FINAL UI/EDITOR/HISTORY REMOVAL STATIC CHECK
+project_root=. dart_files= 54
+missing_dart_import_targets= 0
+runtime_history_or_shared_prefs_hits= 0
+basic_core_more_ans True
+expanded_more_equal_enter True
+integral_longpress_no_double True
+enter_command True
+ans_command True
+equals_literal_text True
+key_config_sha256= 1f512b6d96a528a0363d00b2d9ac9006ca3f10e9892f7f2a10b513af1d380144
+dirty_cache_artifacts= 0

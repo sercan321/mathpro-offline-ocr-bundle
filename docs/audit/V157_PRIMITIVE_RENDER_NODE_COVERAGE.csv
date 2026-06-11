@@ -1,0 +1,65 @@
+label,category,expected_kind,render_node_status,phase_status
+0,number,MathNodeKind.number,NumberNode,V157 migrated
+1,number,MathNodeKind.number,NumberNode,V157 migrated
+2,number,MathNodeKind.number,NumberNode,V157 migrated
+3,number,MathNodeKind.number,NumberNode,V157 migrated
+4,number,MathNodeKind.number,NumberNode,V157 migrated
+5,number,MathNodeKind.number,NumberNode,V157 migrated
+6,number,MathNodeKind.number,NumberNode,V157 migrated
+7,number,MathNodeKind.number,NumberNode,V157 migrated
+8,number,MathNodeKind.number,NumberNode,V157 migrated
+9,number,MathNodeKind.number,NumberNode,V157 migrated
+.,number,MathNodeKind.number,NumberNode,V157 migrated
+12.3,number,MathNodeKind.number,NumberNode,V157 migrated
+0.5,number,MathNodeKind.number,NumberNode,V157 migrated
+.75,number,MathNodeKind.number,NumberNode,V157 migrated
+x,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+y,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+z,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+a,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+b,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+c,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+n,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+m,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+k,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+r,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+A,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+B,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+I,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+dx,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+dy,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+dt,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+dθ,symbol,MathNodeKind.symbol,SymbolNode,V157 migrated
+π,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+e,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+i,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+θ,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+λ,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+μ,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+φ,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+ρ,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+∞,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+rad,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+deg,constant,MathNodeKind.constant,ConstantNode,V157 migrated
++∞,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+−∞,constant,MathNodeKind.constant,ConstantNode,V157 migrated
+−i,constant,MathNodeKind.constant,ConstantNode,V157 migrated
++,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+−,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+×,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+÷,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+%,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+=,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+<,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+>,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+≤,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+≥,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+≠,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+≈,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+≡,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+(,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+),operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+[,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+],operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+",",operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred
+;,operator/delimiter,MathNodeKind.text,OperatorNode pending,V158 deferred

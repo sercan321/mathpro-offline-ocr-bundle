@@ -1,0 +1,55 @@
+# V172-Q204R2 changed files
+
+## Core files
+
+- lib/features/mathlive/mathlive_real_device_evidence_intake_full_test_suite_hygiene_policy.dart
+- test/v172_q204r2_real_device_evidence_intake_full_test_suite_hygiene_test.dart
+- tool/verify_mathlive_real_device_evidence_intake_full_test_suite_hygiene_v172_q204r2.mjs
+- assets/mathlive/manifest.json
+- README.md
+- pubspec.yaml
+
+## Migrated stale MathLive tests
+
+- test/v172_q135_q139_mathlive_full_main_editor_migration_test.dart
+- test/v172_q140_mathlive_premium_surface_repair_test.dart
+- test/v172_q141_mathlive_premium_visual_refinement_test.dart
+- test/v172_q143_mathlive_pointer_caret_fluidity_test.dart
+- test/v172_q144_mathlive_main_editor_state_authority_test.dart
+- test/v172_q145_mathlive_premium_template_layout_test.dart
+- test/v172_q146_mathlive_runtime_sync_binding_test.dart
+- test/v172_q148_mathlive_viewport_fit_test.dart
+- test/v172_q149_mathlive_visual_chrome_contract_test.dart
+- test/v172_q157_mathlive_runtime_command_binding_test.dart
+- test/v172_q158_mathlive_analyzer_hygiene_test.dart
+- test/v172_q159_mathlive_real_device_input_visibility_test.dart
+- test/v172_q160_mathlive_flutter_visible_mirror_test.dart
+- test/v172_q161_mathlive_native_render_ownership_test.dart
+- test/v172_q162_mathlive_native_render_fallback_repair_test.dart
+- test/v172_q163_mathlive_real_device_diagnostic_bridge_test.dart
+- test/v172_q164_mathlive_diagnostic_contract_cleanup_test.dart
+- test/v172_q165_mathlive_appshell_visible_fallback_test.dart
+- test/v172_q166_mathlive_analyzer_syntax_repair_test.dart
+- test/v172_q167_mathlive_appshell_command_bus_hard_binding_test.dart
+- test/v172_q169_mathlive_queue_flush_native_paint_commit_test.dart
+- test/v172_q169r1_mathlive_analyze_test_contract_repair_test.dart
+- test/v172_q169r24_r27_mathlive_authority_chain_test.dart
+- test/v172_q169r28_mathlive_static_hygiene_runtime_truth_repair_test.dart
+- test/v172_q169r29_analyzer_test_contract_repair_test.dart
+- test/v172_q169r2_mathlive_q159_static_contract_repair_test.dart
+- test/v172_q169r30_channel_proven_page_ready_repair_test.dart
+- test/v172_q169r31_prebundled_runtime_boot_repair_test.dart
+- test/v172_q169r32_mount_insert_value_paint_stabilization_test.dart
+- test/v172_q169r35_single_file_runtime_boot_repair_test.dart
+- test/v172_q169r3_mathlive_q158_static_contract_repair_test.dart
+- test/v172_q169r4_mathlive_mf_true_bridge_dispatch_repair_test.dart
+- test/v172_q169r6_mathlive_bridge_fire_and_refresh_repair_test.dart
+- test/v172_q169r8_mathlive_insert_value_failure_reason_court_test.dart
+- test/v172_q182_mathlive_production_simplification_test.dart
+- test/v172_q184_production_mathlive_cutover_surface_test.dart
+- test/v172_q190r7_production_legacy_fallback_isolation_test.dart
+- test/v172_q190r8_production_static_asset_truth_test.dart
+- test/v172_q190r9_static_pre_analyze_hygiene_test.dart
+- test/v172_q194_physical_legacy_cleanup_test.dart
+- test/v172_q200_production_no_freeze_ui_contract_finalization_test.dart
+- test/v172_q204r1_real_device_evidence_intake_analyze_test_hygiene_test.dart

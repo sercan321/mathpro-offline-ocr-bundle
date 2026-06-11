@@ -1,0 +1,39 @@
+# V172-Q281 Changed Files
+
+Added:
+
+- lib/features/camera/gauss_private_artifact_load_real_smoke_policy.dart
+- lib/features/camera/gauss_private_artifact_load_real_smoke.dart
+- test/v172_q281_private_artifact_load_real_smoke_test.dart
+- tool/verify_private_artifact_load_real_smoke_v172_q281.mjs
+- docs/audit/V172_Q281_PRIVATE_ARTIFACT_LOAD_REAL_SMOKE_AUDIT.md
+- docs/audit/V172_Q281_CHANGED_FILES.md
+
+Updated:
+
+- assets/mathlive/manifest.json
+- README.md
+- tool/verify_native_runtime_bridge_implementation_v172_q280.mjs
+- tool/verify_selected_runtime_dependency_trial_v172_q279.mjs
+- tool/verify_real_runtime_integration_evidence_lock_v172_q278.mjs
+- tool/verify_camera_ocr_runtime_premium_regression_tap_latency_cadence_v172_q277r3.mjs
+- tool/verify_camera_ocr_runtime_premium_regression_analyzer_hygiene_v172_q277r2.mjs
+- tool/verify_camera_ocr_runtime_premium_regression_log_repair_v172_q277r1.mjs
+- tool/verify_camera_ocr_runtime_premium_regression_v172_q277.mjs
+- tool/verify_camera_ocr_real_end_to_end_device_court_v172_q276.mjs
+- tool/verify_approved_ocr_workspace_import_gate_v172_q275.mjs
+- tool/verify_ocr_result_mathlive_real_review_binding_v172_q274.mjs
+- tool/verify_pp_formulanet_s_image_to_latex_prototype_gate_v172_q273.mjs
+
+Not changed:
+
+- keyboard layout/source
+- MORE/template tray
+- long-press lists
+- MathLive production HTML/bridge/surface
+- Graph/Solution/History/AppShell/workspace runtime
+- camera capture shell runtime
+- solver/evaluator
+- splash/icon
+- AndroidManifest/MainActivity
+- camera dependency/toolchain values

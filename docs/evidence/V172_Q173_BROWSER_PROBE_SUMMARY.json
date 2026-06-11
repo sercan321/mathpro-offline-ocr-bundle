@@ -1,0 +1,132 @@
+{
+  "phase": "V172-Q173",
+  "browserProbeExecuted": true,
+  "flutterAnalyzePassClaimed": false,
+  "flutterTestPassClaimed": false,
+  "flutterRunPassClaimed": false,
+  "realDevicePremiumPassClaimed": false,
+  "probes": [
+    {
+      "name": "radical_sibling_guard",
+      "final": {
+        "label": "√x",
+        "latex": "\\sqrt{\\placeholder{}}\\sqrt{\\placeholder{}}\\sqrt{\\placeholder{}}",
+        "nativePaintState": "ok",
+        "nativePaintOwner": "mathlive-native-field",
+        "q173StructuralSiblingAppendGuard": "moved-to-mathfield-end-before-structural-sibling",
+        "q173LastNormalizedLatex": "\\sqrt{#0}",
+        "templateOpticalFamily": "radical",
+        "lastInsertCommitted": true,
+        "lastValueNonEmpty": true
+      },
+      "steps": [
+        {
+          "label": "√x",
+          "latex": "\\sqrt{\\placeholder{}}",
+          "nativePaintState": "ok",
+          "nativePaintOwner": "mathlive-native-field",
+          "q173StructuralSiblingAppendGuard": "not-run",
+          "q173LastNormalizedLatex": "7",
+          "templateOpticalFamily": "radical",
+          "lastInsertCommitted": true,
+          "lastValueNonEmpty": true
+        },
+        {
+          "label": "√x",
+          "latex": "\\sqrt{\\placeholder{}}\\sqrt{\\placeholder{}}",
+          "nativePaintState": "ok",
+          "nativePaintOwner": "mathlive-native-field",
+          "q173StructuralSiblingAppendGuard": "moved-to-mathfield-end-before-structural-sibling",
+          "q173LastNormalizedLatex": "\\sqrt{#0}",
+          "templateOpticalFamily": "radical",
+          "lastInsertCommitted": true,
+          "lastValueNonEmpty": true
+        },
+        {
+          "label": "√x",
+          "latex": "\\sqrt{\\placeholder{}}\\sqrt{\\placeholder{}}\\sqrt{\\placeholder{}}",
+          "nativePaintState": "ok",
+          "nativePaintOwner": "mathlive-native-field",
+          "q173StructuralSiblingAppendGuard": "moved-to-mathfield-end-before-structural-sibling",
+          "q173LastNormalizedLatex": "\\sqrt{#0}",
+          "templateOpticalFamily": "radical",
+          "lastInsertCommitted": true,
+          "lastValueNonEmpty": true
+        }
+      ],
+      "screenshot": "docs/evidence/V172_Q173_radical_sibling_guard.png"
+    },
+    {
+      "name": "calculus_native_templates",
+      "final": {
+        "label": "√x",
+        "latex": "\\int\\placeholder{}\\,dx\\frac{d}{dx}\\ln(\\placeholder{})^{\\placeholder{}}\\sqrt{\\placeholder{}}",
+        "nativePaintState": "ok",
+        "nativePaintOwner": "mathlive-native-field",
+        "q173StructuralSiblingAppendGuard": "moved-to-mathfield-end-before-structural-sibling",
+        "q173LastNormalizedLatex": "\\sqrt{#0}",
+        "templateOpticalFamily": "radical",
+        "lastInsertCommitted": true,
+        "lastValueNonEmpty": true
+      },
+      "steps": [
+        {
+          "label": "∫dx",
+          "latex": "\\int\\placeholder{}\\,dx",
+          "nativePaintState": "ok",
+          "nativePaintOwner": "mathlive-native-field",
+          "q173StructuralSiblingAppendGuard": "not-run",
+          "q173LastNormalizedLatex": "7",
+          "templateOpticalFamily": "calculus",
+          "lastInsertCommitted": true,
+          "lastValueNonEmpty": true
+        },
+        {
+          "label": "d/dx",
+          "latex": "\\int\\placeholder{}\\,dx\\frac{d}{dx}\\placeholder{}",
+          "nativePaintState": "ok",
+          "nativePaintOwner": "mathlive-native-field",
+          "q173StructuralSiblingAppendGuard": "moved-to-mathfield-end-before-structural-sibling",
+          "q173LastNormalizedLatex": "\\frac{d}{dx}#0",
+          "templateOpticalFamily": "calculus",
+          "lastInsertCommitted": true,
+          "lastValueNonEmpty": true
+        },
+        {
+          "label": "ln",
+          "latex": "\\int\\placeholder{}\\,dx\\frac{d}{dx}\\ln(\\placeholder{})",
+          "nativePaintState": "ok",
+          "nativePaintOwner": "mathlive-native-field",
+          "q173StructuralSiblingAppendGuard": "moved-to-mathfield-end-before-structural-sibling",
+          "q173LastNormalizedLatex": "7",
+          "templateOpticalFamily": "calculus",
+          "lastInsertCommitted": true,
+          "lastValueNonEmpty": true
+        },
+        {
+          "label": "x^y",
+          "latex": "\\int\\placeholder{}\\,dx\\frac{d}{dx}\\ln(\\placeholder{})^{\\placeholder{}}",
+          "nativePaintState": "ok",
+          "nativePaintOwner": "mathlive-native-field",
+          "q173StructuralSiblingAppendGuard": "moved-to-mathfield-end-before-structural-sibling",
+          "q173LastNormalizedLatex": "#@^{#?}",
+          "templateOpticalFamily": "calculus",
+          "lastInsertCommitted": true,
+          "lastValueNonEmpty": true
+        },
+        {
+          "label": "√x",
+          "latex": "\\int\\placeholder{}\\,dx\\frac{d}{dx}\\ln(\\placeholder{})^{\\placeholder{}}\\sqrt{\\placeholder{}}",
+          "nativePaintState": "ok",
+          "nativePaintOwner": "mathlive-native-field",
+          "q173StructuralSiblingAppendGuard": "moved-to-mathfield-end-before-structural-sibling",
+          "q173LastNormalizedLatex": "\\sqrt{#0}",
+          "templateOpticalFamily": "radical",
+          "lastInsertCommitted": true,
+          "lastValueNonEmpty": true
+        }
+      ],
+      "screenshot": "docs/evidence/V172_Q173_calculus_native_templates.png"
+    }
+  ]
+}

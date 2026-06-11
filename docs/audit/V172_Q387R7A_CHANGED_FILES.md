@@ -1,0 +1,11 @@
+# V172-Q387R7A Changed Files
+
+- lib/features/camera/gauss_deferred_math_ocr_model_manager.dart
+- test/v172_q387_paddle_lite_nb_model_format_decision_gate_test.dart
+- test/v172_q387r2_paddle_lite_nb_source_download_install_binding_test.dart
+- test/v172_q387r3_paddle_lite_nb_artifact_acquisition_protocol_test.dart
+- test/v172_q387r4_paddle_lite_nb_production_source_binding_test.dart
+- tool/verify_paddle_lite_nb_flutter_analyze_test_repair_v172_q387r7a.mjs
+- docs/audit/V172_Q387R7A_FLUTTER_ANALYZE_TEST_REPAIR.md
+- docs/audit/V172_Q387R7A_CHANGED_FILES.md
+- README.md

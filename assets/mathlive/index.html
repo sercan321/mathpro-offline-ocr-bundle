@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>MathPro MathLive Offline Lab</title>
+  <link rel="stylesheet" href="mathlive.css">
+</head>
+<body>
+  <!-- phase-markers: V172-Q85 V172-Q86 V172-Q87 V172-Q88 V172-Q89 V172-Q90 V172-Q90R1 V172-Q90R2 V172-Q90R5 V172-Q90R6 -->
+  <main class="shell">
+    <section class="card">
+      <div class="eyebrow">MathPro V172-Q84 / Q85 / Q86 / Q87 / Q88 / Q89 / Q90 / Q90R1 / Q90R2 / Q90R5 / Q90R6</div>
+      <h1>Isolated MathLive Lab</h1>
+      <p id="runtime-status" class="status">Q90R2 runtime smoke gate: this isolated lab tries to load only the local official MathLive vendor bundle. If vendor/mathlive/mathlive.min.js is absent, the lab stays blocked without fake cursor PASS and without switching the main editor. MathLive virtual keyboard remains disabled. Q90R5 can export smoke evidence for the later real-device cursor court, and Q90R6 can author the canonical evidence file from a copied Lab capture; neither can switch the main editor.</p>
+      <div id="mathlive-host" class="mathfield-shell" aria-label="MathLive host placeholder" contenteditable="true" inputmode="none">□</div>
+      <pre id="mathpro-export" class="export">latex:</pre>
+    </section>
+  </main>
+  <script>
+    window.MathProOfficialMathLiveRuntimeProbe = {
+      bundleScriptRequested: true,
+      bundleScriptLoaded: false,
+      bundleScriptFailed: false
+    };
+  </script>
+  <script src="vendor/mathlive/mathlive.min.js"
+    onload="window.MathProOfficialMathLiveRuntimeProbe.bundleScriptLoaded = true"
+    onerror="window.MathProOfficialMathLiveRuntimeProbe.bundleScriptFailed = true"></script>
+  <script src="mathlive_bridge.js"></script>
+</body>
+</html>

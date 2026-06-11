@@ -1,0 +1,17 @@
+{
+  "phase": "V172-Q351-OPTIMIZED-MODEL-EVIDENCE-ACCEPTANCE-REAL-MODEL-LOAD-UNLOCK-GATE",
+  "sourcePhase": "V172-Q350-OPTIMIZED-MODEL-ARTIFACT-CONVERSION-EVIDENCE-INTAKE",
+  "externalOptimizedModelEvidenceRootPolicy": "../MathProOcrArtifacts/PP-FormulaNet-S-PaddleLite-Optimized",
+  "q350EvidenceJson": "q350_optimized_model_conversion_evidence.json",
+  "q351IntakeScript": "tool/intake_pp_formulanet_s_optimized_model_evidence_v172_q351.mjs",
+  "requiredBeforeRealModelLoad": [
+    "Q350 optimized model evidence JSON exists outside project root",
+    "At least one optimized Paddle Lite Android model artifact with SHA256 is captured",
+    "At least one conversion command/log artifact with SHA256 is captured",
+    "Model-loader path contract is explicitly approved",
+    "Clean user-side Flutter analyze/test/run or build evidence exists after Q351"
+  ],
+  "blockedInThisPackage": true,
+  "modelLoadAttempted": false,
+  "ocrPassClaimed": false
+}

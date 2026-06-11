@@ -1,0 +1,25 @@
+# V172-Q278 Changed Files
+
+Added:
+
+- lib/features/camera/gauss_real_runtime_integration_evidence_lock_policy.dart
+- lib/features/camera/gauss_real_runtime_integration_evidence_lock.dart
+- test/v172_q278_real_runtime_integration_evidence_lock_test.dart
+- tool/verify_real_runtime_integration_evidence_lock_v172_q278.mjs
+- docs/audit/V172_Q278_REAL_RUNTIME_INTEGRATION_EVIDENCE_LOCK_AUDIT.md
+- docs/audit/V172_Q278_CHANGED_FILES.md
+
+Updated:
+
+- assets/mathlive/manifest.json
+- README.md
+- tool/verify_pp_formulanet_s_image_to_latex_prototype_gate_v172_q273.mjs
+- tool/verify_ocr_result_mathlive_real_review_binding_v172_q274.mjs
+- tool/verify_approved_ocr_workspace_import_gate_v172_q275.mjs
+- tool/verify_camera_ocr_real_end_to_end_device_court_v172_q276.mjs
+- tool/verify_camera_ocr_runtime_premium_regression_v172_q277.mjs
+- tool/verify_camera_ocr_runtime_premium_regression_log_repair_v172_q277r1.mjs
+- tool/verify_camera_ocr_runtime_premium_regression_analyzer_hygiene_v172_q277r2.mjs
+- tool/verify_camera_ocr_runtime_premium_regression_tap_latency_cadence_v172_q277r3.mjs
+
+Protected runtime/UI surfaces changed: none.

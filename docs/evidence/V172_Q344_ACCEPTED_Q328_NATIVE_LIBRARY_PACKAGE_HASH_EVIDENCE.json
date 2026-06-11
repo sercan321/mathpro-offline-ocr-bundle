@@ -1,0 +1,57 @@
+{
+  "phase": "V172-Q328-NATIVE-LIBRARY-PACKAGE-FILE-HASH-INTAKE-NO-BUNDLE-EVIDENCE-GATE",
+  "sourcePhase": "V172-Q327-NATIVE-LIBRARY-SOURCE-PACKAGE-APPROVAL-ABI-MATRIX-LOCK",
+  "selectedRuntimeDependencyCandidate": "PADDLE_LITE_ANDROID_NATIVE_LIBRARY_MANUAL_TRIAL_PENDING",
+  "defaultInputDirPolicy": "../MathProOcrNativePackages/Paddle_Lite_Android",
+  "inputDir": "C:\\Users\\user\\Desktop\\MathProOcrNativePackages\\Paddle_Lite_Android",
+  "evidencePath": "C:\\Users\\user\\Desktop\\MathProOcrNativePackages\\Paddle_Lite_Android\\q328_native_library_package_hash_evidence.json",
+  "requiredFiles": [
+    "PaddlePredictor.jar",
+    "arm64-v8a/libpaddle_lite_jni.so",
+    "armeabi-v7a/libpaddle_lite_jni.so"
+  ],
+  "optionalFiles": [
+    "x86_64/libpaddle_lite_jni.so"
+  ],
+  "files": [
+    {
+      "relativePath": "PaddlePredictor.jar",
+      "required": true,
+      "exists": true,
+      "sizeBytes": 9167,
+      "sha256": "81c8f73729123fd4b65b1b0d01ad58f9a0f0fe61274d49179910696cc68959f2"
+    },
+    {
+      "relativePath": "arm64-v8a/libpaddle_lite_jni.so",
+      "required": true,
+      "exists": true,
+      "sizeBytes": 4531976,
+      "sha256": "2eb3cd0f1d3d01c2199ee79d28f5bef7180a699f7bd9cbb183743f3031277fe2"
+    },
+    {
+      "relativePath": "armeabi-v7a/libpaddle_lite_jni.so",
+      "required": true,
+      "exists": true,
+      "sizeBytes": 2877288,
+      "sha256": "261de17f07130118962226f451a9a75aae84ff15bfe4e4b6b2ed942b5a7b121f"
+    },
+    {
+      "relativePath": "x86_64/libpaddle_lite_jni.so",
+      "required": false,
+      "exists": false,
+      "sizeBytes": 0,
+      "sha256": ""
+    }
+  ],
+  "missingRequiredFiles": [],
+  "requiredFilesAllPresent": true,
+  "requiredFilesAllHaveSha256": true,
+  "evidenceStoredOutsideProjectRoot": true,
+  "nativePackageFilesBundledIntoProject": false,
+  "runtimeDependencyAdded": false,
+  "nativeLoaderAdded": false,
+  "runtimeAccepted": false,
+  "note": "Q328 captures native package file hash evidence only. It does not bundle .so/.jar/.aar files into the project.",
+  "capturedAt": "2026-06-07T12:26:19.615Z",
+  "projectRoot": "C:\\Users\\user\\Desktop\\MathProFlutterPhase17"
+}

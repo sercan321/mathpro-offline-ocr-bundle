@@ -1,0 +1,29 @@
+MathPro Graph / Premium History V9 Static Check
+
+Environment:
+- flutter: not available in delivery container
+- dart: not available in delivery container
+
+Checks performed:
+- V8 full ZIP extracted successfully.
+- Graph/history module tree exists.
+- V3 graph painter work is still present.
+- V4 fullscreen graph work is still present.
+- V5 graph settings work is still present.
+- V6 premium history drawer work is still present.
+- V7 typed history item work is still present.
+- V8 history interaction work is still present.
+- Stale tests expecting no `shared_preferences` dependency were updated to the V9 persistence contract.
+- Runtime `lib/` scan found no `mathpro-history-handle`.
+- Runtime `lib/` scan found no `onPressed: null` or `onTap: null`.
+- Keyboard-critical file SHA256 hashes stayed unchanged from the V8 baseline.
+- Forbidden artifact scan found no build/cache/interpreter junk before packaging.
+
+Flutter commands not run here:
+- flutter pub get
+- flutter analyze
+- flutter test
+- flutter run -d 23106RN0DA
+
+Reason:
+- Flutter/Dart SDK is not installed in this execution environment.

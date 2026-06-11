@@ -1,0 +1,26 @@
+{
+  "phase": "V172-Q350-OPTIMIZED-MODEL-ARTIFACT-CONVERSION-EVIDENCE-INTAKE",
+  "sourcePhase": "V172-Q349-REAL-MODEL-LOAD-SMOKE-EVIDENCE-BLOCKED",
+  "externalEvidenceRootPolicy": "../MathProOcrArtifacts/PP-FormulaNet-S-PaddleLite-Optimized",
+  "knownInputArtifact": {
+    "fileName": "inference.pdiparams",
+    "sha256": "b6392296d16e2a9f414c0a751d7ccbd1bd9d8272b68aab72df1d3875f35a7489",
+    "sizeBytes": 231675001,
+    "acceptedAloneForAndroidPaddleLiteModelLoad": false
+  },
+  "requiredBeforeQ349RealModelLoadRetry": [
+    "Accepted Android Paddle Lite model format",
+    "Optimized model artifact or complete model directory outside project root",
+    "Conversion command and conversion log",
+    "Converted model SHA256 and size evidence",
+    "Approved model-loader path contract",
+    "Clean user-side Flutter analyze/test/build or run after Q350"
+  ],
+  "q350Scripts": [
+    "tool/prepare_pp_formulanet_s_optimized_model_intake_v172_q350.mjs",
+    "tool/capture_pp_formulanet_s_optimized_model_evidence_v172_q350.mjs"
+  ],
+  "modelBundledIntoProject": false,
+  "modelLoadAttempted": false,
+  "ocrPassClaimed": false
+}

@@ -1,0 +1,72 @@
+{
+  "phase": "V172-Q352-ONNX-CONVERSION-EVIDENCE-ACCEPTANCE-RUNTIME-STRATEGY-PIVOT-GATE",
+  "sourcePhase": "V172-Q351-OPTIMIZED-MODEL-EVIDENCE-ACCEPTANCE-REAL-MODEL-LOAD-UNLOCK-GATE",
+  "evidenceType": "external-onnx-conversion-evidence",
+  "acceptedByPackage": true,
+  "officialModelSource": "PaddleOCR FormulaRecognition(model_name=\"PP-FormulaNet-S\")",
+  "officialModelCachePathUserSide": "C:/Users/user/.paddlex/official_models/PP-FormulaNet-S",
+  "officialModelFilesObserved": [
+    {
+      "relativePath": "inference.json",
+      "sizeBytes": 504505
+    },
+    {
+      "relativePath": "inference.pdiparams",
+      "sizeBytes": 231675001,
+      "sha256": "b6392296d16e2a9f414c0a751d7ccbd1bd9d8272b68aab72df1d3875f35a7489"
+    },
+    {
+      "relativePath": "inference.yml",
+      "sizeBytes": 2244559
+    }
+  ],
+  "conversionEnvironment": {
+    "name": "MathProOcrP2OExactEnv",
+    "paddlepaddleVersionRequested": "3.0.0.dev20250426",
+    "paddlepaddleVersionImported": "3.0.0",
+    "paddle2onnxVersion": "2.1.0",
+    "onnxVersion": "1.17.0",
+    "onnxoptimizerVersion": "0.3.13"
+  },
+  "conversionCommand": {
+    "tool": "paddle2onnx",
+    "modelDir": "C:/Users/user/.paddlex/official_models/PP-FormulaNet-S",
+    "modelFilename": "inference.json",
+    "paramsFilename": "inference.pdiparams",
+    "saveFile": "C:/Users/user/Desktop/MathProOcrArtifacts/PP-FormulaNet-S-ONNX-Exact/pp_formulanet_s.onnx",
+    "requestedOpsetVersion": "11",
+    "observedOpsetVersion": "18",
+    "onnxCheckerEnabled": true,
+    "optimizerTool": "onnxoptimizer"
+  },
+  "conversionResult": {
+    "paddle2onnxExportSucceeded": true,
+    "onnxOptimizerSucceeded": false,
+    "onnxOptimizerSkippedAfterWarning": true,
+    "onnxOptimizerWarningSummary": "unknown eliminate_nop_cast pass; optimization skipped",
+    "onnxFileSaved": true
+  },
+  "onnxArtifact": {
+    "externalPathPolicy": "../MathProOcrArtifacts/PP-FormulaNet-S-ONNX-Exact/pp_formulanet_s.onnx",
+    "fileName": "pp_formulanet_s.onnx",
+    "sizeBytes": 308743097,
+    "sha256": "6d24333f86478d765fe6fa6fc3bd8061c52044433aafda18399f49cde3fe4d6a",
+    "lastWriteTimeUserEvidence": "2026-06-07 18:53:33",
+    "storedOutsideProjectRoot": true,
+    "bundledIntoFlutterProject": false
+  },
+  "paddleLiteState": {
+    "paddleLiteNativeBinariesBundledFromQ344": true,
+    "paddleLiteNbArtifactAvailable": false,
+    "paddleLiteModelLoadStillBlocked": true,
+    "paddleLiteRuntimeParked": true
+  },
+  "onnxRuntimeState": {
+    "onnxRuntimeMobileCandidateOpened": true,
+    "onnxRuntimeDependencyAdded": false,
+    "onnxModelLoadAttempted": false,
+    "onnxModelLoaded": false,
+    "realImageToLatexInferenceExecuted": false,
+    "ocrPassClaimed": false
+  }
+}

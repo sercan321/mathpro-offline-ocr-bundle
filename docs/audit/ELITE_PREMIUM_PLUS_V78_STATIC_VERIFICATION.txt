@@ -1,0 +1,13 @@
+PASS — LinkedSeriesSlotEdit exists
+PASS — replaceLinkedSeriesSlot exists
+PASS — Taylor group profile exists
+PASS — CalculatorController calls replaceLinkedSeriesSlot
+PASS — NodeFactory placeholder linkGroup metadata exists
+PASS — Taylor nodes carry x/n/a link groups
+PASS — Linked series TeX serializer exists
+PASS — Linked series serializer called early
+PASS — V78 test file exists and covers Taylor
+PASS — V78 test covers Binom
+PASS — V78 test covers Geometric
+
+NOTE — Flutter/Dart are not available in this environment. flutter analyze/test/run were not executed.

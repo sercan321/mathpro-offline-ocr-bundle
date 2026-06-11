@@ -1,0 +1,18 @@
+{
+  "phase": "V172-Q132",
+  "templateOnly": true,
+  "expectedStatus": "Q132_RELEASE_CANDIDATE_EVIDENCE_FREEZE_PACKAGE_READY_BUT_REGRESSION_EVIDENCE_BLOCKED",
+  "evidenceComplete": false,
+  "mayClaimCursorPass": false,
+  "mayClaimReleasePass": false,
+  "maySwitchDefaultEditor": false,
+  "mayDeleteLegacyCursor": false,
+  "required": [
+    "Q131 full-app regression court evidence",
+    "flutter analyze PASS",
+    "flutter test PASS",
+    "MathLive Lab real-device run",
+    "main app real-device run",
+    "explicit Q132 approval"
+  ]
+}

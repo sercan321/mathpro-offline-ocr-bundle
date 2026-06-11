@@ -1,0 +1,27 @@
+GRAPH_HISTORY_V15_STATIC_CHECK
+Generated: 2026-05-10
+
+Result: CONDITIONAL PASS — static/package closure only
+
+Executed here:
+OK: V14 package reopened from ZIP
+OK: Graph/history module presence checked
+OK: V14 graph trace numeric type-safety repair still present
+OK: V14 history drag numeric type-safety repair still present
+OK: constructor required-this field declaration scan
+OK: string/comment-aware Dart bracket balance scan
+OK: relative import existence scan
+OK: package import/dependency consistency scan
+OK: runtime lib scan: old mathpro-history-handle absent from lib/
+OK: runtime lib scan: onPressed: null absent from lib/
+OK: runtime lib scan: onTap: null absent from lib/
+OK: keyboard SHA256 freeze unchanged
+OK: forbidden artifact scan
+OK: full ZIP re-open verification
+OK: meta ZIP re-open verification
+
+Not executed here because Flutter/Dart are unavailable:
+NOT RUN: flutter pub get
+NOT RUN: flutter analyze
+NOT RUN: flutter test
+NOT RUN: flutter run -d 23106RN0DA

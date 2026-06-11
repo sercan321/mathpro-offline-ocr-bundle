@@ -1,0 +1,215 @@
+{
+  "phase": "V172-Q189",
+  "name": "Single Device Candidate Evidence Checklist Template",
+  "baseline": "V172-Q188_PRODUCTION_GRAPH_HISTORY_SOLUTION_ADAPTER",
+  "deviceEvidenceStatus": "required-not-claimed-by-assistant",
+  "packageSha256": "fill-after-download",
+  "operator": "Sercan / device tester",
+  "device": "23106RN0DA or actual Android device id",
+  "flutterCommands": [
+    {
+      "command": "flutter clean",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "flutter pub get",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "flutter analyze",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "flutter test",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "flutter run -d 23106RN0DA",
+      "status": "pending",
+      "pasteLogHere": ""
+    }
+  ],
+  "verifierCommands": [
+    {
+      "command": "node tool/verify_mathlive_production_simplification_v172_q182.mjs",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "node tool/verify_mathlive_production_cutover_surface_v172_q184.mjs",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "node tool/verify_mathlive_production_html_finalization_v172_q185.mjs",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "node tool/verify_mathlive_production_bridge_contract_v172_q186.mjs",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "node tool/verify_mathlive_template_command_contract_freeze_v172_q187.mjs",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "node tool/verify_mathlive_production_graph_history_solution_adapter_v172_q188.mjs",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "node tool/verify_mathlive_single_device_candidate_v172_q189.mjs",
+      "status": "pending",
+      "pasteLogHere": ""
+    },
+    {
+      "command": "python tool/verify_mathpro_contract.py",
+      "status": "pending",
+      "pasteLogHere": ""
+    }
+  ],
+  "manualScenarios": [
+    {
+      "id": "startup-production-surface-visible",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "mathlive-virtual-keyboard-hidden",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "mathlive-badge-menu-debug-chrome-hidden",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "tap-caret-moves-inside-expression",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "type-1-plus-1",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "type-x-squared",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "fraction-template-visible-and-editable",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "sqrt-template-visible-and-editable",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "power-template-visible-and-editable",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "sin-template-visible-and-editable",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "log-template-visible-and-editable",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "sigma-template-visible-and-editable",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "integral-template-visible-and-editable",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "taylor-template-not-raw-text",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "maclaurin-template-not-raw-text",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "three-equation-template-not-raw-text",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "delete-backward",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "clear",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "enter-evaluate",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "graph-open-from-mathlive-state",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "history-record-from-mathlive-state",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    },
+    {
+      "id": "solution-evaluator-candidate-from-mathlive-state",
+      "status": "pending",
+      "notes": "",
+      "screenshotOrVideoReference": ""
+    }
+  ],
+  "acceptanceRule": "No final release, real-device PASS, or Photomath/Wolfram-level claim is allowed until flutter analyze, flutter test, flutter run, all verifiers, and all manual scenarios are captured and accepted.",
+  "redLineRegressionObserved": false,
+  "finalReviewerDecision": "pending"
+}

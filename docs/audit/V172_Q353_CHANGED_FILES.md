@@ -1,0 +1,88 @@
+# V172-Q353 Changed Files
+
+## Added
+
+- `docs/audit/V172_Q353_CHANGED_FILES.md`
+- `docs/audit/V172_Q353_ONNX_RUNTIME_MOBILE_DEPENDENCY_FEASIBILITY_GATE_AUDIT.md`
+- `lib/features/camera/gauss_onnx_runtime_mobile_dependency_feasibility_gate_q353.dart`
+- `lib/features/camera/gauss_onnx_runtime_mobile_dependency_feasibility_gate_q353_policy.dart`
+- `test/v172_q353_onnx_runtime_mobile_dependency_feasibility_gate_test.dart`
+- `tool/verify_onnx_runtime_mobile_dependency_feasibility_gate_v172_q353.mjs`
+
+## Modified
+
+- `README.md`
+- `assets/mathlive/manifest.json`
+- `test/v172_q313r1_flutter_log_repair_q295_path_escape_q152_successor_aware_test.dart`
+- `test/v172_q313r2_flutter_analyze_info_hygiene_test.dart`
+- `test/v172_q313r3_flutter_test_successor_aware_hygiene_repair_test.dart`
+- `test/v172_q314_real_ocr_implementation_readiness_artifact_acquisition_plan_test.dart`
+- `test/v172_q315_controlled_model_artifact_download_hash_capture_test.dart`
+- `test/v172_q317_android_native_bridge_minimal_healthcheck_behind_flag_test.dart`
+- `test/v172_q318_private_model_download_storage_real_implementation_test.dart`
+- `test/v172_q319_verified_artifact_load_smoke_on_device_test.dart`
+- `test/v172_q320_runtime_startup_smoke_on_device_test.dart`
+- `test/v172_q321_dummy_input_runtime_call_test.dart`
+- `test/v172_q322_first_image_to_latex_inference_envelope_test.dart`
+- `test/v172_q323_runtime_dependency_model_loader_decision_test.dart`
+- `test/v172_q324_approved_runtime_dependency_trial_test.dart`
+- `test/v172_q325_runtime_dependency_coordinate_selection_build_trial_gate_test.dart`
+- `test/v172_q326_native_library_build_trial_approval_abi_packaging_preflight_test.dart`
+- `test/v172_q327_native_library_source_package_approval_abi_matrix_lock_test.dart`
+- `test/v172_q328_native_library_package_file_hash_intake_no_bundle_evidence_gate_test.dart`
+- `test/v172_q329_native_package_hash_evidence_review_binary_bundle_approval_gate_test.dart`
+- `test/v172_q330_binary_bundle_trial_jnilibs_paddlepredictor_default_off_test.dart`
+- `test/v172_q331_native_package_hash_evidence_acceptance_bundle_permission_gate_test.dart`
+- `test/v172_q332_actual_binary_bundle_jnilibs_paddlepredictor_blocked_gate_test.dart`
+- `test/v172_q333_native_package_hash_evidence_intake_real_bundle_permission_review_test.dart`
+- `test/v172_q334_actual_binary_bundle_jnilibs_paddlepredictor_pending_evidence_blocked_gate_test.dart`
+- `test/v172_q335_native_package_hash_evidence_collection_user_side_native_package_intake_test.dart`
+- `test/v172_q336_native_package_hash_evidence_capture_q328_json_intake_test.dart`
+- `test/v172_q337_native_package_hash_evidence_acceptance_explicit_bundle_approval_gate_test.dart`
+- `test/v172_q338_actual_binary_bundle_jnilibs_paddlepredictor_no_evidence_blocked_gate_test.dart`
+- `test/v172_q339_native_package_hash_evidence_capture_actual_bundle_permission_final_check_test.dart`
+- `test/v172_q340_actual_binary_bundle_jnilibs_paddlepredictor_evidence_blocked_gate_test.dart`
+- `test/v172_q341_native_package_hash_evidence_capture_bundle_evidence_acceptance_test.dart`
+- `test/v172_q343_native_package_hash_evidence_final_acceptance_real_bundle_unlock_gate_test.dart`
+- `test/v172_q343r1_flutter_analyze_test_successor_aware_hygiene_repair_test.dart`
+- `test/v172_q343r2_flutter_analyze_test_syntax_hygiene_repair_test.dart`
+- `test/v172_q344_actual_binary_bundle_jnilibs_paddlepredictor_test.dart`
+- `test/v172_q344_binary_bundle_successor_test_helper.dart`
+- `test/v172_q345_gradle_abi_packaging_build_trial_test.dart`
+- `test/v172_q346_native_library_load_smoke_test.dart`
+- `test/v172_q347_paddle_lite_predictor_instantiate_smoke_test.dart`
+- `test/v172_q348_optimized_model_conversion_model_loader_evidence_gate_test.dart`
+- `test/v172_q349_real_model_load_smoke_evidence_blocked_test.dart`
+- `test/v172_q350_optimized_model_artifact_conversion_evidence_intake_test.dart`
+- `test/v172_q352_onnx_conversion_evidence_acceptance_runtime_strategy_pivot_gate_test.dart`
+- `test/v172_q352r1_legacy_verifier_successor_awareness_hygiene_repair_test.dart`
+- `tool/verify_actual_binary_bundle_jnilibs_paddlepredictor_evidence_blocked_gate_v172_q340.mjs`
+- `tool/verify_actual_binary_bundle_jnilibs_paddlepredictor_no_evidence_blocked_gate_v172_q338.mjs`
+- `tool/verify_actual_binary_bundle_jnilibs_paddlepredictor_pending_evidence_blocked_v172_q342.mjs`
+- `tool/verify_actual_binary_bundle_jnilibs_paddlepredictor_v172_q344.mjs`
+- `tool/verify_gradle_abi_packaging_build_trial_v172_q345.mjs`
+- `tool/verify_legacy_verifier_successor_awareness_hygiene_repair_v172_q352r1.mjs`
+- `tool/verify_native_library_load_smoke_v172_q346.mjs`
+- `tool/verify_native_package_hash_evidence_acceptance_explicit_bundle_approval_gate_v172_q337.mjs`
+- `tool/verify_native_package_hash_evidence_capture_actual_bundle_permission_final_check_v172_q339.mjs`
+- `tool/verify_native_package_hash_evidence_capture_bundle_evidence_acceptance_v172_q341.mjs`
+- `tool/verify_native_package_hash_evidence_capture_q328_json_intake_v172_q336.mjs`
+- `tool/verify_native_package_hash_evidence_final_acceptance_real_bundle_unlock_gate_v172_q343.mjs`
+- `tool/verify_onnx_conversion_evidence_acceptance_runtime_strategy_pivot_gate_v172_q352.mjs`
+- `tool/verify_optimized_model_artifact_conversion_evidence_intake_v172_q350.mjs`
+- `tool/verify_optimized_model_conversion_model_loader_evidence_gate_v172_q348.mjs`
+- `tool/verify_optimized_model_evidence_acceptance_real_model_load_unlock_gate_v172_q351.mjs`
+- `tool/verify_paddle_lite_predictor_instantiate_smoke_v172_q347.mjs`
+- `tool/verify_q343_flutter_analyze_test_successor_aware_hygiene_repair_v172_q343r1.mjs`
+- `tool/verify_q343r1_flutter_analyze_test_syntax_hygiene_repair_v172_q343r2.mjs`
+- `tool/verify_q351_flutter_run_kotlin_build_helper_repair_v172_q351r2.mjs`
+- `tool/verify_q351_flutter_test_successor_aware_hygiene_repair_v172_q351r1.mjs`
+- `tool/verify_real_model_load_smoke_evidence_blocked_v172_q349.mjs`
+
+## Explicitly not modified
+
+No workspace, keyboard, MORE/template tray, long-press, MathLive production editor/bridge, Graph, Solution, History, splash/icon, solver/evaluator, AndroidManifest, pubspec, Gradle, or MainActivity runtime behavior files were modified.
+
+## Runtime status
+
+No ONNX Runtime dependency, ONNX model bundle, private-storage copy, model load, runtime startup, dummy call, inference, OCR review UI, workspace import, OCR PASS, Android real-device PASS, store PASS, or release PASS is introduced by Q353.

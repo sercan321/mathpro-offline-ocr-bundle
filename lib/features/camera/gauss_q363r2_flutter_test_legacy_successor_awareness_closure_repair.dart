@@ -1,0 +1,35 @@
+import 'gauss_q363r2_flutter_test_legacy_successor_awareness_closure_repair_policy.dart';
+
+class GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairResult {
+  const GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairResult();
+
+  String get phase => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.phase;
+  String get sourcePhase => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.sourcePhase;
+  String get status => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.status;
+  bool get preservesQ363AsActiveProductPhase => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.preservesQ363AsActiveProductPhase;
+  bool get repairsFlutterTestFailures => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.repairsFlutterTestFailures;
+  bool get repairsLegacyQ322ToQ352SuccessorAwareness => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.repairsLegacyQ322ToQ352SuccessorAwareness;
+  bool get repairsQ344ToQ351R2SuccessorAwareness => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.repairsQ344ToQ351R2SuccessorAwareness;
+  bool get repairsStorePrivacyFinalReleaseGateAcceptance => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.repairsStorePrivacyFinalReleaseGateAcceptance;
+  bool get modifiesRuntimeBridge => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.modifiesRuntimeBridge;
+  bool get modifiesUiRedlines => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.modifiesUiRedlines;
+  bool get modifiesGradle => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.modifiesGradle;
+  bool get modifiesPubspec => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.modifiesPubspec;
+  bool get modifiesAndroidManifest => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.modifiesAndroidManifest;
+  bool get modifiesMainActivity => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.modifiesMainActivity;
+  bool get modelBundled => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.modelBundled;
+  bool get modelLoadAttempted => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.modelLoadAttempted;
+  bool get dummyRuntimeCallExecuted => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.dummyRuntimeCallExecuted;
+  bool get imageToLatexInferenceExecuted => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.imageToLatexInferenceExecuted;
+  bool get ocrPassClaimed => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.ocrPassClaimed;
+  bool get androidPassClaimed => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.androidPassClaimed;
+  bool get storeReadyPassClaimed => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.storeReadyPassClaimed;
+  bool get releaseReadyPassClaimed => GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairPolicy.releaseReadyPassClaimed;
+}
+
+class GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepair {
+  static const GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairResult result =
+      GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairResult();
+
+  static GaussQ363R2FlutterTestLegacySuccessorAwarenessClosureRepairResult evaluate() => result;
+}

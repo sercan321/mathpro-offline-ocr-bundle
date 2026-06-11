@@ -1,0 +1,10 @@
+assets/mathlive/main_editor.html
+assets/mathlive/mathlive_bridge.js
+assets/mathlive/manifest.json
+lib/features/mathlive/mathlive_main_editor_surface.dart
+lib/features/mathlive/mathlive_real_device_diagnostic_bridge_policy.dart
+test/v172_q163_mathlive_real_device_diagnostic_bridge_test.dart
+tool/verify_mathlive_real_device_diagnostic_bridge_v172_q163.mjs
+docs/audit/V172_Q163_MATHLIVE_REAL_DEVICE_DIAGNOSTIC_BRIDGE_AUDIT.md
+docs/changed_files/V172_Q163_CHANGED_FILES.txt
+README.md

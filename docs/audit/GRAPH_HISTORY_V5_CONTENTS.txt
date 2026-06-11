@@ -1,0 +1,16 @@
+MathProFlutterPhase17_GRAPH_HISTORY_V5_FULL.zip
+MathProFlutterPhase17_GRAPH_HISTORY_V5_META.zip
+
+Primary V5 changed files:
+- README.md
+- lib/app/app_shell.dart
+- lib/features/graph/graph_fullscreen_page.dart
+- lib/features/graph/graph_models.dart
+- lib/features/graph/graph_settings_sheet.dart
+- test/graph_history_regression_test.dart
+- docs/audit/GRAPH_HISTORY_V5_CHANGED_FILES_MANIFEST.md
+- docs/audit/GRAPH_HISTORY_V5_FINAL_AUDIT_REPORT.md
+- docs/audit/GRAPH_HISTORY_V5_KNOWN_LIMITATIONS.md
+- docs/audit/GRAPH_HISTORY_V5_RELEASE_HYGIENE_REPORT.md
+- docs/audit/GRAPH_HISTORY_V5_STATIC_CHECK.md
+- docs/audit/GRAPH_HISTORY_V5_CONTENTS.txt

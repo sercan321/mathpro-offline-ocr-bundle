@@ -1,0 +1,46 @@
+# V172-Q199 changed files
+
+V172-Q199 changed files manifest.
+
+## Added
+
+- docs/audit/V172_Q199_PRODUCTION_COMMAND_CONTRACT_FINALIZATION_AUDIT_REPORT.md
+- docs/audit/V172_Q199_PRODUCTION_COMMAND_CONTRACT_FINALIZATION_CHANGED_FILES_MANIFEST.md
+- docs/audit/V172_Q199_PROTECTED_FILE_HASH_MANIFEST.md
+- lib/features/mathlive/mathlive_production_command_contract_policy.dart
+- test/v172_q199_production_command_contract_finalization_test.dart
+- tool/verify_mathlive_production_command_contract_finalization_v172_q199.mjs
+
+## Modified
+
+- README.md
+- assets/mathlive/manifest.json
+- assets/mathlive/mathlive_prod_bridge.js
+- lib/app/app_shell.dart
+- lib/features/mathlive/mathlive_keyboard_bridge_policy.dart
+- lib/features/mathlive/mathlive_main_editor_surface.dart
+- lib/features/mathlive/mathlive_production_editor_surface.dart
+- pubspec.yaml
+- tool/verify_mathlive_caret_focus_slot_contract_v172_q192.mjs
+- tool/verify_mathlive_final_static_release_freeze_v172_q195.mjs
+- tool/verify_mathlive_legacy_marker_policy_verifier_cleanup_v172_q198.mjs
+- tool/verify_mathlive_no_freeze_runtime_invariant_v172_q190r6.mjs
+- tool/verify_mathlive_official_font_bundle_ingestion_v172_q196.mjs
+- tool/verify_mathlive_production_active_path_hardening_v172_q190r2.mjs
+- tool/verify_mathlive_production_bridge_contract_v172_q186.mjs
+- tool/verify_mathlive_production_bridge_queue_focus_repair_v172_q190r4.mjs
+- tool/verify_mathlive_production_command_bus_court_v172_q190r3.mjs
+- tool/verify_mathlive_production_legacy_fallback_isolation_v172_q190r7.mjs
+- tool/verify_mathlive_production_static_asset_truth_v172_q190r8.mjs
+- tool/verify_mathlive_production_surface_file_separation_v172_q197.mjs
+- tool/verify_mathlive_real_device_defect_repair_compile_fix_v172_q190r1.mjs
+- tool/verify_mathlive_real_mathlive_font_bundle_closure_v172_q193.mjs
+- tool/verify_mathlive_runtime_render_contract_v172_q191.mjs
+- tool/verify_mathlive_static_pre_analyze_hygiene_v172_q190r9.mjs
+- tool/verify_mathlive_template_payload_surgical_repair_v172_q190r5.mjs
+- tool/verify_mathpro_contract_report.json
+- tool/verify_mathpro_contract_report.md
+
+## Removed
+
+- None

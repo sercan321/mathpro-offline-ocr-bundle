@@ -1,0 +1,17 @@
+# V172-Q382R9 Changed Files
+
+- README.md
+- assets/mathlive/manifest.json
+- lib/features/workspace/workspace_expression_context_menu_q382_policy.dart
+- test/v172_q239b_camera_permission_capture_shell_test.dart
+- test/v172_q239c_formula_crop_scan_frame_test.dart
+- test/v172_q239d_deferred_math_ocr_model_manager_test.dart
+- test/v172_q239e_mathlive_ocr_review_surface_test.dart
+- test/v172_q243_camera_ux_premium_polish_test.dart
+- test/v172_q277r1_camera_ocr_runtime_premium_regression_log_repair_test.dart
+- test/v172_q382_workspace_expression_context_menu_test.dart
+- tool/verify_workspace_expression_context_menu_legacy_camera_review_copy_v172_q382r9.mjs
+- docs/audit/V172_Q382R9_WORKSPACE_CONTEXT_MENU_LEGACY_CAMERA_REVIEW_COPY_EXPECTATION_REPAIR_AUDIT_REPORT.md
+- docs/audit/V172_Q382R9_CHANGED_FILES.md
+
+Runtime surfaces intentionally unchanged.

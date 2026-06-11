@@ -1,0 +1,10 @@
+missing_dart_import_targets=0
+runtime_history_shared_prefs_hits=0
+dirty_cache_artifacts=0
+workspace_overflow_guard=True
+keyboard_content_height_reduced=True
+bottom_inset_system_gesture_fallback=True
+longpress_popup_no_clip_envelope=True
+function_argument_target_82=True
+gradlew_bat_java_home_quote_guard=True
+integral_longpress_no_double=True

@@ -1,0 +1,40 @@
+# SOLUTION PANEL V34 PHASE 6 STATIC CHECK
+
+Date: 2026-05-13
+Base package: MathProFlutterPhase17_SOLUTION_PANEL_V33_PHASE5_FULL.zip
+Target package: MathProFlutterPhase17_SOLUTION_PANEL_V34_PHASE6_FULL.zip
+Scope: Prompt FAZ 6 — Expanded State only.
+
+## Flutter availability
+- flutter analyze: NOT RUN in assistant container; `flutter` command not found.
+- flutter test: NOT RUN in assistant container; `flutter` command not found.
+- flutter run: NOT RUN in assistant container; `flutter` command not found.
+
+## Static syntax balance
+- lib/features/workspace/workspace_panel.dart: parentheses 238/238, braces 50/50, brackets 11/11
+- lib/features/solution/solution_steps_panel.dart: parentheses 239/239, braces 45/45, brackets 25/25
+- test/widget_test.dart: parentheses 875/875, braces 81/81, brackets 7/7
+
+## Protected runtime files compared with V33
+- lib/features/keyboard/key_config.dart: UNCHANGED
+- lib/features/keyboard/bottom_dock.dart: UNCHANGED
+- lib/features/keyboard/math_keyboard.dart: UNCHANGED
+- lib/features/keyboard/premium_key.dart: UNCHANGED
+- lib/features/keyboard/long_press_popup.dart: UNCHANGED
+- lib/features/keyboard/long_press_indicator.dart: UNCHANGED
+- lib/features/keyboard/key_model.dart: UNCHANGED
+- lib/features/graph/graph_card.dart: UNCHANGED
+- lib/features/history/history_panel.dart: UNCHANGED
+- lib/app/app_shell.dart: UNCHANGED
+
+## Forbidden package residue
+- Forbidden residue count: 0
+
+## Phase 6 checks
+- Expanded target ratio now adapts by workspace height and remains bounded to 45–60% for expanded state.
+- Medium ratio remains bounded to 28–38%.
+- A reserved expression/result card height is kept before allocating solution panel height.
+- Panel can toggle medium/expanded by existing expand button and vertical drag gesture.
+- Panel shows an explicit Orta/Geniş state pill.
+- Three-dot menu remains no-op in workspace card.
+- No solver, graph feature, history feature, or keyboard layout change was added.

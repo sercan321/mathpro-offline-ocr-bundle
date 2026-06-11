@@ -1,0 +1,270 @@
+label,expected_visible_mode,reason
+key_model.dart,TEXT_LABEL,plain atom/operator/number or compact text
+v43-full-keyboard-more-inventory-audit,TEXT_LABEL,plain atom/operator/number or compact text
+C,TEXT_LABEL,plain atom/operator/number or compact text
+⌫,TEXT_LABEL,plain atom/operator/number or compact text
+%,TEXT_LABEL,plain atom/operator/number or compact text
+÷,TEXT_LABEL,plain atom/operator/number or compact text
+7,TEXT_LABEL,plain atom/operator/number or compact text
+8,TEXT_LABEL,plain atom/operator/number or compact text
+9,TEXT_LABEL,plain atom/operator/number or compact text
+×,TEXT_LABEL,plain atom/operator/number or compact text
+4,TEXT_LABEL,plain atom/operator/number or compact text
+5,TEXT_LABEL,plain atom/operator/number or compact text
+6,TEXT_LABEL,plain atom/operator/number or compact text
+−,TEXT_LABEL,plain atom/operator/number or compact text
+1,TEXT_LABEL,plain atom/operator/number or compact text
+2,TEXT_LABEL,plain atom/operator/number or compact text
+3,TEXT_LABEL,plain atom/operator/number or compact text
++,TEXT_LABEL,plain atom/operator/number or compact text
+MORE,TEXT_LABEL,plain atom/operator/number or compact text
+0,TEXT_LABEL,plain atom/operator/number or compact text
+.,TEXT_LABEL,plain atom/operator/number or compact text
+Ans,TEXT_LABEL,plain atom/operator/number or compact text
+□/□,MATH_GLYPH,structural math glyph/slot preview
+√□,MATH_GLYPH,structural math glyph/slot preview
+□!,MATH_GLYPH,structural math glyph/slot preview
+|□|,MATH_GLYPH,structural math glyph/slot preview
+=,TEXT_LABEL,plain atom/operator/number or compact text
+↵,TEXT_LABEL,plain atom/operator/number or compact text
+(,TEXT_LABEL,plain atom/operator/number or compact text
+),TEXT_LABEL,plain atom/operator/number or compact text
+x,TEXT_LABEL,plain atom/operator/number or compact text
+y,TEXT_LABEL,plain atom/operator/number or compact text
+π,TEXT_LABEL,plain atom/operator/number or compact text
+e,TEXT_LABEL,plain atom/operator/number or compact text
+sin,TEXT_LABEL,bare function/key name; long-press/insertion contract remains hidden
+cos,TEXT_LABEL,bare function/key name; long-press/insertion contract remains hidden
+tan,TEXT_LABEL,bare function/key name; long-press/insertion contract remains hidden
+ln,TEXT_LABEL,bare function/key name; long-press/insertion contract remains hidden
+log,TEXT_LABEL,bare function/key name; long-press/insertion contract remains hidden
+∞,TEXT_LABEL,plain atom/operator/number or compact text
+□^□,MATH_GLYPH,structural math glyph/slot preview
+n,TEXT_LABEL,plain atom/operator/number or compact text
+{□=□,MATH_GLYPH,structural math glyph/slot preview
+f(□),MATH_GLYPH,structural math glyph/slot preview
+a,TEXT_LABEL,plain atom/operator/number or compact text
+b,TEXT_LABEL,plain atom/operator/number or compact text
+c,TEXT_LABEL,plain atom/operator/number or compact text
+m,TEXT_LABEL,plain atom/operator/number or compact text
+k,TEXT_LABEL,plain atom/operator/number or compact text
+d/dx,TEXT_LABEL,bare function/key name; long-press/insertion contract remains hidden
+∫□dx,MATH_GLYPH,structural math glyph/slot preview
+lim,TEXT_LABEL,bare function/key name; long-press/insertion contract remains hidden
+Σ,MATH_GLYPH,structural math glyph/slot preview
+dx,TEXT_LABEL,plain atom/operator/number or compact text
+i,TEXT_LABEL,plain atom/operator/number or compact text
+z,TEXT_LABEL,plain atom/operator/number or compact text
+Re(□),MATH_GLYPH,structural math glyph/slot preview
+Im(□),MATH_GLYPH,structural math glyph/slot preview
+arg(□),MATH_GLYPH,structural math glyph/slot preview
+z̄,TEXT_LABEL,plain atom/operator/number or compact text
+θ,TEXT_LABEL,plain atom/operator/number or compact text
+e^□,MATH_GLYPH,structural math glyph/slot preview
+r,TEXT_LABEL,plain atom/operator/number or compact text
+[□ □],MATH_GLYPH,structural math glyph/slot preview
+[□],MATH_GLYPH,structural math glyph/slot preview
+A,TEXT_LABEL,plain atom/operator/number or compact text
+B,TEXT_LABEL,plain atom/operator/number or compact text
+I,TEXT_LABEL,plain atom/operator/number or compact text
+det(□),MATH_GLYPH,structural math glyph/slot preview
+□⁻¹,MATH_GLYPH,structural math glyph/slot preview
+□ᵀ,MATH_GLYPH,structural math glyph/slot preview
+□·□,MATH_GLYPH,structural math glyph/slot preview
+□×□,MATH_GLYPH,structural math glyph/slot preview
+‖□‖,MATH_GLYPH,structural math glyph/slot preview
+[,TEXT_LABEL,plain atom/operator/number or compact text
+],TEXT_LABEL,plain atom/operator/number or compact text
+",",TEXT_LABEL,plain atom/operator/number or compact text
+≠,TEXT_LABEL,plain atom/operator/number or compact text
+<,TEXT_LABEL,plain atom/operator/number or compact text
+>,TEXT_LABEL,plain atom/operator/number or compact text
+≤,TEXT_LABEL,plain atom/operator/number or compact text
+≥,TEXT_LABEL,plain atom/operator/number or compact text
+≈,TEXT_LABEL,plain atom/operator/number or compact text
+≡,TEXT_LABEL,plain atom/operator/number or compact text
+x₁,TEXT_LABEL,plain atom/operator/number or compact text
+x₂,TEXT_LABEL,plain atom/operator/number or compact text
+x_□,MATH_GLYPH,structural math glyph/slot preview
+y₁,TEXT_LABEL,plain atom/operator/number or compact text
+y₂,TEXT_LABEL,plain atom/operator/number or compact text
+y_□,MATH_GLYPH,structural math glyph/slot preview
+y′,TEXT_LABEL,plain atom/operator/number or compact text
+y″,TEXT_LABEL,plain atom/operator/number or compact text
+y‴,TEXT_LABEL,plain atom/operator/number or compact text
+y⁽□⁾,MATH_GLYPH,structural math glyph/slot preview
+dy/dx,TEXT_LABEL,bare function/key name; long-press/insertion contract remains hidden
+d²y/dx²,TEXT_LABEL,plain atom/operator/number or compact text
+z₁,TEXT_LABEL,plain atom/operator/number or compact text
+z₂,TEXT_LABEL,plain atom/operator/number or compact text
+φ,TEXT_LABEL,plain atom/operator/number or compact text
+rad,TEXT_LABEL,plain atom/operator/number or compact text
+deg,TEXT_LABEL,plain atom/operator/number or compact text
+;,TEXT_LABEL,plain atom/operator/number or compact text
+∛□,MATH_GLYPH,structural math glyph/slot preview
+□√□,MATH_GLYPH,structural math glyph/slot preview
+□²,MATH_GLYPH,structural math glyph/slot preview
+□³,MATH_GLYPH,structural math glyph/slot preview
+□ⁿ,MATH_GLYPH,structural math glyph/slot preview
+10^□,MATH_GLYPH,structural math glyph/slot preview
+sin(□),MATH_GLYPH,structural math glyph/slot preview
+sin⁻¹(□),MATH_GLYPH,structural math glyph/slot preview
+sinh(□),MATH_GLYPH,structural math glyph/slot preview
+sinh⁻¹(□),MATH_GLYPH,structural math glyph/slot preview
+cos(□),MATH_GLYPH,structural math glyph/slot preview
+cos⁻¹(□),MATH_GLYPH,structural math glyph/slot preview
+cosh(□),MATH_GLYPH,structural math glyph/slot preview
+cosh⁻¹(□),MATH_GLYPH,structural math glyph/slot preview
+tan(□),MATH_GLYPH,structural math glyph/slot preview
+tan⁻¹(□),MATH_GLYPH,structural math glyph/slot preview
+tanh(□),MATH_GLYPH,structural math glyph/slot preview
+tanh⁻¹(□),MATH_GLYPH,structural math glyph/slot preview
+ln(□),MATH_GLYPH,structural math glyph/slot preview
+log₁₀(□),MATH_GLYPH,structural math glyph/slot preview
+log₂(□),MATH_GLYPH,structural math glyph/slot preview
+log_□(□),MATH_GLYPH,structural math glyph/slot preview
+{3 denklem,MATH_GLYPH,structural math glyph/slot preview
+{n denklem,MATH_GLYPH,structural math glyph/slot preview
+{≤ sistem,MATH_GLYPH,structural math glyph/slot preview
+g(□),MATH_GLYPH,structural math glyph/slot preview
+h(□),MATH_GLYPH,structural math glyph/slot preview
+"f(□,□)",MATH_GLYPH,structural math glyph/slot preview
+f∘g,TEXT_LABEL,plain atom/operator/number or compact text
+□C□,MATH_GLYPH,structural math glyph/slot preview
+□P□,MATH_GLYPH,structural math glyph/slot preview
+d/dx(□),MATH_GLYPH,structural math glyph/slot preview
+d²/dx²(□),MATH_GLYPH,structural math glyph/slot preview
+d³/dx³(□),MATH_GLYPH,structural math glyph/slot preview
+∂/∂x(□),MATH_GLYPH,structural math glyph/slot preview
+∂²/∂x²(□),MATH_GLYPH,structural math glyph/slot preview
+∫ₐᵇ,MATH_GLYPH,structural math glyph/slot preview
+∬,TEXT_LABEL,plain atom/operator/number or compact text
+∭,TEXT_LABEL,plain atom/operator/number or compact text
+∮,TEXT_LABEL,plain atom/operator/number or compact text
+lim x→□,MATH_GLYPH,structural math glyph/slot preview
+lim x→∞,TEXT_LABEL,plain atom/operator/number or compact text
+lim x→0⁺,TEXT_LABEL,plain atom/operator/number or compact text
+lim x→0⁻,TEXT_LABEL,plain atom/operator/number or compact text
+Π,MATH_GLYPH,structural math glyph/slot preview
+Taylor,TEXT_LABEL,human-readable menu/action name; must not become template preview
+Maclaurin,TEXT_LABEL,human-readable menu/action name; must not become template preview
+Geometrik,TEXT_LABEL,human-readable menu/action name; must not become template preview
+Binom,TEXT_LABEL,human-readable menu/action name; must not become template preview
+eˣ serisi,TEXT_LABEL,human-readable menu/action name; must not become template preview
+sin serisi,TEXT_LABEL,human-readable menu/action name; must not become template preview
+cos serisi,TEXT_LABEL,human-readable menu/action name; must not become template preview
+ln serisi,TEXT_LABEL,human-readable menu/action name; must not become template preview
+arctan serisi,TEXT_LABEL,human-readable menu/action name; must not become template preview
+dy,TEXT_LABEL,plain atom/operator/number or compact text
+dt,TEXT_LABEL,plain atom/operator/number or compact text
+dθ,TEXT_LABEL,plain atom/operator/number or compact text
+−∞,TEXT_LABEL,plain atom/operator/number or compact text
++∞,TEXT_LABEL,plain atom/operator/number or compact text
+−i,TEXT_LABEL,plain atom/operator/number or compact text
+i²,TEXT_LABEL,plain atom/operator/number or compact text
+Arg(□),MATH_GLYPH,structural math glyph/slot preview
+Eşlenik,TEXT_LABEL,human-readable menu/action name; must not become template preview
+e^(i□),MATH_GLYPH,structural math glyph/slot preview
+cis(□),MATH_GLYPH,structural math glyph/slot preview
+ρ,TEXT_LABEL,plain atom/operator/number or compact text
+2×2,TEXT_LABEL,plain atom/operator/number or compact text
+3×3,TEXT_LABEL,plain atom/operator/number or compact text
+4×4,TEXT_LABEL,plain atom/operator/number or compact text
+m×n,TEXT_LABEL,human-readable menu/action name; must not become template preview
+0 matris,TEXT_LABEL,human-readable menu/action name; must not become template preview
+2D vektör,TEXT_LABEL,human-readable menu/action name; must not become template preview
+3D vektör,TEXT_LABEL,human-readable menu/action name; must not become template preview
+nD vektör,TEXT_LABEL,human-readable menu/action name; must not become template preview
+satır vektörü,TEXT_LABEL,human-readable menu/action name; must not become template preview
+sütun vektörü,TEXT_LABEL,human-readable menu/action name; must not become template preview
+A₁,TEXT_LABEL,plain atom/operator/number or compact text
+A₂,TEXT_LABEL,plain atom/operator/number or compact text
+A⁻¹,MATH_GLYPH,structural math glyph/slot preview
+Aᵀ,MATH_GLYPH,structural math glyph/slot preview
+B₁,TEXT_LABEL,plain atom/operator/number or compact text
+B₂,TEXT_LABEL,plain atom/operator/number or compact text
+B⁻¹,MATH_GLYPH,structural math glyph/slot preview
+Bᵀ,MATH_GLYPH,structural math glyph/slot preview
+minör,TEXT_LABEL,human-readable menu/action name; must not become template preview
+kofaktör,TEXT_LABEL,human-readable menu/action name; must not become template preview
+Moore-Penrose,TEXT_LABEL,human-readable menu/action name; must not become template preview
+□ᴴ,MATH_GLYPH,structural math glyph/slot preview
+I₂,TEXT_LABEL,plain atom/operator/number or compact text
+I₃,TEXT_LABEL,plain atom/operator/number or compact text
+Iₙ,TEXT_LABEL,plain atom/operator/number or compact text
+projeksiyon,TEXT_LABEL,human-readable menu/action name; must not become template preview
+karma çarpım,TEXT_LABEL,human-readable menu/action name; must not become template preview
+birim vektör,TEXT_LABEL,human-readable menu/action name; must not become template preview
+mesafe,TEXT_LABEL,human-readable menu/action name; must not become template preview
+λ,TEXT_LABEL,plain atom/operator/number or compact text
+μ,TEXT_LABEL,plain atom/operator/number or compact text
+-,TEXT_LABEL,plain atom/operator/number or compact text
+xₙ,TEXT_LABEL,plain atom/operator/number or compact text
+yₙ,TEXT_LABEL,plain atom/operator/number or compact text
+""",
+    ",TEXT_LABEL,plain atom/operator/number or compact text
+": ""y",TEXT_LABEL,plain atom/operator/number or compact text
+: ,TEXT_LABEL,plain atom/operator/number or compact text
+",
+    ",TEXT_LABEL,plain atom/operator/number or compact text
+",
+  };
+
+  static const Map<String, KeyBehaviorType> keyBehaviorMap = {
+    ",MATH_GLYPH,structural math glyph/slot preview
+": KeyBehaviorType.command,
+    ",TEXT_LABEL,plain atom/operator/number or compact text
+": KeyBehaviorType.textInsert,
+    ",TEXT_LABEL,plain atom/operator/number or compact text
+": KeyBehaviorType.structureInsert,
+    ",TEXT_LABEL,plain atom/operator/number or compact text
+": KeyBehaviorType.wrapper,
+    ",TEXT_LABEL,plain atom/operator/number or compact text
+": KeyBehaviorType.postfix,
+    ",TEXT_LABEL,plain atom/operator/number or compact text
+": KeyBehaviorType.structureInsert,
+  };
+
+  static KeyBehaviorType getKeyBehavior(String label) {
+    return keyBehaviorMap[label] ?? KeyBehaviorType.textInsert;
+  }
+
+  static String getInsertText(String label) {
+    return keyInsertTextMap[label] ?? label;
+  }
+
+  static KeyboardSections buildKeyboardSections(String activeTab) {
+    final specialty = premiumSpecialtyRows[activeTab] ?? premiumSpecialtyRows[",MATH_GLYPH,structural math glyph/slot preview
+"]!;
+    final rows = <List<String?>>[
+      ...specialty,
+      ..._fixedRowsFor(activeTab),
+    ];
+    return KeyboardSections.expanded(_toCells(rows));
+  }
+
+  static bool hasLongPressOptions(String label, String activeTab) {
+    return getLongPressOptions(label, activeTab).isNotEmpty;
+  }
+
+  static List<String> getLongPressOptions(String label, String activeTab) {
+    final rawOptions = longPressMap[label] ?? const <String>[];
+
+    // Keep frozen regression contracts intact: several keys intentionally expose
+    // their primary mathematical form as the first long-press option so tests and
+    // muscle memory can lock the popup envelope. Only remove exact duplicates
+    // after their first occurrence; do not remove the first option merely because
+    // it equals the key label.
+    final seen = <String>{};
+    final options = <String>[];
+    for (final option in rawOptions) {
+      if (seen.add(option)) {
+        options.add(option);
+      }
+    }
+
+    if (activeTab == ",MATH_GLYPH,structural math glyph/slot preview
+ && label == ,TEXT_LABEL,plain atom/operator/number or compact text
+") {
+      return options.where((option) => option != ",MATH_GLYPH,structural math glyph/slot preview
+ && option != ,TEXT_LABEL,plain atom/operator/number or compact text

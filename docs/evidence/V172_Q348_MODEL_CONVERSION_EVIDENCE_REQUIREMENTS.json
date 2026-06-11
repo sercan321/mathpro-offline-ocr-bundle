@@ -1,0 +1,28 @@
+{
+  "phase": "V172-Q348-OPTIMIZED-MODEL-CONVERSION-MODEL-LOADER-EVIDENCE-GATE",
+  "sourcePhase": "V172-Q347-PADDLE-LITE-PREDICTOR-INSTANTIATE-SMOKE",
+  "modelName": "PP-FormulaNet-S",
+  "knownUserArtifact": {
+    "fileName": "inference.pdiparams",
+    "sha256": "b6392296d16e2a9f414c0a751d7ccbd1bd9d8272b68aab72df1d3875f35a7489",
+    "sizeBytes": 231675001,
+    "runtimeAccepted": false
+  },
+  "externalConversionEvidencePolicy": "../MathProOcrArtifacts/PP-FormulaNet-S-PaddleLite-Optimized",
+  "requiredBeforeQ349RealModelLoad": [
+    "accepted Paddle Lite Android model format",
+    "optimized model artifact or model directory outside project root",
+    "conversion command",
+    "conversion log",
+    "converted artifact SHA256",
+    "converted artifact size",
+    "model loader path contract"
+  ],
+  "blockedClaims": {
+    "inferencePdiparamsAloneAcceptedForModelLoad": false,
+    "optimizedModelEvidenceProvided": false,
+    "modelLoaderPathApproved": false,
+    "modelLoaded": false,
+    "ocrPassClaimed": false
+  }
+}

@@ -1,0 +1,8 @@
+# V78.1 Static Verification
+
+PASS — generic placeholder fallback after lim/inverse trig
+PASS — no _lastExpression field
+PASS — short expression width no max360
+PASS — bounded integral label envelope 72
+PASS — nth root test updated to box-root
+PASS — obsolete nth root test expectation removed

@@ -1,0 +1,34 @@
+# V172-Q190R9 Static Pre-Analyze Hygiene Changed Files Manifest
+
+## Changed files
+
+```text
+README.md
+assets/mathlive/manifest.json
+lib/features/mathlive/mathlive_main_editor_surface.dart
+tool/verify_mathlive_no_freeze_runtime_invariant_v172_q190r6.mjs
+tool/verify_mathlive_production_active_path_hardening_v172_q190r2.mjs
+tool/verify_mathlive_production_bridge_queue_focus_repair_v172_q190r4.mjs
+tool/verify_mathlive_production_command_bus_court_v172_q190r3.mjs
+tool/verify_mathlive_production_legacy_fallback_isolation_v172_q190r7.mjs
+tool/verify_mathlive_production_static_asset_truth_v172_q190r8.mjs
+tool/verify_mathlive_real_device_defect_repair_compile_fix_v172_q190r1.mjs
+tool/verify_mathlive_template_payload_surgical_repair_v172_q190r5.mjs
+```
+
+## Added files
+
+```text
+docs/audit/V172_Q190R9_PROTECTED_FILE_HASH_MANIFEST.md
+docs/audit/V172_Q190R9_STATIC_PRE_ANALYZE_HYGIENE_AUDIT_REPORT.md
+docs/audit/V172_Q190R9_STATIC_PRE_ANALYZE_HYGIENE_CHANGED_FILES_MANIFEST.md
+lib/features/mathlive/mathlive_static_pre_analyze_hygiene_policy.dart
+test/v172_q190r9_static_pre_analyze_hygiene_test.dart
+tool/verify_mathlive_static_pre_analyze_hygiene_v172_q190r9.mjs
+```
+
+## Removed files
+
+```text
+
+```

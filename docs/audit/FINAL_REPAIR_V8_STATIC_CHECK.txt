@@ -1,0 +1,15 @@
+missing_dart_import_targets=0
+dirty_cache_artifacts=0
+runtime_history_shared_prefs_hits=0
+key_config_unchanged_vs_v7=True
+math_keyboard_unchanged_vs_v7=True
+tree_utils_function_call_structural=True
+function_argument_target_96=True
+sqrt_fraction_integral_target_88=True
+nearest_fallback_role_radius=True
+function_manual_protocol_added=True
+phase5_regression_tests_added=True
+integral_longpress_no_double=True
+flutter_analyze=NOT_RUN_ENV_NO_FLUTTER
+flutter_test=NOT_RUN_ENV_NO_FLUTTER
+flutter_run=NOT_RUN_ENV_NO_FLUTTER

@@ -1,0 +1,38 @@
+PREMIUM_KEYBOARD_V22_STATIC_CHECK
+Generated: 2026-05-12
+
+[runtime changed files present]
+FOUND lib/features/keyboard/key_config.dart
+FOUND lib/features/keyboard/premium_key.dart
+FOUND lib/features/keyboard/long_press_popup.dart
+FOUND lib/features/workspace/template_tray.dart
+FOUND test/premium_keyboard_v22_contract_test.dart
+
+[version marker]
+22:  static const String keyboardLayoutVersion = 'v36-premium-keyboard-contract-locked';
+
+[stable key markers]
+91:            key: ValueKey('mathpro-premium-key-${_stableKeyPart(widget.label)}'),
+137:            key: ValueKey('mathpro-long-press-option-${_stableLongPressKey(widget.label)}'),
+198:          key: ValueKey('mathpro-more-category-$label'),
+261:            key: ValueKey('mathpro-more-chip-${widget.label}'),
+
+[forbidden raw visible labels check]
+OK_NO_VISIBLE system
+OK_NO_VISIBLE matrix
+OK_NO_VISIBLE vector
+OK_NO_VISIBLE inv
+OK_NO_VISIBLE trans
+OK_NO_VISIBLE norm
+OK_NO_VISIBLE dot
+OK_NO_VISIBLE cross
+OK_NO_VISIBLE scalar
+OK_NO_VISIBLE exp
+OK_NO_VISIBLE conj
+OK_NO_VISIBLE mod
+OK_NO_VISIBLE gcd
+OK_NO_VISIBLE lcm
+OK_NO_VISIBLE prime?
+
+[test contract marker]
+6:  group('Premium Keyboard V22 contract lock', () {

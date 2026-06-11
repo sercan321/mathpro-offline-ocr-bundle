@@ -1,0 +1,11 @@
+# V172 Q387R7E Changed Files
+
+- test/v172_q348_optimized_model_conversion_model_loader_evidence_gate_test.dart
+- test/v172_q349_real_model_load_smoke_evidence_blocked_test.dart
+- test/v172_q350_optimized_model_artifact_conversion_evidence_intake_test.dart
+- test/v172_q387r7e_paddle_lite_nb_flutter_test_legacy_nb_marker_repair_test.dart
+- tool/verify_paddle_lite_nb_flutter_test_legacy_nb_marker_repair_v172_q387r7e.mjs
+- assets/mathlive/manifest.json
+- README.md
+- docs/audit/V172_Q387R7E_FLUTTER_TEST_LEGACY_NB_MARKER_REPAIR.md
+- docs/audit/V172_Q387R7E_CHANGED_FILES.md

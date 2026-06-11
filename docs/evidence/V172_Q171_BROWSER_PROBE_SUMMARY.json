@@ -1,0 +1,43 @@
+{
+  "phase": "V172-Q171-browser-summary",
+  "mountResult": true,
+  "readyState": "complete",
+  "hasMathLive": true,
+  "customDefined": true,
+  "hasBridge": true,
+  "userFacingDiagnosticOverlay": false,
+  "q171Global": {
+    "phase": "V172-Q171",
+    "templateByTemplatePolish": true,
+    "diagnosticOverlayAllowed": false,
+    "realDevicePremiumPassClaimed": false
+  },
+  "hostRect": {
+    "width": 760,
+    "height": 86
+  },
+  "hostFamily": "series",
+  "hostOptical": "V172-Q171",
+  "fieldRect": {
+    "width": 744,
+    "height": 82
+  },
+  "fieldClass": "mathpro-template-series mathpro-fit-dense",
+  "fieldFamily": "series",
+  "fieldOptical": "V172-Q171",
+  "latex": "5+3\\int{\\textstyle\\sum_{n=\\placeholder{}}^{\\lim_{x\\to\\placeholder{}}\\placeholder{}}\\placeholder{}}\\,dx",
+  "state": {
+    "premiumLayoutVisualPolishPhase": "V172-Q170",
+    "templateOpticalCorrectionPhase": "V172-Q171",
+    "templateOpticalFamily": "series",
+    "lastTemplateOpticalCorrectionPass": "q148-selection-settled-caret-visible:series",
+    "mathfieldElementDefined": true,
+    "mathfieldInstanceMounted": true,
+    "lastInsertCommitted": true,
+    "lastValueNonEmpty": true,
+    "nativePaintState": "ok",
+    "nativePaintOwner": "mathlive-native-field",
+    "nativePaintProofValuePath": "native-getValue-latex-expanded",
+    "q169FailureReason": "none"
+  }
+}

@@ -1,0 +1,43 @@
+class GaussCameraKotlinMetadataCompatibilityPolicy {
+  const GaussCameraKotlinMetadataCompatibilityPolicy._();
+
+  static const phase = 'V172-Q244R8-CAMERA-KOTLIN-METADATA-COMPATIBILITY-REPAIR';
+  static const triggeredByUserSideKotlinMetadataFailure = true;
+  static const userSideFailureTask = ':app:compileDebugKotlin';
+  static const rejectedKotlinPluginVersion = '1.9.22';
+  static const activeKotlinPluginVersion = '2.1.0';
+  static const kotlinMetadataActualVersion = '2.1.0';
+  static const kotlinMetadataCompilerPreviouslyExpected = '1.9.0';
+  static const agpVersionPreserved = '8.3.2';
+  static const agpUpgradePerformed = false;
+  static const cameraPackagePreserved = '0.10.6';
+  static const cameraAndroidImplementationPreserved = '0.10.9+3';
+  static const cameraXImplementationAllowed = false;
+  static const pubspecChanged = false;
+  static const androidSettingsGradleChanged = true;
+  static const androidManifestChanged = false;
+  static const mainActivityChanged = false;
+  static const cameraRuntimeShellChanged = false;
+  static const workspaceRuntimeChanged = false;
+  static const realOcrRuntimeAdded = false;
+  static const textOcrFallbackAdded = false;
+  static const paddleRuntimeAdded = false;
+  static const pix2TextRuntimeAdded = false;
+  static const onnxRuntimeAdded = false;
+  static const modelBinaryBundledInBaseApp = false;
+  static const productionModelUrlBound = false;
+  static const backgroundDownloadWorkerImplemented = false;
+  static const mathLiveProductionBridgeCalled = false;
+  static const directWorkspaceImportImplemented = false;
+  static const directSolveFromCameraAllowed = false;
+  static const keyboardMutationAllowed = false;
+  static const longPressMutationAllowed = false;
+  static const moreMutationAllowed = false;
+  static const mathLiveProductionMutationAllowed = false;
+  static const graphSolutionHistoryMutationAllowed = false;
+  static const splashLauncherMutationAllowed = false;
+  static const flutterAnalyzePassClaimedByAssistant = false;
+  static const flutterTestPassClaimedByAssistant = false;
+  static const flutterRunPassClaimedByAssistant = false;
+  static const requiresUserSideFlutterRunRetest = true;
+}

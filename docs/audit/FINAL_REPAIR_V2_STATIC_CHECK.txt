@@ -1,0 +1,11 @@
+missing_dart_import_targets=0
+runtime_history_shared_prefs_hits=0
+basic_more_ans=True
+expanded_more_equal_enter=True
+integral_longpress_no_double=True
+enter_command=True
+equals_literal_text=True
+bottom_inset_uses_system_gesture=True
+popup_not_clipped_envelope=True
+function_argument_finger_target=True
+dirty_cache_artifacts=0

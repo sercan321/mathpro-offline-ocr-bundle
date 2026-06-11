@@ -1,0 +1,16 @@
+{
+  "phase": "V172-Q90R5",
+  "status": "BLOCKED_MATHLIVE_LAB_SMOKE_EVIDENCE",
+  "evidencePath": "docs/evidence/V172_Q90R5_MATHLIVE_LAB_RUNTIME_SMOKE_EVIDENCE.json",
+  "evidenceVerified": false,
+  "q87CursorCourtMayRun": false,
+  "mainEditorSwitchAllowed": false,
+  "mainEditorMountAllowed": false,
+  "legacyEngineRemainsDefault": true,
+  "legacyEngineRemainsRollback": true,
+  "physicalLegacyDeletionAllowed": false,
+  "diagnostic": "q90r5-lab-smoke-evidence-blocked-no-main-editor-switch",
+  "issues": [
+    "evidence file is missing: docs/evidence/V172_Q90R5_MATHLIVE_LAB_RUNTIME_SMOKE_EVIDENCE.json"
+  ]
+}

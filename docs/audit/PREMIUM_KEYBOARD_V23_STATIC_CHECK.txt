@@ -1,0 +1,6 @@
+PREMIUM KEYBOARD V23 STATIC CHECK
+forbidden_visible_labels= []
+visible_variants_that_should_stay_longpress= []
+raw_english_in_longpress= []
+missing_behavior_for_longpress_options= []
+result=PASS for static label/contract audit

@@ -1,0 +1,13 @@
+FINAL_REPAIR_V10_PHASE7_STATIC_CHECK
+missing_dart_import_targets= 0
+runtime_history_leaks= 0
+runtime_history_leak_details= []
+shared_preferences_dependency_present= False
+dirty_cache_artifacts= 0
+key_config_unchanged_vs_v9= True
+math_keyboard_unchanged_vs_v9= True
+phase7_core_regression_test_added= True
+phase7_widget_absence_test_added= True
+flutter_analyze_run_here=NOT_RUN_FLUTTER_SDK_UNAVAILABLE
+flutter_test_run_here=NOT_RUN_FLUTTER_SDK_UNAVAILABLE
+flutter_run_here=NOT_RUN_FLUTTER_SDK_UNAVAILABLE

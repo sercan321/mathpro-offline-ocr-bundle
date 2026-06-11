@@ -1,0 +1,28 @@
+{
+  "phase": "V172-Q344-ACTUAL-BINARY-BUNDLE-JNILIBS-PADDLEPREDICTOR",
+  "sourcePhase": "V172-Q343-NATIVE-PACKAGE-HASH-EVIDENCE-FINAL-ACCEPTANCE-REAL-BUNDLE-UNLOCK-GATE",
+  "q328EvidenceAcceptedForBundle": true,
+  "explicitUserBinaryBundleApprovalProvided": true,
+  "q343R2FlutterAnalyzeTestCleanUserLogProvided": true,
+  "bundledFiles": [
+    {
+      "relativePath": "android/app/libs/PaddlePredictor.jar",
+      "sourceRelativePath": "PaddlePredictor.jar",
+      "sizeBytes": 9167,
+      "sha256": "81c8f73729123fd4b65b1b0d01ad58f9a0f0fe61274d49179910696cc68959f2"
+    },
+    {
+      "relativePath": "android/app/src/main/jniLibs/arm64-v8a/libpaddle_lite_jni.so",
+      "sourceRelativePath": "arm64-v8a/libpaddle_lite_jni.so",
+      "sizeBytes": 4531976,
+      "sha256": "2eb3cd0f1d3d01c2199ee79d28f5bef7180a699f7bd9cbb183743f3031277fe2"
+    },
+    {
+      "relativePath": "android/app/src/main/jniLibs/armeabi-v7a/libpaddle_lite_jni.so",
+      "sourceRelativePath": "armeabi-v7a/libpaddle_lite_jni.so",
+      "sizeBytes": 2877288,
+      "sha256": "261de17f07130118962226f451a9a75aae84ff15bfe4e4b6b2ed942b5a7b121f"
+    }
+  ],
+  "runtimeExecutionStatus": "BINARY_BUNDLED_ONLY_NO_SYSTEM_LOAD_LIBRARY_NO_PADDLE_INSTANTIATE_NO_MODEL_LOAD_NO_OCR"
+}

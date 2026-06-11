@@ -1,0 +1,45 @@
+MathPro V36 real-log repair static check
+Flutter available: no (not installed in assistant container)
+Dart available: no (not installed in assistant container)
+
+lib/features/workspace/workspace_panel.dart
+  (): 237 / 237 -> OK
+  {}: 50 / 50 -> OK
+  []: 11 / 11 -> OK
+  sha256: 56a9ffe837f5b2d14f6f8ed83f057df82154bad84c3b183c7b8bc3dbf47d7c80
+lib/features/solution/solution_steps_panel.dart
+  (): 257 / 257 -> OK
+  {}: 54 / 54 -> OK
+  []: 25 / 25 -> OK
+  sha256: 63dc38e4f836c4e9d49c01b7f45533251668c4c78167fe3ef5654bbb1a29322b
+test/widget_test.dart
+  (): 1069 / 1069 -> OK
+  {}: 91 / 91 -> OK
+  []: 7 / 7 -> OK
+  sha256: 491de79b9526a5cd098975a046cc84470b386c0278c6125df3d302847cb7f2f4
+
+Dart file counts:
+  lib: 75
+  test: 7
+
+Protected file hashes:
+  lib/features/keyboard/key_config.dart: cc0421a869afea14fce1321d6738bbb35d1e81cd66aa269f6b1455246b64ca6c
+  lib/features/keyboard/bottom_dock.dart: 346b4bc904a4f93e34b3e5b9bb7e44369347061227b42272c9404fd2f3c03a37
+  lib/features/keyboard/math_keyboard.dart: f4f2a9acdc226cdc9838a265a96f2539a5b9ecf1f4feccd5fbb76745370b7ad2
+  lib/features/keyboard/premium_key.dart: 8a5bd968224914830cc59f75ffe0e7fffd31b6e7f452a1f2dafe3a987c98c087
+  lib/features/keyboard/long_press_popup.dart: 39cda6efcf2e0705e3dafa615117f9d80a0987d90ad0b37c82005513ff5e82b0
+  lib/features/keyboard/long_press_indicator.dart: 2550c71d1d87058542390faf532d837da957ac04565849c567e7e2569000018e
+  lib/features/keyboard/key_model.dart: da075decdcaf25bcc34eb9b3612a03dbac6946c2c8a602597242761eeae93f75
+  lib/features/graph/graph_card.dart: c245cc5d61f94b0b4204c98031806ecd1e874c4d9f6cf9d0115d3fdbc615e78a
+  lib/features/history/history_panel.dart: e8c2c13275e6560ec8028b8b15f341d769101f4fcd0150e3af42e850dfd7bf94
+  lib/app/app_shell.dart: 8d08a7a0b3a2e889e9baa0394d6367a4f5576722c2afdc77d5485c26e2c1aeb7
+
+Forbidden residue scan:
+  build: 0
+  .dart_tool: 0
+  .gradle: 0
+  .idea: 0
+  .git: 0
+  __pycache__: 0
+  .pytest_cache: 0
+  *.pyc: 0

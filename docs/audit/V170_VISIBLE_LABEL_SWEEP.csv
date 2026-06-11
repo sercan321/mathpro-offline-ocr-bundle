@@ -1,0 +1,234 @@
+public_label,visible_label,mapped,leak
+%,%,NO,NO
+(,(,NO,NO
+(x+y)²,(x+y)²,NO,NO
+),),NO,NO
++,+,NO,NO
++∞,+∞,NO,NO
+",",",",NO,NO
+.,.,NO,NO
+0,0,NO,NO
+0 matris,0 matris,NO,NO
+1,1,NO,NO
+10^□,10ˣ,YES,NO
+2,2,NO,NO
+2D vektör,2D vektör,NO,NO
+2×2,2×2 Matris,YES,NO
+2×2 Matris,2×2 Matris,NO,NO
+3,3,NO,NO
+3D vektör,3D vektör,NO,NO
+3×3,3×3 Matris,YES,NO
+4,4,NO,NO
+4×4,4×4 Matris,YES,NO
+5,5,NO,NO
+6,6,NO,NO
+7,7,NO,NO
+8,8,NO,NO
+9,9,NO,NO
+;,;,NO,NO
+<,<,NO,NO
+=,=,NO,NO
+>,>,NO,NO
+A,A,NO,NO
+Ans,Ans,NO,NO
+Arg(□),Arg(z),YES,NO
+Asal mı?,Asal mı?,NO,NO
+Ayrık,Ayrık,NO,NO
+Aᵀ,Aᵀ,NO,NO
+A⁻¹,A⁻¹,NO,NO
+A₁,A₁,NO,NO
+A₂,A₂,NO,NO
+B,B,NO,NO
+Binom,Binom,NO,NO
+Bᵀ,Bᵀ,NO,NO
+B⁻¹,B⁻¹,NO,NO
+B₁,B₁,NO,NO
+B₂,B₂,NO,NO
+C,C,NO,NO
+Cebir,Cebir,NO,NO
+EBOB,EBOB,NO,NO
+EKOK,EKOK,NO,NO
+Eşlenik,Eşlenik,NO,NO
+Fonksiyon,Fonksiyon,NO,NO
+Geometrik,Geometrik,NO,NO
+I,I,NO,NO
+Im(□),Im(z),YES,NO
+I₂,I₂,NO,NO
+I₃,I₃,NO,NO
+Iₙ,Iₙ,YES,NO
+Kalan,Kalan,NO,NO
+Kalkülüs,Kalkülüs,NO,NO
+Kompleks,Kompleks,NO,NO
+Kuadratik,Kuadratik,NO,NO
+Lineer,Lineer,NO,NO
+Lineer Cebir,Lineer Cebir,NO,NO
+MORE,MORE,NO,NO
+Maclaurin,Maclaurin,NO,NO
+Moore-Penrose,Moore-Penrose,NO,NO
+Mutlak,Mutlak,NO,NO
+RREF,RREF,NO,NO
+Rank,Rank,NO,NO
+Re(□),Re(z),YES,NO
+Taylor,Taylor,NO,NO
+Temel,Temel,NO,NO
+Trig,Trig,NO,NO
+Yapı,Yapı,NO,NO
+Yuvarla,Yuvarla,NO,NO
+[,[,NO,NO
+[□ □],Matris,YES,NO
+[□],Vektör,YES,NO
+],],NO,NO
+a,a,NO,NO
+arctan serisi,arctan serisi,NO,NO
+arg(□),arg(z),YES,NO
+b,b,NO,NO
+birim vektör,birim vektör,NO,NO
+c,c,NO,NO
+cis(□),cis(x),YES,NO
+cos,cos,NO,NO
+cos serisi,cos serisi,NO,NO
+cos(□),cos(x),YES,NO
+cosh(□),cosh(x),YES,NO
+cosh⁻¹(□),cosh⁻¹(x),YES,NO
+cos⁻¹(□),cos⁻¹(x),YES,NO
+cot(□),cot(x),YES,NO
+coth(□),coth(x),YES,NO
+cot⁻¹(□),cot⁻¹(x),YES,NO
+csc(□),csc(x),YES,NO
+d/dx,d/dx,NO,NO
+d/dx(□),d/dx,YES,NO
+deg,deg,NO,NO
+det(□),det(A),YES,NO
+dt,dt,NO,NO
+dx,dx,NO,NO
+dy,dy,NO,NO
+dy/dx,dy/dx,NO,NO
+d²/dx²(□),d²/dx²,YES,NO
+d²y/dx²,d²y/dx²,NO,NO
+d³/dx³(□),d³/dx³,YES,NO
+dθ,dθ,NO,NO
+e,e,NO,NO
+e^(i□),eⁱˣ,YES,NO
+e^□,eˣ,YES,NO
+eˣ serisi,eˣ serisi,NO,NO
+f(□),f(x),YES,NO
+"f(□,□)","f(x,y)",YES,NO
+f∘g,f∘g,YES,NO
+g(□),g(x),YES,NO
+h(□),h(x),YES,NO
+i,i,NO,NO
+i²,i²,NO,NO
+k,k,NO,NO
+karma çarpım,karma çarpım,NO,NO
+key_model.dart,key_model.dart,NO,NO
+kofaktör,kofaktör,NO,NO
+lim,lim,NO,NO
+lim sin(x)/x,lim sin(x)/x,NO,NO
+lim x→0⁺,lim x→0⁺,NO,NO
+lim x→0⁻,lim x→0⁻,NO,NO
+lim x→∞,lim x→∞,NO,NO
+lim x→□,lim x→a,YES,NO
+ln,ln,NO,NO
+ln serisi,ln serisi,NO,NO
+ln(□),ln(x),YES,NO
+log,log,NO,NO
+log_□(□),logₐ(x),YES,NO
+log₁₀(□),log₁₀(x),YES,NO
+log₂(□),log₂(x),YES,NO
+m,m,NO,NO
+mesafe,mesafe,NO,NO
+minör,minör,NO,NO
+m×n,m×n Matris,YES,NO
+n,n,NO,NO
+nD vektör,nD vektör,NO,NO
+projeksiyon,projeksiyon,NO,NO
+r,r,NO,NO
+rad,rad,NO,NO
+satır vektörü,satır vektörü,NO,NO
+sec(□),sec(x),YES,NO
+sin,sin,NO,NO
+sin serisi,sin serisi,NO,NO
+sin(□),sin(x),YES,NO
+sinh(□),sinh(x),YES,NO
+sinh⁻¹(□),sinh⁻¹(x),YES,NO
+sin⁻¹(□),sin⁻¹(x),YES,NO
+sütun vektörü,sütun vektörü,NO,NO
+tan,tan,NO,NO
+tan(□),tan(x),YES,NO
+tanh(□),tanh(x),YES,NO
+tanh⁻¹(□),tanh⁻¹(x),YES,NO
+tan⁻¹(□),tan⁻¹(x),YES,NO
+v43-full-keyboard-more-inventory-audit,v43-full-keyboard-more-inventory-audit,NO,NO
+x,x,NO,NO
+x_□,xₙ,YES,NO
+x₁,x₁,NO,NO
+x₂,x₂,NO,NO
+y,y,NO,NO
+y_□,yₙ,YES,NO
+y′,y′,NO,NO
+y″,y″,NO,NO
+y‴,y‴,NO,NO
+y⁽□⁾,y⁽ⁿ⁾,YES,NO
+y₁,y₁,NO,NO
+y₂,y₂,NO,NO
+z,z,NO,NO
+z̄,z̄,NO,NO
+z₁,z₁,NO,NO
+z₂,z₂,NO,NO
+{3 denklem,3 Denklem,YES,NO
+{n denklem,n Denklem,YES,NO
+{≤ sistem,Eşitsizlik,YES,NO
+{□=□,Sistem,YES,NO
+|□|,|x|,YES,NO
+Çöz,Çöz,NO,NO
+Özdeğer,Özdeğer,NO,NO
+×,×,NO,NO
+÷,÷,NO,NO
+İşaret,İşaret,NO,NO
+Γ(□),Γ(x),YES,NO
+Π,Π,NO,NO
+Σ,Σ,NO,NO
+θ,θ,NO,NO
+λ,λ,NO,NO
+μ,μ,NO,NO
+π,π,NO,NO
+ρ,ρ,NO,NO
+φ,φ,NO,NO
+‖□‖,‖x‖,YES,NO
+↵,↵,NO,NO
+∂/∂x(□),∂/∂x,YES,NO
+∂²/∂x²(□),∂²/∂x²,YES,NO
+−,−,NO,NO
+−i,−i,NO,NO
+−∞,−∞,NO,NO
+√□,√x,YES,NO
+∛□,∛x,YES,NO
+∞,∞,NO,NO
+∫₀¹ f(x),∫₀¹ f(x),NO,NO
+∫ₐᵇ,∫ₐᵇ,NO,NO
+∫□dx,∫dx,YES,NO
+∬,∬,NO,NO
+∭,∭,NO,NO
+∮,∮,NO,NO
+≈,≈,NO,NO
+≠,≠,NO,NO
+≡,≡,NO,NO
+≤,≤,NO,NO
+≥,≥,NO,NO
+⌈□⌉,⌈x⌉,YES,NO
+⌊□⌋,⌊x⌋,YES,NO
+⌫,⌫,NO,NO
+□!,x!,YES,NO
+□/□,a⁄b,YES,NO
+□C□,nCr,YES,NO
+□P□,nPr,YES,NO
+□^□,xʸ,YES,NO
+□²,x²,YES,NO
+□³,x³,YES,NO
+□·□,a·b,YES,NO
+□×□,a×b,YES,NO
+□ᴴ,Aᴴ,YES,NO
+□ᵀ,Aᵀ,YES,NO
+□⁻¹,x⁻¹,YES,NO
+□ⁿ,xⁿ,YES,NO
+□√□,ⁿ√x,YES,NO

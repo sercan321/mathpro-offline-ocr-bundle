@@ -1,0 +1,24 @@
+PREMIUM_KEYBOARD_V40_GLYPH_AFFORDANCE_STATIC_CHECK
+
+checks:
+- duplicate const set scan in long_press_popup.dart: PASS
+- duplicate const set scan in premium_key.dart: PASS
+- structural glyph classes present: PASS
+  - _RootGlyph
+  - _IntegralDxGlyph
+  - _SummationGlyph
+  - _DerivativeGlyph
+  - _LimitGlyph
+  - _FactorialGlyph
+  - _AbsGlyph
+- long-press badge affordance present: PASS
+- key positions changed: NO
+- graph/history/android touched: NO
+- dirty artifacts: NONE
+
+flutter_execution:
+- flutter analyze: NOT RUN in assistant container
+- flutter test: NOT RUN in assistant container
+- flutter run: NOT RUN in assistant container
+
+result=STATIC_PASS

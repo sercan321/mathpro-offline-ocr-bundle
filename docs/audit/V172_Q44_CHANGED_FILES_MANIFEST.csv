@@ -1,0 +1,13 @@
+path,status_vs_q43,q43_sha16,q44_sha16
+README.md,CHANGED,943552a38a3a6e73,ab5e861900bc74f2
+docs/audit/V172_Q44_FILE_DIFF_VS_P6.csv,ADDED,,af4748780a948b5a
+docs/audit/V172_Q44_RENDERER_SYNC_UPGRADE_AUDIT_REPORT.md,ADDED,,315e628a0dc63368
+lib/features/editor/render/mathjax_render_surface.dart,CHANGED,3f2f919a3d9639af,0ba9631b2475aff6
+lib/features/formula_engine/deterministic_slot_geometry_registry.dart,CHANGED,26ea38fa45a3cb86,3711d81617c5cf3f
+lib/features/formula_engine/renderer_sync_geometry_policy.dart,CHANGED,93ce0c927b0d164d,a0b100784753e22e
+lib/features/formula_engine/renderer_sync_upgrade_policy.dart,ADDED,,e793f4ed0c1b83a4
+lib/logic/mathpro_package_contract.dart,CHANGED,5c45cf8885e4476a,c989cee94c9a9b69
+pubspec.yaml,CHANGED,519c5ea2016e4bfa,354bc483a1b914bb
+tool/verify_mathpro_contract.py,CHANGED,40dd16f83e188947,a6f583b5080c6687
+tool/verify_mathpro_contract_report.json,CHANGED,791dc1bd191be700,6b943072a34b8b47
+tool/verify_mathpro_contract_report.md,CHANGED,9f595098c852361c,25f995390d4c6a8f

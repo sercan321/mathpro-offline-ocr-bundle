@@ -1,0 +1,17 @@
+path,status,p6_size,q32_size
+README.md,changed,8238,9593
+docs/audit/V172_Q30_FILE_DIFF_VS_P6.csv,added,0,163038
+docs/audit/V172_Q30_P6_BASELINE_CURSOR_ONLY_RESTORE_AUDIT_REPORT.md,added,0,2542
+docs/audit/V172_Q31_FILE_DIFF_VS_P6.csv,added,0,50590
+docs/audit/V172_Q31_LEGACY_AUDIT_TRACE_CLEANUP_REPORT.md,added,0,1931
+docs/audit/V172_Q31_SELF_CHECK_REPORT.md,added,0,640
+docs/audit/V172_Q32_P6_LOCKED_ROLE_AWARE_CURSOR_GEOMETRY_REPAIR_REPORT.md,added,0,1661
+lib/features/editor/render/mathjax_render_surface.dart,changed,16853,20210
+lib/features/editor/selection_controller.dart,changed,14168,16734
+lib/features/formula_engine/premium_cursor_visual_polish_policy.dart,changed,2131,2151
+lib/features/workspace/editor_caret_overlay.dart,changed,5449,5487
+lib/logic/mathpro_package_contract.dart,changed,2181,2276
+pubspec.yaml,changed,552,560
+tool/verify_mathpro_contract.py,changed,17065,18664
+tool/verify_mathpro_contract_report.json,changed,3688,2934
+tool/verify_mathpro_contract_report.md,changed,3069,2326

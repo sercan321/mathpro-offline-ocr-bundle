@@ -1,0 +1,18 @@
+{
+  "phase": "V172-Q127",
+  "templateOnly": true,
+  "expectedStatus": "Q127_CURSOR_COURT_CLOSURE_OR_REPAIR_DECISION_PACKAGE_READY_BUT_DEVICE_EVIDENCE_REQUIRED",
+  "evidenceComplete": false,
+  "mayClaimCursorPass": false,
+  "mayClaimReleasePass": false,
+  "maySwitchDefaultEditor": false,
+  "mayDeleteLegacyCursor": false,
+  "required": [
+    "Q126 reconciled local evidence intake",
+    "flutter analyze PASS",
+    "flutter test PASS",
+    "MathLive Lab real-device run",
+    "main app real-device run",
+    "explicit Q127 approval"
+  ]
+}

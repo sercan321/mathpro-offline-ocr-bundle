@@ -1,0 +1,9 @@
+assets/mathlive/mathlive_bridge.js
+assets/mathlive/manifest.json
+lib/features/mathlive/mathlive_main_editor_surface.dart
+lib/features/mathlive/mathlive_native_render_fallback_repair_policy.dart
+test/v172_q162_mathlive_native_render_fallback_repair_test.dart
+tool/verify_mathlive_native_render_fallback_repair_v172_q162.mjs
+README.md
+docs/audit/V172_Q162_MATHLIVE_NATIVE_RENDER_FALLBACK_REPAIR_AUDIT.md
+docs/changed_files/V172_Q162_CHANGED_FILES.txt

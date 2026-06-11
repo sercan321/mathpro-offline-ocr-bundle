@@ -1,0 +1,22 @@
+label,tokenType,nodeKind,renderNode,status
++,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+−,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+×,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+÷,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+%,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+=,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+<,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+>,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+≤,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+≥,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+≠,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+≈,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+≡,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+±,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+·,operator,MathNodeKind.operatorToken,OperatorNode,V158 migrated
+(,delimiter,MathNodeKind.delimiter,DelimiterNode,V158 migrated
+),delimiter,MathNodeKind.delimiter,DelimiterNode,V158 migrated
+[,delimiter,MathNodeKind.delimiter,DelimiterNode,V158 migrated
+],delimiter,MathNodeKind.delimiter,DelimiterNode,V158 migrated
+,,delimiter,MathNodeKind.delimiter,DelimiterNode,V158 migrated
+;,delimiter,MathNodeKind.delimiter,DelimiterNode,V158 migrated

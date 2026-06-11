@@ -1,0 +1,22 @@
+PREMIUM_KEYBOARD_V30_FINAL_VALIDATION_STATIC_CHECK
+
+result=PASS
+
+PASS: KeyConfig tabs keep 5 canonical math tabs
+PASS: fixed bottom rows keep MORE, digits, operators, Ans/= and ↵
+PASS: Temel visible surface keeps simplified V29 layout
+PASS: Cebir keeps symbolic system/function/factorial surface
+PASS: Kalkülüs keeps d/dx ∫□dx lim Σ surface
+PASS: Kompleks keeps Re/Im/arg/zbar surface
+PASS: Lineer Cebir keeps matrix/vector/operator surface
+PASS: Long-press dismiss close chip removed
+PASS: Root long-press contract restored
+PASS: V22 contract test guards raw English long-press regression
+PASS: Widget test includes closeless long-press expectation
+PASS: MORE title simplification exists
+PASS: MathLabel has compact visual support
+PASS: _mathishChipLabels has no duplicate quoted labels
+PASS: _mathishLabels block found or intentionally removed
+PASS: Release hygiene has no build/.dart_tool/.gradle/.idea/cache/pyc
+
+zip_integrity=PASS

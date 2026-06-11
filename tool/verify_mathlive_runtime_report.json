@@ -1,0 +1,41 @@
+{
+  "phase": "V172-Q90R4",
+  "status": "MATHLIVE_RUNTIME_INSTALL_VERIFIED_FOR_LAB_SMOKE",
+  "projectRoot": "/mnt/data/q204r3_work/MathProFlutterPhase17",
+  "vendorRoot": "/mnt/data/q204r3_work/MathProFlutterPhase17/assets/mathlive/vendor/mathlive",
+  "installVerified": true,
+  "q90r2SmokeMayRun": true,
+  "q87CursorCourtMayRun": false,
+  "mainEditorSwitchAllowed": false,
+  "cursorPassClaimed": false,
+  "protectedUiMutationAllowed": false,
+  "fileEvidence": {
+    "mathlive.min.js": {
+      "present": true,
+      "bytes": 843622
+    },
+    "mathlive-fonts.css": {
+      "present": true,
+      "bytes": 3012
+    },
+    "mathlive-static.css": {
+      "present": true,
+      "bytes": 13154
+    },
+    "LICENSE.txt": {
+      "present": true,
+      "bytes": 1099
+    },
+    "package.json": {
+      "present": true,
+      "bytes": 1789
+    },
+    "runtime_manifest.json": {
+      "present": true,
+      "bytes": 4456
+    }
+  },
+  "packageName": "mathlive",
+  "packageVersion": "0.109.2",
+  "issues": []
+}

@@ -1,0 +1,7 @@
+MathPro V45 static packaging check notes:
+- V45 changes are visual polish only.
+- key_config.dart unchanged.
+- math_keyboard.dart unchanged.
+- long_press_popup.dart unchanged.
+- pubspec version updated to 0.45.0+45.
+- Flutter/Dart SDK unavailable in this environment; run analyze/test locally.

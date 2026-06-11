@@ -1,0 +1,36 @@
+GRAPH/HISTORY V10 STATIC CHECK
+
+Environment:
+- flutter: not available in this execution environment
+- dart: not available in this execution environment
+
+Checks performed:
+- V9 full ZIP extracted successfully: OK
+- Graph/history module presence: OK
+- Faz 3 Graph Painter preservation: OK
+- Faz 4 Fullscreen Graph preservation: OK
+- Faz 5 Graph Settings preservation: OK
+- Faz 6 Premium History Drawer preservation: OK
+- Faz 7 History Item system preservation: OK
+- Faz 8 History Interaction preservation: OK
+- Faz 9 Persistence preservation: OK
+- Edited Dart brace/paren/string-aware static balance: OK
+- Runtime lib old history handle scan: OK
+- Runtime null callback scan: OK
+- Forbidden build/cache artifact scan before packaging: OK
+- Keyboard hash preservation: OK
+
+Keyboard hashes:
+- key_config.dart:        1f512b6d96a528a0363d00b2d9ac9006ca3f10e9892f7f2a10b513af1d380144
+- math_keyboard.dart:     f4f2a9acdc226cdc9838a265a96f2539a5b9ecf1f4feccd5fbb76745370b7ad2
+- bottom_dock.dart:       e2063efc93b7b7470ba5940db8da1a49ded633cd8c31619f2659132c82d243a7
+- long_press_popup.dart:  a7f7c8a0d2c6df9efa02cb984f9109f090992e944145f124d8c258059d3f7d75
+
+Not executed:
+- flutter pub get
+- flutter analyze
+- flutter test
+- flutter run -d 23106RN0DA
+
+Reason:
+Flutter/Dart SDK is not installed in this delivery environment. No PASS claim is made for Flutter analyze/test/run.

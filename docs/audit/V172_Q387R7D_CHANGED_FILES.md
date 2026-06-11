@@ -1,0 +1,14 @@
+# V172 Q387R7D Changed Files
+
+- lib/features/camera/gauss_paddle_lite_nb_flutter_test_legacy_successor_repair_q387r7d.dart
+- test/v172_q387r7d_paddle_lite_nb_flutter_test_legacy_successor_repair_test.dart
+- test/v172_q348_optimized_model_conversion_model_loader_evidence_gate_test.dart
+- test/v172_q349_real_model_load_smoke_evidence_blocked_test.dart
+- test/v172_q350_optimized_model_artifact_conversion_evidence_intake_test.dart
+- test/v172_q351_optimized_model_evidence_acceptance_real_model_load_unlock_gate_test.dart
+- test/v172_q351r2_flutter_run_kotlin_build_helper_repair_test.dart
+- test/v172_q352_onnx_conversion_evidence_acceptance_runtime_strategy_pivot_gate_test.dart
+- test/v172_q352r1_legacy_verifier_successor_awareness_hygiene_repair_test.dart
+- tool/verify_paddle_lite_nb_flutter_test_legacy_successor_repair_v172_q387r7d.mjs
+- assets/mathlive/manifest.json
+- README.md

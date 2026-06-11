@@ -1,0 +1,17 @@
+V76 STATIC VERIFICATION
+
+Target: Long-press mathematical glyph visual consistency hardening.
+
+Checks performed in packaging environment:
+- Opened V75 package as baseline.
+- Patched long_press_popup.dart so mathish chips are centered MathLabel glyphs without FittedBox upscaling.
+- FittedBox remains only on non-math plain text labels with BoxFit.scaleDown.
+- Parsed KeyConfig.longPressMap and _mathishChipLabels coverage with a Python static checker.
+- Result: every symbolic/template long-press option requiring math rendering is represented in _mathishChipLabels.
+- Added V76 regression test file.
+- Verified dirty zip paths are excluded.
+
+Flutter/Dart status:
+- flutter: not available in this environment.
+- dart: not available in this environment.
+- No local runtime PASS is claimed.

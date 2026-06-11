@@ -1,0 +1,18 @@
+{
+  "phase": "V172-Q126",
+  "templateOnly": true,
+  "expectedStatus": "Q126_LOCAL_EVIDENCE_RECONCILIATION_INTAKE_PACKAGE_READY_BUT_USER_EVIDENCE_REQUIRED",
+  "evidenceComplete": false,
+  "mayClaimCursorPass": false,
+  "mayClaimReleasePass": false,
+  "maySwitchDefaultEditor": false,
+  "mayDeleteLegacyCursor": false,
+  "required": [
+    "Q125 final package evidence closure intake guard package readiness",
+    "flutter analyze PASS",
+    "flutter test PASS",
+    "MathLive Lab real-device run",
+    "main app real-device run",
+    "explicit Q126 approval"
+  ]
+}

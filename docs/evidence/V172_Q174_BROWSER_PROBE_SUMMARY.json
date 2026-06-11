@@ -1,0 +1,18 @@
+{
+  "phase": "V172-Q174",
+  "probe": "playwright_set_content_chromium_package_side",
+  "realDevicePremiumPassClaimed": false,
+  "nativeRendererPurityPhase": "V172-Q174",
+  "observed": {
+    "runtime": "ok",
+    "mathfield": "ok",
+    "nativePaint": "ok",
+    "nativePaintOwner": "mathlive-native-field",
+    "q174Mode": "preserve-active-placeholder",
+    "duplicateSameSqrtDidNotCreateVisibleDuplicateInProbe": true,
+    "differentTemplateInsertedIntoActivePlaceholder": true
+  },
+  "finalProbeLatex": "\\sqrt{\\frac{\\ln(\\sqrt{\\placeholder{}})}{\\placeholder{}}}",
+  "screenshot": "docs/evidence/V172_Q174_native_renderer_purity_probe.png",
+  "protectedUiMutationAllowed": false
+}

@@ -1,0 +1,241 @@
+name: Q389R5C Offline Formula OCR Bundle Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_repo:
+        description: Official Hugging Face model repo to convert
+        required: true
+        default: PaddlePaddle/PP-FormulaNet_plus-L
+      model_revision:
+        description: Immutable model revision, tag, branch, or commit
+        required: true
+        default: main
+      release_tag:
+        description: Release tag used when publish_release is true and for generated HTTPS manifest URLs
+        required: true
+        default: q389r5c-offline-formula-ocr-bundle
+      publish_release:
+        description: Publish generated bundle files to a GitHub Release
+        required: true
+        type: boolean
+        default: false
+      paddle_lite_opt_url:
+        description: Optional direct Linux paddle_lite_opt archive/binary URL. Empty = auto-discover latest Paddle-Lite release asset.
+        required: false
+        default: ''
+      base_url_override:
+        description: Optional HTTPS directory URL for manifest downloadUrl fields. Empty = GitHub Release download URL.
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+env:
+  Q389R5C_PHASE: V172-Q389R5C_OFFLINE-CLOUD-MODEL-BUNDLE-BUILDER
+  BUNDLE_ROOT: ${{ github.workspace }}/build/q389r5c_formula_ocr_bundle
+  MODEL_DIR: ${{ runner.temp }}/q389r5c_model
+  TOOLS_DIR: ${{ runner.temp }}/q389r5c_tools
+
+jobs:
+  build-offline-formula-ocr-bundle:
+    name: Build Paddle Lite .nb bundle without backend or APK model bundling
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout MathPro source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install acquisition dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade huggingface_hub requests
+
+      - name: Download official Formula OCR model snapshot
+        env:
+          MODEL_REPO: ${{ inputs.model_repo }}
+          MODEL_REVISION: ${{ inputs.model_revision }}
+          MODEL_DIR: ${{ env.MODEL_DIR }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from huggingface_hub import snapshot_download
+
+          repo = os.environ['MODEL_REPO'].strip()
+          revision = os.environ['MODEL_REVISION'].strip()
+          target = Path(os.environ['MODEL_DIR'])
+          if 'FormulaNet' not in repo:
+              raise SystemExit(f'Model repo must be a FormulaNet family repo, got: {repo}')
+          target.mkdir(parents=True, exist_ok=True)
+          local_dir = snapshot_download(
+              repo_id=repo,
+              revision=revision,
+              local_dir=str(target),
+              local_dir_use_symlinks=False,
+              allow_patterns=[
+                  '*.pdmodel', '*.pdiparams', '*.json', '*.yml', '*.yaml',
+                  '*vocab*', '*token*', '*dict*', '*latex*', '*preprocess*', '*shape*', '*metadata*',
+              ],
+          )
+          files = sorted(str(p.relative_to(target)) for p in target.rglob('*') if p.is_file() and '.git/' not in str(p))
+          if not any(name.endswith('.pdmodel') for name in files):
+              raise SystemExit('Formula OCR snapshot is missing inference/model .pdmodel')
+          if not any(name.endswith('.pdiparams') for name in files):
+              raise SystemExit('Formula OCR snapshot is missing inference/model .pdiparams')
+          (target / 'q389r5c_model_snapshot_report.json').write_text(json.dumps({
+              'phase': os.environ.get('Q389R5C_PHASE', 'V172-Q389R5C_OFFLINE'),
+              'repo': repo,
+              'revision': revision,
+              'localDir': local_dir,
+              'files': files,
+              'backendAllowed': False,
+              'mlKitAllowed': False,
+              'modelBundledInBaseApp': False,
+          }, indent=2) + '\n')
+          print('Downloaded model files:')
+          for item in files:
+              print(' -', item)
+          PY
+
+      - name: Acquire paddle_lite_opt for Linux
+        env:
+          TOOLS_DIR: ${{ env.TOOLS_DIR }}
+          PADDLE_LITE_OPT_URL: ${{ inputs.paddle_lite_opt_url }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import shutil
+          import stat
+          import tarfile
+          import zipfile
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          tools = Path(os.environ['TOOLS_DIR'])
+          tools.mkdir(parents=True, exist_ok=True)
+          explicit_url = os.environ.get('PADDLE_LITE_OPT_URL', '').strip()
+
+          def fetch_json(url):
+              req = Request(url, headers={'User-Agent': 'MathPro-Q389R5C-offline-bundle-builder'})
+              with urlopen(req, timeout=60) as r:
+                  return json.loads(r.read().decode('utf-8'))
+
+          def download(url, dst):
+              req = Request(url, headers={'User-Agent': 'MathPro-Q389R5C-offline-bundle-builder'})
+              with urlopen(req, timeout=120) as r, open(dst, 'wb') as f:
+                  shutil.copyfileobj(r, f)
+
+          url = explicit_url
+          asset_name = 'paddle_lite_opt_override'
+          if not url:
+              release = fetch_json('https://api.github.com/repos/PaddlePaddle/Paddle-Lite/releases/latest')
+              candidates = []
+              for asset in release.get('assets', []):
+                  name = asset.get('name', '')
+                  lower = name.lower()
+                  if 'opt' in lower and 'linux' in lower and ('x86' in lower or 'ubuntu' in lower or 'gcc' in lower):
+                      candidates.append(asset)
+              if not candidates:
+                  raise SystemExit('Could not auto-discover a Linux paddle_lite_opt asset in Paddle-Lite latest release. Re-run with paddle_lite_opt_url input set to the official opt asset URL.')
+              chosen = sorted(candidates, key=lambda a: a.get('size', 0), reverse=True)[0]
+              url = chosen['browser_download_url']
+              asset_name = chosen.get('name', asset_name)
+
+          archive = tools / asset_name
+          download(url, archive)
+          extract = tools / 'extract'
+          extract.mkdir(exist_ok=True)
+          if zipfile.is_zipfile(archive):
+              with zipfile.ZipFile(archive) as zf:
+                  zf.extractall(extract)
+          elif tarfile.is_tarfile(archive):
+              with tarfile.open(archive) as tf:
+                  tf.extractall(extract)
+          else:
+              shutil.copy2(archive, extract / 'paddle_lite_opt')
+
+          matches = [p for p in extract.rglob('*') if p.is_file() and re.search(r'(^|/)paddle_lite_opt(\.exe)?$', str(p))]
+          if not matches:
+              matches = [p for p in extract.rglob('*') if p.is_file() and 'opt' in p.name.lower() and 'lite' in str(p).lower()]
+          if not matches:
+              raise SystemExit(f'paddle_lite_opt was not found after extracting {url}')
+          opt = matches[0]
+          opt.chmod(opt.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+          report = {
+              'phase': os.environ.get('Q389R5C_PHASE', 'V172-Q389R5C_OFFLINE'),
+              'paddleLiteOptUrl': url,
+              'assetName': asset_name,
+              'paddleLiteOptPath': str(opt),
+              'backendAllowed': False,
+              'mlKitAllowed': False,
+              'modelBundledInBaseApp': False,
+          }
+          (tools / 'q389r5c_paddle_lite_opt_report.json').write_text(json.dumps(report, indent=2) + '\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write(f'PADDLE_LITE_OPT_PATH={opt}\n')
+          print(json.dumps(report, indent=2))
+          PY
+
+      - name: Build production .nb bundle manifest
+        env:
+          MODEL_REPO: ${{ inputs.model_repo }}
+          MODEL_REVISION: ${{ inputs.model_revision }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          BASE_URL_OVERRIDE: ${{ inputs.base_url_override }}
+        run: |
+          set -euo pipefail
+          BASE_URL="$BASE_URL_OVERRIDE"
+          if [ -z "$BASE_URL" ]; then
+            BASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}"
+          fi
+          node tool/q389r5a_offline_formula_ocr_bundle_factory.mjs \
+            --source-dir "$MODEL_DIR" \
+            --sidecar-dir "$MODEL_DIR" \
+            --paddle-lite-opt "$PADDLE_LITE_OPT_PATH" \
+            --out-dir "$BUNDLE_ROOT" \
+            --base-url "$BASE_URL" \
+            --source-revision "${MODEL_REPO}@${MODEL_REVISION}" \
+            --conversion-provenance "${Q389R5C_PHASE}; github=${GITHUB_REPOSITORY}; run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}; paddleLiteOpt=${PADDLE_LITE_OPT_PATH}" \
+            --model-id "pp_formulanet_plus_l_device_only" \
+            --model-display-name "PP-FormulaNet_plus-L offline formula OCR"
+          cp "$MODEL_DIR/q389r5c_model_snapshot_report.json" "$BUNDLE_ROOT/reports/"
+          cp "$TOOLS_DIR/q389r5c_paddle_lite_opt_report.json" "$BUNDLE_ROOT/reports/"
+          (cd "$BUNDLE_ROOT/bundle" && zip -r ../q389r5c_offline_formula_ocr_bundle_files.zip .)
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r5c-offline-formula-ocr-bundle
+          path: |
+            ${{ env.BUNDLE_ROOT }}/bundle/*
+            ${{ env.BUNDLE_ROOT }}/reports/*
+            ${{ env.BUNDLE_ROOT }}/q389r5c_offline_formula_ocr_bundle_files.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub Release files when requested
+        if: ${{ inputs.publish_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: Q389R5C Offline Formula OCR Bundle
+          fail_on_unmatched_files: true
+          files: |
+            ${{ env.BUNDLE_ROOT }}/bundle/*
+            ${{ env.BUNDLE_ROOT }}/reports/*
+            ${{ env.BUNDLE_ROOT }}/q389r5c_offline_formula_ocr_bundle_files.zip

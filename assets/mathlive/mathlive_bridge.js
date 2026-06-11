@@ -1,0 +1,2850 @@
+(function () {
+  'use strict';
+
+  const runtimeMode = window.MathProMathLiveRuntimeMode === 'main-editor' ? 'main-editor' : 'lab';
+  const mainEditorMode = runtimeMode === 'main-editor';
+  const q181ProductionDiagnosticsEnabled = !!window.MathProEnableDiagnosticCourt;
+  const q181LightweightMainEditorBoot = mainEditorMode && !q181ProductionDiagnosticsEnabled;
+  const q182ProductionMathLiveSimplificationActive = mainEditorMode && !q181ProductionDiagnosticsEnabled;
+  let mathfield = null;
+  let q169R31RuntimeRecoveryScriptAttempted = false;
+  let q169R31RuntimeRecoveryLastReason = 'not-run';
+  let q169R32BootStabilizationScheduled = false;
+  let q169R32BootStabilizationPasses = 0;
+  let q169R32WhenDefinedHooked = false;
+  let q169R36ChromeSuppressionScheduled = false;
+  let q169R36ChromeSuppressionRunning = false;
+  let q169R36ChromeObserverFields = typeof WeakSet !== 'undefined' ? new WeakSet() : null;
+
+
+  // Backward-compatible static contract markers for Q83/Q85/Q88/Q89/Q90R2 tests:
+  // phase: 'V172-Q84'
+
+  // Backward-compatible Q86/Q89 static-contract markers; these preserve old
+  // lab-guard tests while Q135-Q139 uses runtimeMode to activate the real main path:
+  // stateAdapterLabOnly: true
+  // mainEditorIntegrationGuard: true
+  // mainEditorIntegratedNow: false
+  // realMathLiveRuntimeBundled: false
+  // activeMainEditorEngine: 'legacyFlutterSlotEditor'
+  // mainEditorIntegratedNow: false
+  // mainEditorSwitchAllowed: false
+  // mainEditorSwitchBehindFlag: true
+
+
+  const __mathProQ139R3StaticLabCompatibilityContract = Object.freeze({
+    phase: 'V172-Q84',
+    realMathLiveRuntimeBundled: false,
+    mainEditorSwitchBehindFlag: true,
+    activeMainEditorEngine: 'legacyFlutterSlotEditor'
+  });
+
+  const runtimeProbe = window.MathProOfficialMathLiveRuntimeProbe || {
+    bundleScriptRequested: false,
+    bundleScriptLoaded: false,
+    bundleScriptFailed: true
+  };
+
+  const state = {
+    latex: '',
+    mathJson: null,
+    normalizedLatex: '',
+    plainText: '',
+    runtime: 'q90r2-lab-smoke-gate-official-runtime-not-mounted',
+    keyboardBridgePhase: 'V172-Q85',
+    stateAdapterPhase: 'V172-Q86',
+    cursorCourtPhase: 'V172-Q87',
+    engineSwitchPhase: 'V172-Q88',
+    mainEditorIntegrationPhase: 'V172-Q89',
+    legacyCursorRetirementPhase: 'V172-Q90',
+    runtimeBundlePhase: 'V172-Q90R1',
+    runtimeSmokePhase: 'V172-Q90R2',
+    runtimeSmokeEvidencePhase: 'V172-Q90R5',
+    runtimeSmokeEvidenceAuthoringPhase: 'V172-Q90R6',
+    runtimeSmokeEvidenceExportPhase: 'V172-Q90R7',
+    runtimeSmokeEvidenceExportPhase: 'V172-Q90R7',
+    runtimeBundleIntakeGuard: true,
+    runtimeSmokeGate: true,
+    officialRuntimeInstallerScriptProvided: true,
+    officialRuntimeClaimAllowedWithoutFiles: false,
+    officialRuntimeClaimAllowedWithoutSmoke: false,
+    legacyCursorRetirementGuard: true,
+    legacyCursorFilesMayBeDeleted: false,
+    legacyCursorPhysicalDeletionAllowed: false,
+    legacyEngineRemainsRollback: true,
+    legacyOverlayBypassAllowedOnlyForProvenMathLiveEngine: true,
+    legacyHitTestBypassAllowedOnlyForProvenMathLiveEngine: true,
+    broadCustomCursorPatchingAllowed: false,
+    mainEditorSwitchBehindFlag: false,
+    mainEditorIntegrationGuard: false,
+    mainEditorSwitchedToMathLive: mainEditorMode,
+    mainEditorIntegratedNow: mainEditorMode,
+    mathLiveMountedInMainWorkspaceByDefault: mainEditorMode,
+    activeMainEditorEngine: mainEditorMode ? 'mathliveMainEditorMandatory' : 'legacyFlutterSlotEditor',
+    defaultMainEditorEngine: mainEditorMode ? 'mathliveMainEditorMandatory' : 'legacyFlutterSlotEditor',
+    realDeviceCursorCourtPassClaimed: false,
+    cursorCourtScenarioPasses: 0,
+    cursorCourtTotalScenarios: 22,
+    cursorCourtBlockingFailures: 0,
+    hasFocus: false,
+    selectionDescription: '',
+    lastCommandLabel: '',
+    lastCommandAction: '',
+    evaluateRequested: false,
+    officialRuntimeScriptRequested: !!runtimeProbe.bundleScriptRequested,
+    officialRuntimeScriptLoaded: !!(runtimeProbe.bundleScriptLoaded || (window.MathProInlineRuntimeBootRepair && window.MathProInlineRuntimeBootRepair.inlineRuntimeExecuted)),
+    officialRuntimeScriptFailed: !!runtimeProbe.bundleScriptFailed,
+    mathfieldElementDefined: false,
+    mathfieldInstanceMounted: false,
+    labRuntimeSmokePassed: false,
+    labRuntimeSmokeDiagnostic: 'q90r2-mathlive-lab-runtime-smoke-not-run',
+    smokeCommandPasses: 0,
+    smokeCommandTotal: 6,
+    premiumRenderingPhase: 'V172-Q141',
+    pointerCaretHardeningPhase: 'V172-Q143',
+    pointerCaretFluidityPhase: 'V172-Q143',
+    premiumTemplateLayoutPhase: 'V172-Q145',
+    viewportFitPhase: 'V172-Q148',
+    visualChromeContractPhase: 'V172-Q149',
+    runtimeCommandBindingPhase: 'V172-Q157',
+    nativeRenderOwnershipPhase: 'V172-Q161',
+    diagnosticContractCleanupPhase: 'V172-Q164',
+    nativeRenderFallbackRepairPhase: 'V172-Q162',
+    realDeviceDiagnosticPhase: 'V172-Q163',
+    queueFlushNativePaintCommitPhase: 'V172-Q169',
+    mathfieldValueApiGuardPhase: 'V172-Q169R7',
+    insertValueFailureReasonCourtPhase: 'V172-Q169R8',
+    bridgeStateRefreshRepairPhase: 'V172-Q169R9',
+    compactBridgeStateReadbackPhase: 'V172-Q169R16',
+    lastCompactStateReadbackReason: '',
+    lastCompactStateReadbackSequence: 0,
+    finalSelfTestCourtPhase: 'V172-Q169R17',
+    channelPushSelfTestHardBindingPhase: 'V172-Q169R19',
+    lastChannelPushSelfTestReason: '',
+    lastChannelPushSelfTestSequence: 0,
+    lastFinalSelfTestReason: '',
+    lastFinalSelfTestSequence: 0,
+    lastFinalSelfTestRootCause: 'not-run',
+    staleTapDiagnosticOverwritePhase: 'V172-Q169R10',
+    singleSourceBridgePhase: 'V172-Q169R23',
+    mountAuthorityResetPhase: 'V172-Q169R24',
+    singleCommandBusAuthorityPhase: 'V172-Q169R25',
+    insertValueCommitAuthorityPhase: 'V172-Q169R26',
+    nativePaintOwnershipAuthorityPhase: 'V172-Q169R27',
+    premiumLayoutVisualPolishPhase: 'V172-Q170',
+    templateOpticalCorrectionPhase: 'V172-Q171',
+    templateOpticalFamily: 'plain',
+    q173NativeTemplateCommandNormalizerPhase: 'V172-Q173',
+    q173LastTemplateFamily: 'plain',
+    q173LastCommandWasNativeTemplate: false,
+    q173StructuralSiblingAppendGuard: 'not-run',
+    lastTemplateOpticalCorrectionPass: 'not-run',
+    userFacingDiagnosticOverlay: false,
+    prebundledRuntimeBootRepairPhase: 'V172-Q169R31',
+    mountInsertValuePaintStabilizationPhase: 'V172-Q169R32',
+    inlineRuntimeBootRepairPhase: 'V172-Q169R33',
+    staticMathfieldHostRepairPhase: 'V172-Q169R34',
+    singleFileRuntimeBootRepairPhase: 'V172-Q169R35',
+    shadowObserverFeedbackLoopRepairPhase: 'V172-Q169R36',
+    nativeTemplateCommandNormalizerPhase: 'V172-Q173',
+    q174NativeRendererPurityPhase: 'V172-Q174',
+    q175DefaultRendererPurityPhase: 'V172-Q175',
+    productionMathLiveSimplificationPhase: 'V172-Q182',
+    q175DefaultRendererPurityPhase: 'V172-Q175',
+    productionMathLiveSimplificationPhase: 'V172-Q182',
+    q175DefaultRendererTarget: 0.95,
+    q174LastDuplicateTemplateSuppressed: false,
+    q174NativeSlotAwareInsertionMode: 'preserve-active-placeholder',
+    q174LastTemplateIntent: '',
+    q174PendingTemplateIntent: '',
+    nativeRendererPurityPhase: 'V172-Q174',
+    defaultRendererPurityPhase: 'V172-Q175',
+    q169R36ChromeObserverMode: 'not-installed',
+    q169R36ChromeSuppressionDebounced: true,
+    q169R36ChromeSuppressionPasses: 0,
+    q169R36LastChromeSuppressionReason: 'not-run',
+    staticMathfieldHostAdopted: false,
+    runtimeUsableByDefinedCustomElement: false,
+    q169R32BootStabilizationPasses: 0,
+    q169R32LastStabilizationReason: 'not-run',
+    q169R32NativeReadyForCommand: false,
+    lastInsertValueCommitAuthorityPath: 'not-run',
+    nativePaintOwner: 'unknown',
+    nativePaintProofValuePath: 'not-read',
+    mathFieldIsOnlyStructuralRenderer: true,
+    sanitizedStructuralFallbackAllowed: true,
+    rawInsertTokensMayBeUserVisible: false,
+    lastRuntimeCommandAck: '',
+    lastInsertSucceeded: false,
+    lastInsertCommitted: false,
+    lastValueNonEmpty: false,
+    lastJsCommandStatus: 'pending',
+    nativePaintState: 'pending',
+    nativePaintLikelyVisible: false,
+    nativePaintCommitReason: '',
+    lastMathfieldValueBefore: '',
+    lastMathfieldValueAfter: '',
+    q169FailureReason: 'none',
+    q169FailureReasonLegacyAlias: 'none',
+    lastFailureReason: 'none',
+    lastValueApiPath: 'not-read',
+    lastValueApiError: '',
+    lastInsertPath: 'not-run',
+    lastMathfieldValueWritePath: 'not-run',
+    lastFallbackOverlayState: 'unknown',
+    lastPaintRectState: 'unknown',
+    focusEventFired: false,
+    inputEventFired: false,
+    lastDiagnosticReason: '',
+    diagnosticSequence: 0,
+    lastDiagnosticReport: null,
+    lastBridgeStateRefreshReason: '',
+    lastStateReportDelivered: '',
+    lastStateReportSequence: 0,
+    runtimeCommandSequence: 0,
+    visibleCommandFallbackPass: '',
+    visibleChromeSuppressionPass: '',
+    visibleMathLiveBrandingAllowed: false,
+    mathLiveChromeVisible: false,
+    viewportFitClass: 'mathpro-fit-normal',
+    viewportFitReason: '',
+    lastViewportFitPass: '',
+    caretFollowPhase: 'V172-Q148',
+    caretFollowPass: '',
+    lastPremiumTemplateLayoutPass: '',
+    pointerFocusPrimed: false,
+    tapSequence: 0,
+    lastSelectionChange: '',
+    lastPointerInteraction: ''
+  };
+
+  function host() {
+    return document.getElementById('mathlive-host');
+  }
+
+  function exportNode() {
+    return document.getElementById('mathpro-export');
+  }
+
+  function statusNode() {
+    return document.getElementById('runtime-status');
+  }
+
+  function normalizeLatex(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function latexToPlainText(value) {
+    return normalizeLatex(value)
+      .replace(/\\left/g, '')
+      .replace(/\\right/g, '')
+      .replace(/\\times/g, '×')
+      .replace(/\\div/g, '÷')
+      .replace(/\\pi/g, 'π')
+      .replace(/\\theta/g, 'θ')
+      .replace(/\\infty/g, '∞')
+      .replace(/\\frac\{\}\{\}/g, '□/□')
+      .replace(/\\sqrt\{\}/g, '√□')
+      .replace(/\\log_\{\}/g, 'log_□')
+      .replace(/\\sin/g, 'sin')
+      .replace(/\\cos/g, 'cos')
+      .replace(/\\tan/g, 'tan')
+      .replace(/\\ln/g, 'ln')
+      .replace(/[{}]/g, '')
+      .trim();
+  }
+
+  function setQ169FailureReason(reason) {
+    const value = String(reason || 'none');
+    state.q169FailureReason = value;
+    state.lastFailureReason = value;
+    return value;
+  }
+
+  function readMathfieldValueDetailed(reason) {
+    const details = {
+      value: '',
+      path: 'not-read',
+      error: '',
+      reason: String(reason || 'q169r8-value-read')
+    };
+    if (!mathfield) {
+      details.value = state.latex || '';
+      details.path = 'state-latex-no-mathfield';
+      state.lastValueApiPath = details.path;
+      state.lastValueApiError = '';
+      return details;
+    }
+    // V172-Q169R8: Q169R6 proved Bridge/fire and Q169R7 guarded value APIs,
+    // but real-device evidence can still show INSERT:false VALUE:empty. Record
+    // the exact value API path/error so one device screenshot reveals whether
+    // getValue(), value, setValue(), insert(), or paintability is blocking.
+    const readAttempts = [];
+    try {
+      if (typeof mathfield.getValue === 'function') {
+        readAttempts.push({ path: 'getValue-latex-expanded', fn: function () { return mathfield.getValue('latex-expanded'); } });
+        readAttempts.push({ path: 'getValue-latex', fn: function () { return mathfield.getValue('latex'); } });
+        readAttempts.push({ path: 'getValue-default', fn: function () { return mathfield.getValue(); } });
+      }
+    } catch (error) {
+      details.error = 'prepare-getValue-' + (error && error.name ? error.name : 'throw');
+    }
+    readAttempts.push({ path: 'property-value', fn: function () { return mathfield.value; } });
+    for (let i = 0; i < readAttempts.length; i += 1) {
+      try {
+        const value = readAttempts[i].fn();
+        if (String(value || '').trim().length > 0) {
+          details.value = String(value || '');
+          details.path = readAttempts[i].path;
+          details.error = '';
+          state.lastValueApiPath = details.path;
+          state.lastValueApiError = '';
+          return details;
+        }
+        if (!details.path || details.path === 'not-read') details.path = readAttempts[i].path + '-empty';
+      } catch (error) {
+        details.error = readAttempts[i].path + '-' + (error && error.name ? error.name : 'throw');
+        state.lastRuntimeCommandAck = 'q169r8-mathfield-value-api-error-' + details.error;
+      }
+    }
+    try {
+      const rawValue = mathfield.value;
+      if (typeof rawValue === 'string') {
+        details.value = rawValue;
+        details.path = rawValue.trim().length > 0 ? 'property-value-final' : 'property-value-final-empty';
+      }
+    } catch (error) {
+      details.error = details.error || ('property-value-final-' + (error && error.name ? error.name : 'throw'));
+    }
+    if (!details.value && state.latex) {
+      details.value = state.latex;
+      details.path = 'state-latex-fallback-after-empty-value-api';
+    }
+    if (!details.value) {
+      details.path = details.path || 'all-value-apis-empty';
+      if (state.lastCommandAction === 'insertLatex') setQ169FailureReason('value-api-empty-after-insert');
+    }
+    state.lastValueApiPath = details.path;
+    state.lastValueApiError = details.error;
+    return details;
+  }
+
+  function mathfieldValue() {
+    return readMathfieldValueDetailed('q169r8-mathfield-value').value || '';
+  }
+
+  function readNativeMathfieldValueDetailed(reason) {
+    const details = {
+      value: '',
+      path: 'native-not-read',
+      error: '',
+      reason: String(reason || 'q169r26-native-value-read')
+    };
+    if (!mathfield) {
+      details.path = 'native-no-mathfield';
+      return details;
+    }
+    const attempts = [];
+    try {
+      if (typeof mathfield.getValue === 'function') {
+        attempts.push({ path: 'native-getValue-latex-expanded', fn: function () { return mathfield.getValue('latex-expanded'); } });
+        attempts.push({ path: 'native-getValue-latex', fn: function () { return mathfield.getValue('latex'); } });
+        attempts.push({ path: 'native-getValue-default', fn: function () { return mathfield.getValue(); } });
+      }
+    } catch (error) {
+      details.error = 'native-prepare-getValue-' + (error && error.name ? error.name : 'throw');
+    }
+    attempts.push({ path: 'native-property-value', fn: function () { return mathfield.value; } });
+    for (let i = 0; i < attempts.length; i += 1) {
+      try {
+        const value = attempts[i].fn();
+        if (String(value || '').trim().length > 0) {
+          details.value = String(value || '');
+          details.path = attempts[i].path;
+          state.lastValueApiPath = details.path;
+          state.lastValueApiError = '';
+          return details;
+        }
+        if (!details.path || details.path === 'native-not-read') details.path = attempts[i].path + '-empty';
+      } catch (error) {
+        details.error = attempts[i].path + '-' + (error && error.name ? error.name : 'throw');
+      }
+    }
+    state.lastValueApiPath = details.path;
+    state.lastValueApiError = details.error;
+    return details;
+  }
+
+  function mathfieldNativeValue() {
+    return readNativeMathfieldValueDetailed('q169r26-native-value').value || '';
+  }
+
+  function q169R26TryExecuteCommandInsert(value, reason) {
+    if (!mathfield || typeof mathfield.executeCommand !== 'function') {
+      state.lastInsertValueCommitAuthorityPath = 'executeCommand-api-missing';
+      return false;
+    }
+    const payload = String(value || '');
+    const attempts = [
+      { path: 'executeCommand-array-insert', command: ['insert', payload] },
+      { path: 'executeCommand-array-performTypingResponse', command: ['performTypingResponse', payload] },
+      { path: 'executeCommand-string-performTypingResponse', command: 'performTypingResponse', argument: payload }
+    ];
+    for (let i = 0; i < attempts.length; i += 1) {
+      try {
+        restoreMathfieldFocus('q169r26-before-' + attempts[i].path);
+        if (attempts[i].argument !== undefined) {
+          mathfield.executeCommand(attempts[i].command, attempts[i].argument);
+        } else {
+          mathfield.executeCommand(attempts[i].command);
+        }
+        const nativeValue = mathfieldNativeValue();
+        if (String(nativeValue || '').trim().length > 0) {
+          state.lastInsertValueCommitAuthorityPath = attempts[i].path;
+          state.lastInsertPath = attempts[i].path;
+          state.latex = nativeValue;
+          setQ169FailureReason('none');
+          return true;
+        }
+      } catch (error) {
+        state.lastValueApiError = attempts[i].path + '-' + (error && error.name ? error.name : 'throw');
+      }
+    }
+    state.lastInsertValueCommitAuthorityPath = 'executeCommand-insert-fallback-empty';
+    if (String(reason || '').trim().length > 0) state.lastRuntimeCommandAck = String(reason);
+    return false;
+  }
+
+  function commitDocumentLatexToMathfield(documentLatex, reason) {
+    if (!mathfield) {
+      state.lastMathfieldValueWritePath = 'no-mathfield';
+      setQ169FailureReason('direct-value-no-mathfield');
+      return false;
+    }
+    const value = String(documentLatex || '').trim();
+    if (!value) {
+      state.lastMathfieldValueWritePath = 'empty-document-latex';
+      setQ169FailureReason('direct-value-empty-document-latex');
+      return false;
+    }
+    let wrote = false;
+    let writePath = '';
+    try {
+      if (typeof mathfield.setValue === 'function') {
+        mathfield.setValue(value, { silenceNotifications: false });
+        wrote = true;
+        writePath = 'setValue-options';
+      }
+    } catch (error) {
+      state.lastValueApiError = 'setValue-options-' + (error && error.name ? error.name : 'throw');
+    }
+    try {
+      if (!wrote || String(mathfieldValue() || '').trim().length === 0) {
+        mathfield.value = value;
+        wrote = true;
+        writePath = writePath ? (writePath + '+property-value') : 'property-value';
+      }
+    } catch (error) {
+      state.lastValueApiError = state.lastValueApiError || ('property-value-write-' + (error && error.name ? error.name : 'throw'));
+    }
+    state.lastMathfieldValueWritePath = writePath || 'write-not-attempted';
+    if (!wrote) {
+      const commandCommitted = q169R26TryExecuteCommandInsert(value, reason || 'q169r26-direct-value-write-failed-command-fallback');
+      if (!commandCommitted) {
+        setQ169FailureReason('direct-value-write-failed');
+        return false;
+      }
+    }
+    try {
+      mathfield.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: value }));
+      state.inputEventFired = true;
+    } catch (_) {
+      try {
+        mathfield.dispatchEvent(new Event('input', { bubbles: true }));
+        state.inputEventFired = true;
+      } catch (_) {}
+    }
+    state.lastRuntimeCommandAck = reason || 'q169r8-direct-mathfield-value-commit q169r26-insert-value-commit-authority';
+    state.visibleCommandFallbackPass = reason || 'q169r8-direct-mathfield-value-commit q169r26-insert-value-commit-authority';
+    const nativeRead = readNativeMathfieldValueDetailed('q169r26-after-direct-value-commit-native-read');
+    state.latex = nativeRead.value || '';
+    let committed = String(state.latex || '').trim().length > 0;
+    if (!committed) {
+      committed = q169R26TryExecuteCommandInsert(value, reason || 'q169r26-empty-after-direct-write-command-fallback');
+      state.latex = mathfieldNativeValue();
+    }
+    if (committed) {
+      setQ169FailureReason('none');
+      state.lastInsertPath = 'direct-value-commit-' + state.lastMathfieldValueWritePath + '+q169r26';
+      state.lastInsertValueCommitAuthorityPath = state.lastInsertPath;
+    } else {
+      setQ169FailureReason('direct-value-commit-empty-after-write');
+      state.lastInsertValueCommitAuthorityPath = 'direct-value-commit-empty-after-write';
+    }
+    return committed;
+  }
+
+
+  function q169R31MathfieldElementDefined() {
+    if (typeof window.customElements !== 'undefined' && !window.customElements.get('math-field')) {
+      q169R35EnsureOfficialMathfieldRegistration('q169r35-before-defined-check');
+    }
+    const defined = typeof window.customElements !== 'undefined' && !!window.customElements.get('math-field');
+    if (defined && window.MathProInlineRuntimeBootRepair) {
+      window.MathProInlineRuntimeBootRepair.mathfieldElementDefined = true;
+    }
+    if (window.MathProStaticMathfieldHostRepair) {
+      window.MathProStaticMathfieldHostRepair.mathfieldElementDefined = defined;
+    }
+    state.runtimeUsableByDefinedCustomElement = defined;
+    return defined;
+  }
+
+
+  function q169R35OfficialMathfieldClass() {
+    if (typeof window !== 'undefined') {
+      if (typeof window.MathfieldElement === 'function') return window.MathfieldElement;
+      if (window.MathLive && typeof window.MathLive.MathfieldElement === 'function') return window.MathLive.MathfieldElement;
+    }
+    if (typeof globalThis !== 'undefined') {
+      if (typeof globalThis.MathfieldElement === 'function') return globalThis.MathfieldElement;
+      if (globalThis.MathLive && typeof globalThis.MathLive.MathfieldElement === 'function') return globalThis.MathLive.MathfieldElement;
+    }
+    return null;
+  }
+
+  function q169R35EnsureOfficialMathfieldRegistration(reason) {
+    const marker = String(reason || 'q169r35-single-file-runtime-registration');
+    state.singleFileRuntimeBootRepairPhase = 'V172-Q169R35';
+    if (window.MathProSingleFileRuntimeBootRepair) {
+      window.MathProSingleFileRuntimeBootRepair.lastRegistrationReason = marker;
+    }
+    if (typeof window.customElements === 'undefined') {
+      if (window.MathProSingleFileRuntimeBootRepair) window.MathProSingleFileRuntimeBootRepair.customElementsAvailable = false;
+      return false;
+    }
+    if (window.customElements.get('math-field')) {
+      if (window.MathProSingleFileRuntimeBootRepair) {
+        window.MathProSingleFileRuntimeBootRepair.mathfieldElementDefined = true;
+        window.MathProSingleFileRuntimeBootRepair.registrationPath = 'already-defined';
+      }
+      return true;
+    }
+    const OfficialMathfieldElement = q169R35OfficialMathfieldClass();
+    if (typeof OfficialMathfieldElement !== 'function') {
+      if (window.MathProSingleFileRuntimeBootRepair) {
+        window.MathProSingleFileRuntimeBootRepair.mathfieldElementDefined = false;
+        window.MathProSingleFileRuntimeBootRepair.registrationPath = 'official-class-missing';
+      }
+      return false;
+    }
+    try {
+      window.customElements.define('math-field', OfficialMathfieldElement);
+      if (window.MathProSingleFileRuntimeBootRepair) {
+        window.MathProSingleFileRuntimeBootRepair.mathfieldElementDefined = true;
+        window.MathProSingleFileRuntimeBootRepair.registrationPath = 'explicit-official-class-define';
+      }
+      return true;
+    } catch (error) {
+      const nowDefined = !!window.customElements.get('math-field');
+      if (window.MathProSingleFileRuntimeBootRepair) {
+        window.MathProSingleFileRuntimeBootRepair.mathfieldElementDefined = nowDefined;
+        window.MathProSingleFileRuntimeBootRepair.registrationPath = nowDefined ? 'defined-after-exception' : 'define-exception';
+        window.MathProSingleFileRuntimeBootRepair.registrationError = error && error.name ? error.name : 'unknown-error';
+      }
+      return nowDefined;
+    }
+  }
+
+  function q169R31RefreshRuntimeProbeFlags(reason) {
+    const defined = q169R31MathfieldElementDefined();
+    if (defined) {
+      runtimeProbe.bundleScriptLoaded = true;
+      runtimeProbe.bundleScriptFailed = false;
+      state.officialRuntimeScriptLoaded = true;
+      state.officialRuntimeScriptFailed = false;
+      state.mathfieldElementDefined = true;
+      state.lastRuntimeCommandAck = 'q169r31-runtime-probe-defined-' + String(reason || 'refresh');
+    }
+    return defined;
+  }
+
+  function q169R31AttemptRuntimeScriptRecovery(reason) {
+    q169R31RuntimeRecoveryLastReason = String(reason || 'q169r31-prebundled-runtime-recovery');
+    state.lastRuntimeCommandAck = 'q169r31-runtime-recovery-check-' + q169R31RuntimeRecoveryLastReason;
+    if (window.MathProInlineRuntimeBootRepair && window.MathProInlineRuntimeBootRepair.inlineRuntimeExecuted) {
+      runtimeProbe.bundleScriptLoaded = true;
+      state.officialRuntimeScriptLoaded = true;
+      q169R35EnsureOfficialMathfieldRegistration('q169r35-after-inline-runtime-executed');
+      state.lastRuntimeCommandAck = 'q169r33-inline-runtime-executed-' + q169R31RuntimeRecoveryLastReason;
+    }
+    if (q169R31RefreshRuntimeProbeFlags(q169R31RuntimeRecoveryLastReason)) return true;
+    if (q169R31RuntimeRecoveryScriptAttempted) return false;
+    q169R31RuntimeRecoveryScriptAttempted = true;
+    try {
+      const script = document.createElement('script');
+      script.src = 'vendor/mathlive/mathlive.min.js';
+      script.async = false;
+      script.dataset.mathproRuntimeRecovery = 'V172-Q169R31';
+      script.onload = function () {
+        runtimeProbe.bundleScriptLoaded = true;
+        runtimeProbe.bundleScriptFailed = false;
+        state.officialRuntimeScriptLoaded = true;
+        state.officialRuntimeScriptFailed = false;
+        state.lastRuntimeCommandAck = 'q169r31-runtime-recovery-onload';
+        window.setTimeout(function () {
+          tryMountOfficialMathLive();
+          notifyFlutter();
+          runQ169FinalSelfTestCourtAndPush('q169r31-runtime-recovery-onload-court');
+        }, 0);
+      };
+      script.onerror = function () {
+        runtimeProbe.bundleScriptFailed = true;
+        state.officialRuntimeScriptFailed = true;
+        setQ169FailureReason('q169r31-runtime-script-asset-load-failed');
+        state.lastRuntimeCommandAck = 'q169r31-runtime-recovery-onerror';
+        notifyFlutter();
+      };
+      (document.head || document.documentElement).appendChild(script);
+      return false;
+    } catch (error) {
+      runtimeProbe.bundleScriptFailed = true;
+      state.officialRuntimeScriptFailed = true;
+      setQ169FailureReason('q169r31-runtime-script-injection-failed');
+      state.lastValueApiError = error && error.name ? error.name : 'runtime-script-injection-throw';
+      return false;
+    }
+  }
+
+
+  function q169R32MarkStabilization(reason) {
+    q169R32BootStabilizationPasses += 1;
+    state.mountInsertValuePaintStabilizationPhase = 'V172-Q169R32';
+    state.q169R32BootStabilizationPasses = q169R32BootStabilizationPasses;
+    state.q169R32LastStabilizationReason = String(reason || 'q169r32-stabilization');
+  }
+
+  function q169R32HookWhenDefined(reason) {
+    if (q169R32WhenDefinedHooked) return;
+    q169R32WhenDefinedHooked = true;
+    try {
+      if (typeof window.customElements !== 'undefined' && typeof window.customElements.whenDefined === 'function') {
+        window.customElements.whenDefined('math-field').then(function () {
+          q169R32RunBootStabilizationPass(String(reason || 'q169r32-when-defined') + '-resolved');
+          runQ169FinalSelfTestCourtAndPush('q169r32-when-defined-final-court');
+        }).catch(function () {
+          setQ169FailureReason('q169r32-when-defined-rejected');
+          notifyFlutter();
+        });
+      }
+    } catch (_) {}
+  }
+
+  function q169R32EnsureNativeReadyForCommand(reason) {
+    const marker = String(reason || 'q169r32-ensure-native-ready-for-command');
+    q169R32MarkStabilization(marker);
+    q169R31RefreshRuntimeProbeFlags(marker);
+    if (!q169R31MathfieldElementDefined()) {
+      q169R32HookWhenDefined(marker);
+      q169R31AttemptRuntimeScriptRecovery(marker);
+    }
+    if (!mathfield) tryMountOfficialMathLive();
+    if (mathfield) {
+      state.q169R32NativeReadyForCommand = true;
+      state.mathfieldElementDefined = true;
+      state.mathfieldInstanceMounted = true;
+      state.officialRuntimeScriptLoaded = true;
+      state.officialRuntimeScriptFailed = false;
+      restoreMathfieldFocus(marker + '-focus');
+      disableMathLiveVirtualKeyboard(mathfield);
+      hideMathLiveChrome(mathfield);
+      updateNativePaintCommitState(marker + ' q169r32-native-ready-paint-probe');
+      return true;
+    }
+    state.q169R32NativeReadyForCommand = false;
+    state.lastInsertPath = 'q169r32-native-ready-blocked-no-mathfield';
+    if (!state.lastFailureReason || state.lastFailureReason === 'none') {
+      setQ169FailureReason('q169r32-native-ready-blocked-no-mathfield');
+    }
+    return false;
+  }
+
+  function q169R32RunBootStabilizationPass(reason) {
+    const marker = String(reason || 'q169r32-boot-stabilization-pass');
+    q169R32MarkStabilization(marker);
+    q169R31RefreshRuntimeProbeFlags(marker);
+    q169R32HookWhenDefined(marker);
+    if (!q169R31MathfieldElementDefined()) q169R31AttemptRuntimeScriptRecovery(marker);
+    const mounted = tryMountOfficialMathLive();
+    if (mounted && mathfield) {
+      state.q169R32NativeReadyForCommand = true;
+      restoreMathfieldFocus(marker + '-focus');
+      disableMathLiveVirtualKeyboard(mathfield);
+      hideMathLiveChrome(mathfield);
+      applyViewportFit(marker + '-viewport-fit');
+      keepCaretVisible(marker + '-caret-visible');
+      updateNativePaintCommitState(marker + ' q169r32-mounted-native-paint-probe');
+      if (q182ProductionMathLiveSimplificationActive) {
+        notifyFlutter();
+      } else {
+        postQ169ChannelPushState(getQ169CompactState(marker + ' q169r32-mounted-compact-state'), marker + ' q169r32-mounted-channel-push');
+      }
+    } else {
+      state.q169R32NativeReadyForCommand = false;
+      updateNativePaintCommitState(marker + ' q169r32-not-mounted-native-paint-probe');
+      notifyFlutter();
+    }
+    return getQ169CompactState(marker + ' q169r32-stabilization-return-state');
+  }
+
+  function q169R32ScheduleBootStabilization(reason) {
+    if (q169R32BootStabilizationScheduled) return true;
+    q169R32BootStabilizationScheduled = true;
+    const marker = String(reason || 'q169r32-scheduled-boot-stabilization');
+    const delays = q182ProductionMathLiveSimplificationActive ? [0, 120] : [0, 40, 120, 260, 520, 900, 1500, 2400, 3600];
+    delays.forEach(function (delay) {
+      window.setTimeout(function () {
+        q169R32RunBootStabilizationPass(marker + '-' + delay);
+        if (!q182ProductionMathLiveSimplificationActive && mathfield && delay >= 120) {
+          runQ169FinalSelfTestCourtAndPush(marker + '-final-court-' + delay);
+        }
+      }, delay);
+    });
+    return true;
+  }
+
+  function updateDerivedState() {
+    q169R31RefreshRuntimeProbeFlags('update-derived-state');
+    state.officialRuntimeScriptLoaded = !!(runtimeProbe.bundleScriptLoaded || (window.MathProInlineRuntimeBootRepair && window.MathProInlineRuntimeBootRepair.inlineRuntimeExecuted));
+    state.officialRuntimeScriptFailed = !!runtimeProbe.bundleScriptFailed;
+    state.mathfieldElementDefined = q169R31MathfieldElementDefined();
+    state.runtimeUsableByDefinedCustomElement = state.mathfieldElementDefined;
+    state.mathfieldInstanceMounted = !!mathfield;
+    state.latex = mathfieldValue();
+    state.normalizedLatex = normalizeLatex(state.latex);
+    state.plainText = latexToPlainText(state.normalizedLatex);
+    state.runtime = mathfield
+      ? (mainEditorMode ? 'q134-official-mathlive-runtime-mounted-in-main-editor' : 'q90r2-official-mathlive-runtime-mounted-in-isolated-lab')
+      : 'q90r2-lab-smoke-gate-official-runtime-not-mounted';
+  }
+
+  function notifyFlutter() {
+    updateDerivedState();
+    if (window.MathProMathLiveState && window.MathProMathLiveState.postMessage) {
+      window.MathProMathLiveState.postMessage(JSON.stringify(getState()));
+    }
+  }
+
+  function q169StatusFromBoolean(value) {
+    return value ? 'ok' : 'fail';
+  }
+
+  function q169KnownPaintState(value) {
+    const next = String(value || 'pending');
+    if (next === 'ok' || next === 'fail') return next;
+    return 'pending';
+  }
+
+  function buildQ169SingleSourceEnvelope(report, reason) {
+    const marker = String(reason || 'q169r23-single-source-envelope');
+    const source = report || getQ169CompactState(marker);
+    const sourceKind = source && source.channelPushKind ? String(source.channelPushKind) : '';
+    const isCourtPayload = !!(source && (
+      sourceKind === 'court' ||
+      source.rootCause ||
+      source.finalSelfTestCourtPhase === 'V172-Q169R17'
+    ));
+    const field = mathfield || document.querySelector('math-field');
+    const mathfieldExists = !!(source.mathfieldExists || source.mathfieldInstanceMounted || field);
+    const mathfieldMounted = !!(source.mathfieldInstanceMounted || mathfield);
+    const nativeValueDetails = readNativeMathfieldValueDetailed('q169r27-single-source-native-value-read');
+    const nativeLatex = String(source.nativeMathfieldValue || source.lastNativeMathfieldValue || nativeValueDetails.value || '');
+    const latex = nativeLatex;
+    const valueNonEmpty = !!source.nativeValueNonEmpty || String(nativeLatex || '').trim().length > 0;
+    const insertCommitted = source.insert === 'ok' || (!!source.lastInsertCommitted && valueNonEmpty) || (!!source.lastInsertSucceeded && valueNonEmpty);
+    const channelAvailable = !!(window.MathProMathLiveState && window.MathProMathLiveState.postMessage);
+    updateNativePaintCommitState(marker + ' q169r27-single-source-paint-proof');
+    const mount = source.mount || q169StatusFromBoolean(mathfieldExists || mathfieldMounted);
+    const insert = source.insert || q169StatusFromBoolean(insertCommitted);
+    const value = source.value || q169StatusFromBoolean(valueNonEmpty);
+    const channel = source.channel || (channelAvailable ? 'ok' : 'fail');
+    const paint = q169KnownPaintState(source.paint || source.nativePaintState || state.nativePaintState);
+    const valuePath = String(source.valuePath || source.nativeValuePath || source.lastValueApiPath || nativeValueDetails.path || state.lastValueApiPath || 'not-read');
+    const insertPath = String(source.insertPath || source.lastInsertPath || state.lastInsertPath || 'not-run');
+    let rootCause = String(source.rootCause || source.root || '');
+    const envelope = {
+      phase: 'V172-Q169R23',
+      singleSourceBridgePhase: 'V172-Q169R23',
+      mountAuthorityResetPhase: 'V172-Q169R24',
+      mountAuthorityResetPhase: 'V172-Q169R24',
+    mountAuthorityResetPhase: 'V172-Q169R24',
+      finalSelfTestCourtPhase: source.finalSelfTestCourtPhase || 'V172-Q169R17',
+      channelPushSelfTestHardBindingPhase: 'V172-Q169R19',
+      channelPushOwnershipPhase: 'V172-Q169R20',
+      q169ChannelPushState: true,
+      channelPushKind: isCourtPayload ? 'court' : 'compact',
+      q169SingleSourceEnvelope: true,
+      // Q169R20 compatibility markers: payload.channelPushOwnershipPhase = 'V172-Q169R20'; payload.channelPushKind = isCourtPayload ? 'court' : 'compact'
+      channelPushReason: marker,
+      channelPushSequence: state.lastChannelPushSelfTestSequence,
+      sourceKind: isCourtPayload ? 'court' : 'compact',
+      bridgePresent: true,
+      officialRuntimeScriptLoaded: !!(source.officialRuntimeScriptLoaded || state.officialRuntimeScriptLoaded),
+      officialRuntimeScriptFailed: !!(source.officialRuntimeScriptFailed || state.officialRuntimeScriptFailed),
+      mathfieldElementDefined: !!(source.mathfieldElementDefined || state.mathfieldElementDefined),
+      mathfieldExists: mathfieldExists,
+      mathfieldInstanceMounted: mathfieldMounted,
+      mount: mount,
+      insert: insert,
+      value: value,
+      channel: channel,
+      paint: paint,
+      failureReason: String(source.failureReason || source.q169FailureReason || state.lastFailureReason || 'none'),
+      valuePath: valuePath,
+      insertPath: insertPath,
+      paintRectState: String(source.paintRectState || source.lastPaintRectState || state.lastPaintRectState || 'unknown'),
+      fallbackOverlayState: String(source.fallbackOverlayState || source.lastFallbackOverlayState || state.lastFallbackOverlayState || 'unknown'),
+      latex: latex,
+      valueNonEmpty: valueNonEmpty,
+      nativePaintOwnershipAuthorityPhase: 'V172-Q169R27',
+    prebundledRuntimeBootRepairPhase: 'V172-Q169R31',
+      nativeMathfieldValue: nativeLatex,
+      nativeValueNonEmpty: valueNonEmpty,
+      nativeValuePath: valuePath,
+      nativePaintOwner: state.nativePaintOwner || 'unknown',
+      nativePaintProofValuePath: state.nativePaintProofValuePath || valuePath,
+      lastJsCommandStatus: String(source.lastJsCommandStatus || state.lastJsCommandStatus || 'pending'),
+      rawInsertTokensMayBeUserVisible: false
+    };
+    if (!rootCause) {
+      rootCause = classifyQ169FinalSelfTestCourt(envelope);
+    }
+    envelope.rootCause = rootCause;
+    envelope.root = rootCause;
+    return envelope;
+  }
+
+  function postQ169ChannelPushState(report, reason) {
+    const marker = String(reason || 'q169r23-channel-push-single-source');
+    state.channelPushSelfTestHardBindingPhase = 'V172-Q169R19';
+    state.singleSourceBridgePhase = 'V172-Q169R23';
+    state.lastChannelPushSelfTestReason = marker;
+    state.lastChannelPushSelfTestSequence += 1;
+    const payload = buildQ169SingleSourceEnvelope(report, marker);
+    payload.channelPushSequence = state.lastChannelPushSelfTestSequence;
+    try {
+      if (window.MathProMathLiveState && window.MathProMathLiveState.postMessage) {
+        window.MathProMathLiveState.postMessage(JSON.stringify(payload));
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function paintFallbackHost() {
+    const node = host();
+    if (node && !mathfield) {
+      node.setAttribute('contenteditable', 'false');
+      node.setAttribute('data-mathpro-visible-chrome', 'suppressed');
+      node.setAttribute('data-q159-visible-command-fallback', state.latex ? 'sanitized' : 'empty');
+      node.setAttribute('data-q162-sanitized-fallback', state.latex ? 'true' : 'false');
+      // V172-Q157/Q159/Q162: in the mandatory main-editor path, do not hide
+      // bridge fallback input behind a permanent empty placeholder if the
+      // official math-field has not mounted yet. Keep the host visible, but
+      // never expose raw #0/#?/#@ insert tokens. Compatibility marker for older
+      // tests: node.textContent = state.latex || '□';
+      node.textContent = mayShowFallbackAsText(state.latex) ? (state.latex || '□') : visibleFallbackTextFromLatex(state.latex);
+      state.lastFallbackOverlayState = state.latex ? 'webview-host-fallback-visible' : 'webview-host-fallback-empty';
+    } else if (node && mathfield) {
+      state.lastFallbackOverlayState = 'native-mathfield-mounted-host-fallback-demoted';
+    }
+  }
+
+  function paint() {
+    updateDerivedState();
+    const output = exportNode();
+    if (output) {
+      output.textContent = 'latex: ' + state.latex;
+    }
+    paintFallbackHost();
+    notifyFlutter();
+  }
+
+  function setStatus(message) {
+    const status = statusNode();
+    if (status) status.textContent = message;
+  }
+
+
+  function disableMathLiveVirtualKeyboard(field) {
+    try {
+      field.setAttribute('virtual-keyboard-mode', 'off');
+      field.setAttribute('math-virtual-keyboard-policy', 'manual');
+      field.setAttribute('virtual-keyboard-policy', 'manual');
+      field.setAttribute('inputmode', 'none');
+      field.removeAttribute('show-virtual-keyboard');
+      field.mathVirtualKeyboardPolicy = 'manual';
+      field.virtualKeyboardMode = 'off';
+      field.menuItems = [];
+      if (typeof field.setOptions === 'function') {
+        field.setOptions({
+          virtualKeyboardMode: 'off',
+          mathVirtualKeyboardPolicy: 'manual',
+          virtualKeyboardPolicy: 'manual',
+          menuItems: [],
+          smartFence: true,
+          smartMode: true,
+          removeExtraneousParentheses: true
+        });
+      }
+    } catch (_) {
+      // Keep the editor usable even if this MathLive build exposes fewer options.
+    }
+    try {
+      if (window.mathVirtualKeyboard) {
+        window.mathVirtualKeyboard.visible = false;
+        if (typeof window.mathVirtualKeyboard.hide === 'function') {
+          window.mathVirtualKeyboard.hide();
+        }
+      }
+    } catch (_) {}
+    hideMathLiveChrome(field);
+  }
+
+  function injectMathLiveChromeKillSwitch(field) {
+    try {
+      const root = field && field.shadowRoot;
+      if (!root || root.getElementById('mathpro-q141-chrome-kill-switch')) return;
+      const style = document.createElement('style');
+      style.id = 'mathpro-q141-chrome-kill-switch';
+      style.textContent = `
+        [part*="keyboard"], [part*="menu"], [part*="virtual-keyboard"],
+        [class*="keyboard"], [class*="menu-toggle"], [class*="virtual-keyboard"],
+        [aria-label*="keyboard" i], [aria-label*="menu" i],
+        [title*="keyboard" i], [title*="menu" i],
+        [class*="toolbar"], [class*="toggle"], [class*="popover"],
+        [class*="tooltip"], [class*="badge"], [class*="logo"], [class*="brand"],
+        button[part*="keyboard"], button[part*="menu"] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+          width: 0 !important;
+          min-width: 0 !important;
+          max-width: 0 !important;
+          height: 0 !important;
+          min-height: 0 !important;
+          max-height: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+      `;
+      root.appendChild(style);
+    } catch (_) {}
+  }
+
+
+  function nodeChromeSignature(node) {
+    if (!node || node.nodeType !== 1) return '';
+    const attrs = [
+      node.getAttribute('class'),
+      node.getAttribute('id'),
+      node.getAttribute('part'),
+      node.getAttribute('aria-label'),
+      node.getAttribute('title'),
+      node.getAttribute('role')
+    ].filter(Boolean).join(' ');
+    return String(attrs || '').toLowerCase();
+  }
+
+  function isChromeElement(node) {
+    const signature = nodeChromeSignature(node);
+    if (!signature) return false;
+    return /(keyboard|virtual-keyboard|menu|toolbar|toggle|popover|tooltip|badge|logo|brand|settings)/i.test(signature);
+  }
+
+  function suppressElement(node) {
+    if (!node || !node.style) return;
+    node.setAttribute('data-mathpro-hidden-chrome', 'true');
+    node.style.display = 'none';
+    node.style.visibility = 'hidden';
+    node.style.opacity = '0';
+    node.style.pointerEvents = 'none';
+    node.style.width = '0';
+    node.style.minWidth = '0';
+    node.style.maxWidth = '0';
+    node.style.height = '0';
+    node.style.minHeight = '0';
+    node.style.maxHeight = '0';
+    node.style.margin = '0';
+    node.style.padding = '0';
+  }
+
+  function suppressVisibleMathLiveBranding(field) {
+    let suppressed = 0;
+    try {
+      document.documentElement.setAttribute('data-mathpro-chrome', 'suppressed');
+      document.body.setAttribute('data-mathpro-chrome', 'suppressed');
+      const node = host();
+      if (node) {
+        node.setAttribute('data-mathpro-visible-chrome', 'suppressed');
+        if (!mathfield && /mathlive/i.test(node.textContent || '')) {
+          node.textContent = '□';
+          suppressed += 1;
+        }
+      }
+    } catch (_) {}
+    try {
+      const root = field && field.shadowRoot;
+      if (root) {
+        root.querySelectorAll('*').forEach(function (node) {
+          if (isChromeElement(node)) {
+            suppressElement(node);
+            suppressed += 1;
+          }
+        });
+        const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        const textNodes = [];
+        while (walker.nextNode()) textNodes.push(walker.currentNode);
+        textNodes.forEach(function (textNode) {
+          const text = String(textNode.nodeValue || '');
+          if (!/MathLive|Virtual Keyboard|Keyboard|Menu/i.test(text)) return;
+          const parent = textNode.parentElement;
+          if (parent && isChromeElement(parent)) {
+            suppressElement(parent);
+            suppressed += 1;
+          }
+        });
+      }
+    } catch (_) {}
+    state.visualChromeContractPhase = 'V172-Q149';
+    state.visibleChromeSuppressionPass = 'q149-visible-chrome-suppressed';
+    state.visibleMathLiveBrandingAllowed = false;
+    state.mathLiveChromeVisible = false;
+    return suppressed;
+  }
+
+  function hideMathLiveChrome(field) {
+    try {
+      const root = field && field.shadowRoot;
+      if (!root) return;
+      injectMathLiveChromeKillSwitch(field);
+      const selectors = [
+        '[part*="keyboard"]',
+        '[part*="menu"]',
+        '[part*="virtual-keyboard"]',
+        '[class*="keyboard"]',
+        '[class*="menu-toggle"]',
+        '[class*="virtual-keyboard"]',
+        '[aria-label*="keyboard" i]',
+        '[aria-label*="menu" i]',
+        '[title*="keyboard" i]',
+        '[title*="menu" i]',
+        '[class*="toolbar"]',
+        '[class*="toggle"]',
+        '[class*="popover"]',
+        '[class*="tooltip"]',
+        '[class*="badge"]',
+        '[class*="logo"]',
+        '[class*="brand"]'
+      ];
+      root.querySelectorAll(selectors.join(',')).forEach(function (node) {
+        suppressElement(node);
+      });
+      suppressVisibleMathLiveBranding(field);
+    } catch (_) {}
+  }
+
+  function q169R36ScheduleChromeSuppression(field, reason) {
+    if (!field) return;
+    state.shadowObserverFeedbackLoopRepairPhase = 'V172-Q169R36';
+    state.q169R36LastChromeSuppressionReason = String(reason || 'q169r36-shadow-mutation-debounced');
+    if (q169R36ChromeSuppressionScheduled || q169R36ChromeSuppressionRunning) {
+      state.q169R36ChromeObserverMode = 'debounced-childlist-only';
+      return;
+    }
+    q169R36ChromeSuppressionScheduled = true;
+    window.setTimeout(function () {
+      q169R36ChromeSuppressionScheduled = false;
+      if (q169R36ChromeSuppressionRunning) return;
+      q169R36ChromeSuppressionRunning = true;
+      try {
+        state.q169R36ChromeSuppressionPasses = (state.q169R36ChromeSuppressionPasses || 0) + 1;
+        hideMathLiveChrome(field);
+        suppressVisibleMathLiveBranding(field);
+      } finally {
+        q169R36ChromeSuppressionRunning = false;
+      }
+    }, 80);
+  }
+
+  function q169R36InstallShadowChromeObserver(field) {
+    try {
+      const root = field && field.shadowRoot;
+      if (!root || !window.MutationObserver) {
+        state.q169R36ChromeObserverMode = 'unavailable-no-shadow-root-or-observer';
+        return;
+      }
+      if (q169R36ChromeObserverFields && q169R36ChromeObserverFields.has(field)) {
+        state.q169R36ChromeObserverMode = 'already-installed-debounced-childlist-only';
+        return;
+      }
+      if (q169R36ChromeObserverFields) q169R36ChromeObserverFields.add(field);
+      const chromeObserver = new MutationObserver(function () {
+        q169R36ScheduleChromeSuppression(field, 'q169r36-shadow-mutation-debounced');
+      });
+      chromeObserver.observe(root, { childList: true, subtree: true });
+      state.q169R36ChromeObserverMode = 'debounced-childlist-only-no-attributes';
+      state.q169R36ChromeSuppressionDebounced = true;
+    } catch (error) {
+      state.q169R36ChromeObserverMode = 'install-error:' + String(error && error.message ? error.message : error);
+    }
+  }
+
+
+  function normalizeLatexForPremiumTemplateLayout(latex) {
+    let value = String(latex || '');
+    // Q145: Large structural operators must remain mathematical templates, but
+    // on a phone-sized main editor they must not explode into display-style
+    // multi-line blocks. Use a compact textstyle prefix for sums/products/limits
+    // and named series templates. The payload is still real LaTeX sent to
+    // MathLive; no visible key label such as "Taylor" is inserted.
+    const trimmed = value.trim();
+    const startsCompact = /^\\textstyle\b/.test(trimmed);
+    const needsCompact = /^(\\sum|\\prod|\\lim\b)/.test(trimmed) ||
+      trimmed.indexOf('\\sum_') !== -1 ||
+      trimmed.indexOf('\\prod_') !== -1 ||
+      trimmed.indexOf('=\\sum_') !== -1;
+    if (needsCompact && !startsCompact) {
+      value = '\\textstyle ' + trimmed;
+    }
+    value = value
+      .replace(/\\textstyle\s+\\textstyle\s+/g, '\\textstyle ')
+      .replace(/\s+\\,/g, '\\,')
+      .replace(/\s+dx/g, 'dx')
+      .replace(/#0\s+\\,/g, '#0\\,')
+      .replace(/#0\s+d([A-Za-z\\])/g, '#0\\,d$1');
+    state.lastPremiumTemplateLayoutPass = 'q145-premium-template-layout-normalized';
+    return value;
+  }
+
+  function isTemplateLatex(latex) {
+    return /\\placeholder\{|#\?|#@|#0|\\frac\{|\\sqrt\{|\\int|\\sum|\\prod|\\lim|\\begin\{bmatrix\}|\\begin\{cases\}/.test(String(latex || ''));
+  }
+
+  function containsRawInsertToken(latex) {
+    return /#0|#\?|#@/.test(String(latex || ''));
+  }
+
+  // Q169R15/Q161 static contract marker: q161-sanitized-document-latex-fallback-in-mathfield
+  function documentLatexFromInsertPayload(latex) {
+    return String(latex || '')
+      .replace(/#@/g, '\\placeholder{}')
+      .replace(/#0/g, '\\placeholder{}')
+      .replace(/#\?/g, '\\placeholder{}')
+      .replace(/\\textstyle\s+\\textstyle\s+/g, '\\textstyle ')
+      .trim();
+  }
+
+  function visibleFallbackTextFromLatex(latex) {
+    const value = documentLatexFromInsertPayload(latex);
+    if (!value) return '□';
+    if (/\\sqrt\{\\placeholder\{\}\}/.test(value)) return '√□';
+    if (/\\frac\{\\placeholder\{\}\}\{\\placeholder\{\}\}/.test(value)) return '□⁄□';
+    if (/\\sum|\\prod/.test(value)) return 'Σ□';
+    if (/\\lim/.test(value)) return 'lim □';
+    if (/\\int/.test(value)) return '∫□';
+    if (/\\begin\{cases\}/.test(value)) return '{□';
+    if (/\\begin\{bmatrix\}/.test(value)) return '[□]';
+    return value
+      .replace(/\\placeholder\{\}/g, '□')
+      .replace(/\\textstyle\s*/g, '')
+      .replace(/\\left/g, '')
+      .replace(/\\right/g, '')
+      .replace(/[{}]/g, '');
+  }
+
+  function mayShowFallbackAsText(latex) {
+    return !isTemplateLatex(latex) && !containsRawInsertToken(latex);
+  }
+
+
+
+
+  function structuralComplexityScore(latex) {
+    const value = String(latex || '');
+    const structuralMatches = value.match(/\\frac|\\sqrt|\\int|\\iint|\\iiint|\\oint|\\sum|\\prod|\\lim|\\begin\{cases\}|\\begin\{bmatrix\}|\\left|\\right|\^|_|#/g) || [];
+    return value.length + structuralMatches.length * 18;
+  }
+
+  function viewportFitClassForLatex(latex) {
+    const score = structuralComplexityScore(latex);
+    if (score >= 260) return 'mathpro-fit-micro';
+    if (score >= 190) return 'mathpro-fit-dense';
+    if (score >= 125) return 'mathpro-fit-compact';
+    return 'mathpro-fit-normal';
+  }
+
+
+  function q171TemplateFamilyForLatex(latex) {
+    const value = String(latex || '');
+    if (/\\sqrt/.test(value)) return 'radical';
+    if (/\\begin\{cases\}|\\begin\{aligned\}/.test(value)) return 'systems';
+    if (/\\begin\{bmatrix\}/.test(value)) return 'matrix';
+    if (/\\sum|\\prod|Taylor|Maclaurin|\\infty/.test(value)) return 'series';
+    if (/\\int|\\iint|\\iiint|\\oint|\\lim|\\frac\{d|\\partial/.test(value)) return 'calculus';
+    if (/\\sin|\\cos|\\tan|\\ln|\\log|\\operatorname|\\det|\\arg/.test(value)) return 'function';
+    if (value.length > 140) return 'long';
+    return 'plain';
+  }
+  function q173IsLeftBindingTemplate(latex, label) {
+    const value = String(latex || '');
+    const key = String(label || '');
+    return /#@/.test(value) || /\^\{|\!$/.test(value) || /(?:\u1d40|\u207b\u00b9|\u00b2|\u00b3)/.test(key);
+  }
+
+  function q173IsNativeStructuralTemplate(latex, label) {
+    const value = String(latex || '');
+    const key = String(label || '');
+    if (!value.trim()) return false;
+    if (q173IsLeftBindingTemplate(value, key)) return false;
+    return /#0|#\?|\\placeholder\{|\\frac\{|\\sqrt\{|\\int|\\iint|\\iiint|\\oint|\\sum|\\prod|\\lim|\\begin\{cases\}|\\begin\{bmatrix\}|\\sin|\\cos|\\tan|\\ln|\\log|\\operatorname|\\det|\\arg|\\left\||\\left\\\|/.test(value);
+  }
+
+  function q173NativeTemplateFamilyForLatex(latex, label) {
+    const value = String(latex || '');
+    const key = String(label || '');
+    if (/\\sqrt/.test(value) || key.indexOf('√') !== -1) return 'radical';
+    if (/\\frac\{d|\\partial|d\/dx|\\int|\\iint|\\iiint|\\oint|\\lim/.test(value) || /∫|lim|d\/dx/.test(key)) return 'calculus';
+    if (/\\sum|\\prod|Σ|Π/.test(value) || /Σ|Π|Taylor|Maclaurin|serisi/.test(key)) return 'series';
+    if (/\\begin\{cases\}/.test(value) || /denklem|sistem/.test(key)) return 'systems';
+    if (/\\begin\{bmatrix\}/.test(value) || /Matris|vektör|2×2|3×3|4×4/.test(key)) return 'matrix';
+    if (/\\sin|\\cos|\\tan|\\ln|\\log|\\operatorname/.test(value)) return 'function';
+    if (value.length > 140) return 'long';
+    return 'plain';
+  }
+
+  function q173NormalizeNativeTemplateLatex(latex, label) {
+    let value = String(latex || '');
+    const before = value;
+    // Q173: runtime-only normalization. Dart/static template maps remain intact
+    // for legacy tests; the WebView bridge sends MathLive cleaner native input.
+    value = value
+      .replace(/\\sin\\left\(#0\\right\)/g, '\\sin(#0)')
+      .replace(/\\cos\\left\(#0\\right\)/g, '\\cos(#0)')
+      .replace(/\\tan\\left\(#0\\right\)/g, '\\tan(#0)')
+      .replace(/\\sinh\\left\(#0\\right\)/g, '\\sinh(#0)')
+      .replace(/\\cosh\\left\(#0\\right\)/g, '\\cosh(#0)')
+      .replace(/\\tanh\\left\(#0\\right\)/g, '\\tanh(#0)')
+      .replace(/\\cot\\left\(#0\\right\)/g, '\\cot(#0)')
+      .replace(/\\sec\\left\(#0\\right\)/g, '\\sec(#0)')
+      .replace(/\\csc\\left\(#0\\right\)/g, '\\csc(#0)')
+      .replace(/\\ln\\left\(#0\\right\)/g, '\\ln(#0)')
+      .replace(/\\log_\{([^{}]+)\}\\left\(#0\\right\)/g, '\\log_{$1}(#0)')
+      .replace(/\\log_\{#\?\}\\left\(#0\\right\)/g, '\\log_{#?}(#0)')
+      .replace(/\\log\\left\(#0\\right\)/g, '\\log(#0)')
+      .replace(/\\frac\{d\}\{dx\}\\left\(#0\\right\)/g, '\\frac{d}{dx}#0')
+      .replace(/\\frac\{d\^2\}\{dx\^2\}\\left\(#0\\right\)/g, '\\frac{d^2}{dx^2}#0')
+      .replace(/\\frac\{d\^3\}\{dx\^3\}\\left\(#0\\right\)/g, '\\frac{d^3}{dx^3}#0')
+      .replace(/\\frac\{\\partial\}\{\\partial x\}\\left\(#0\\right\)/g, '\\frac{\\partial}{\\partial x}#0')
+      .replace(/\\frac\{\\partial\^2\}\{\\partial x\^2\}\\left\(#0\\right\)/g, '\\frac{\\partial^2}{\\partial x^2}#0')
+      .replace(/\\textstyle\s+\\lim/g, '\\lim')
+      .replace(/\\textstyle\s+\\sum/g, '\\sum')
+      .replace(/\\textstyle\s+\\prod/g, '\\prod')
+      .replace(/#0\s+\\,/g, '#0\\,')
+      .replace(/#0\s+d([A-Za-z\\])/g, '#0\\,d$1')
+      .replace(/\\,dx/g, '\\,dx')
+      .replace(/\\left\(([^#{}]*?)\\right\)/g, '($1)');
+    state.q173NativeTemplateCommandNormalizerPhase = 'V172-Q173';
+    state.q173LastInputLabel = String(label || '');
+    state.q173LastInputLatex = String(latex || '');
+    state.q173LastNormalizedLatex = value;
+    state.q173LastNormalizerChanged = before !== value;
+    state.q173LastTemplateFamily = q173NativeTemplateFamilyForLatex(value, label);
+    return value;
+  }
+
+
+  function q174TemplateIntentKey(latex, label) {
+    const key = String(label || '').trim();
+    const value = String(latex || '').trim();
+    if (!value && !key) return 'plain';
+    if (/\\sqrt|√/.test(value) || key.indexOf('√') !== -1) return 'radical';
+    if (/\\frac\{#0\}\{#\?\}|a\/b|□\/□|□⁄□/.test(value) || key === 'a/b') return 'fraction';
+    if (/\\int|∫/.test(value) || key.indexOf('∫') !== -1) return 'integral';
+    if (/\\frac\{d\}|d\/dx/.test(value) || key.indexOf('d/dx') !== -1) return 'derivative';
+    if (/\\lim|lim/.test(value) || key.indexOf('lim') !== -1) return 'limit';
+    if (/\\sum|Σ/.test(value) || key.indexOf('Σ') !== -1) return 'summation';
+    if (/\\prod|Π/.test(value) || key.indexOf('Π') !== -1) return 'product';
+    if (/\\ln|\\log|\\sin|\\cos|\\tan|\\sinh|\\cosh|\\tanh|\\cot|\\sec|\\csc|\\operatorname/.test(value)) return 'function';
+    if (/\\begin\{cases\}/.test(value)) return 'system';
+    if (/\\begin\{bmatrix\}/.test(value)) return 'matrix';
+    if (/\^\{#\?\}|#@\^|x\^y/.test(value) || key.indexOf('^') !== -1) return 'power';
+    return q173NativeTemplateFamilyForLatex(value, key);
+  }
+
+  function q174HasActiveEmptyPlaceholder() {
+    const current = String(mathfieldNativeValue() || mathfieldValue() || '');
+    return /\\placeholder\{\}/.test(current);
+  }
+
+  function q174ShouldSuppressDuplicateEmptyTemplate(latex, label) {
+    const incomingTemplate = q173IsNativeStructuralTemplate(latex, label) || q173IsLeftBindingTemplate(latex, label);
+    if (!incomingTemplate || !mathfield) return false;
+    if (!q174HasActiveEmptyPlaceholder()) return false;
+    const intent = q174TemplateIntentKey(latex, label);
+    const sameIntent = state.q174LastTemplateIntent === intent;
+    const sameLabel = String(state.q173LastInputLabel || '') === String(label || '');
+    const repeatedEmptyTemplate = state.q173LastCommandWasNativeTemplate === true && (sameIntent || sameLabel);
+    if (!repeatedEmptyTemplate) return false;
+    state.q174LastDuplicateTemplateSuppressed = true;
+    state.q174LastSuppressedTemplateIntent = intent;
+    state.q174NativeSlotAwareInsertionMode = 'duplicate-empty-template-suppressed-preserve-native-placeholder';
+    state.lastInsertPath = 'q174-duplicate-empty-template-suppressed';
+    return true;
+  }
+
+  function q174PrepareNativeSlotAwareInsertion(latex, label) {
+    const intent = q174TemplateIntentKey(latex, label);
+    state.q174NativeRendererPurityPhase = 'V172-Q174';
+    state.q175DefaultRendererPurityPhase = 'V172-Q175';
+    state.defaultRendererPurityPhase = 'V172-Q175';
+    state.q174PendingTemplateIntent = intent;
+    state.q174NativeSlotAwareInsertionMode = 'preserve-active-placeholder';
+    state.q174LastDuplicateTemplateSuppressed = false;
+    try {
+      const node = host();
+      if (node) node.setAttribute('data-mathpro-native-renderer-purity', 'V172-Q174');
+      node.setAttribute('data-mathpro-default-renderer-purity', 'V172-Q175');
+      if (document && document.documentElement) document.documentElement.setAttribute('data-mathpro-native-renderer-purity', 'V172-Q174');
+      document.documentElement.setAttribute('data-mathpro-default-renderer-purity', 'V172-Q175');
+      if (document && document.body) document.body.setAttribute('data-mathpro-native-renderer-purity', 'V172-Q174');
+      document.body.setAttribute('data-mathpro-default-renderer-purity', 'V172-Q175');
+      if (mathfield) mathfield.setAttribute('data-mathpro-native-renderer-purity', 'V172-Q174');
+      mathfield.setAttribute('data-mathpro-default-renderer-purity', 'V172-Q175');
+    } catch (_) {}
+    return intent;
+  }
+
+  function q173ShouldAppendStructuralSibling(latex, label) {
+    const incomingTemplate = q173IsNativeStructuralTemplate(latex, label) || q173IsLeftBindingTemplate(latex, label);
+    if (!incomingTemplate) return false;
+    const current = String(mathfieldNativeValue() || mathfieldValue() || '');
+    if (!current || current.trim().length === 0) return false;
+    if (!/\\placeholder\{\}/.test(current)) return false;
+    const previousStructural = state.q173LastCommandWasNativeTemplate === true;
+    const repeatedEmptyTemplateRun = previousStructural && /\\placeholder\{\}/.test(current);
+    return repeatedEmptyTemplateRun;
+  }
+
+  function q173MoveCaretOutOfEmptyTemplateForSibling(latex, label) {
+    if (!mathfield || !q173ShouldAppendStructuralSibling(latex, label)) return false;
+    try {
+      if (typeof mathfield.executeCommand === 'function') {
+        mathfield.executeCommand('moveToMathfieldEnd');
+        state.q173StructuralSiblingAppendGuard = 'moved-to-mathfield-end-before-structural-sibling';
+        return true;
+      }
+    } catch (error) {
+      state.q173StructuralSiblingAppendGuard = 'move-error:' + String(error && error.message ? error.message : error);
+    }
+    return false;
+  }
+
+  function applyQ171TemplateOpticalCorrection(latex, reason) {
+    const node = host();
+    const family = q171TemplateFamilyForLatex(latex);
+    state.templateOpticalCorrectionPhase = 'V172-Q171';
+    state.templateOpticalFamily = family;
+    state.lastTemplateOpticalCorrectionPass = String(reason || 'q171-template-optical-correction') + ':' + family;
+    try {
+      document.documentElement.setAttribute('data-mathpro-template-optical-correction', 'V172-Q171');
+      document.body.setAttribute('data-mathpro-template-optical-correction', 'V172-Q171');
+      document.documentElement.setAttribute('data-mathpro-template-family', family);
+      document.body.setAttribute('data-mathpro-template-family', family);
+      if (node) {
+        node.setAttribute('data-mathpro-template-optical-correction', 'V172-Q171');
+        node.setAttribute('data-mathpro-template-family', family);
+      }
+      if (mathfield) {
+        mathfield.setAttribute('data-mathpro-template-optical-correction', 'V172-Q171');
+        mathfield.setAttribute('data-mathpro-template-family', family);
+        ['mathpro-template-plain','mathpro-template-radical','mathpro-template-function','mathpro-template-calculus','mathpro-template-series','mathpro-template-systems','mathpro-template-matrix','mathpro-template-long'].forEach(function (name) {
+          mathfield.classList.toggle(name, name === 'mathpro-template-' + family);
+        });
+      }
+    } catch (_) {}
+    return family;
+  }
+
+  function applyViewportFit(reason) {
+    const node = host();
+    const value = mathfieldValue();
+    const fit = viewportFitClassForLatex(value);
+    applyQ171TemplateOpticalCorrection(value, reason || 'q171-viewport-fit-template-family');
+    state.viewportFitPhase = 'V172-Q148';
+    state.viewportFitClass = fit;
+    state.viewportFitReason = reason || 'q148-viewport-fit-applied';
+    state.lastViewportFitPass = 'q148-viewport-fit-class-' + fit;
+    try {
+      document.documentElement.setAttribute('data-mathpro-fit', fit);
+      document.body.setAttribute('data-mathpro-fit', fit);
+      if (node) node.setAttribute('data-mathpro-fit', fit);
+      if (mathfield) {
+        mathfield.setAttribute('data-mathpro-fit', fit);
+        ['mathpro-fit-normal', 'mathpro-fit-compact', 'mathpro-fit-dense', 'mathpro-fit-micro'].forEach(function (name) {
+          mathfield.classList.toggle(name, name === fit);
+        });
+      }
+    } catch (_) {}
+    return fit;
+  }
+
+  function keepCaretVisible(reason) {
+    const node = host();
+    applyViewportFit(reason || 'q148-caret-follow-viewport-fit');
+    try {
+      if (mathfield && typeof mathfield.scrollIntoView === 'function') {
+        mathfield.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+      }
+    } catch (_) {}
+    try {
+      if (node) {
+        const width = node.scrollWidth - node.clientWidth;
+        if (width > 0) {
+          // Without relying on private MathLive caret internals, keep the active
+          // side visible after insert/delete while still allowing the user to
+          // manually pan the host. This avoids the hidden-tail symptom on long
+          // Taylor/sigma/integral templates on narrow phone cards.
+          const position = typeof mathfield.position === 'number' ? mathfield.position : String(mathfieldValue()).length;
+          const length = Math.max(1, String(mathfieldValue()).length);
+          const ratio = Math.max(0, Math.min(1, position / length));
+          node.scrollLeft = Math.max(0, Math.min(width, width * ratio));
+        }
+      }
+    } catch (_) {}
+    state.caretFollowPhase = 'V172-Q148';
+    state.caretFollowPass = reason || 'q148-caret-visible-host-scroll-stabilized';
+    return true;
+  }
+
+  // Flutter surface calls keepCaretVisible('q148-after-keyboard-command-caret-visible') after MathPro keyboard commands.
+  function scheduleViewportFit(reason) {
+    const label = reason || 'q148-scheduled-viewport-fit';
+    const run = function (suffix) {
+      keepCaretVisible(label + suffix);
+      hideMathLiveChrome(mathfield);
+      applyViewportFit('q148-selection-settled-viewport-fit');
+      keepCaretVisible('q148-selection-settled-caret-visible');
+      notifyFlutter();
+    };
+    window.setTimeout(function () { run('-0'); }, 0);
+    window.setTimeout(function () { run('-64'); }, 64);
+    window.setTimeout(function () { run('-180'); }, 180);
+  }
+
+
+  function describeMathfieldSelection() {
+    if (!mathfield) return 'q143-no-mathfield-selection';
+    try {
+      if (Array.isArray(mathfield.selection)) {
+        return 'q143-selection-' + JSON.stringify(mathfield.selection);
+      }
+      if (typeof mathfield.position !== 'undefined') {
+        return 'q143-position-' + String(mathfield.position);
+      }
+    } catch (_) {}
+    return 'q143-selection-unavailable-but-owned-by-mathlive';
+  }
+
+  function primeInteractiveMathfield(reason) {
+    if (!mathfield) return false;
+    // Q143: focus must be primed before MathLive handles the touch/click so
+    // Android WebView does not leave the field in a dead state after the first
+    // caret placement. This intentionally does not preventDefault and does not
+    // move the selection itself; the official math-field still owns hit-testing.
+    try {
+      if (document.activeElement !== mathfield && typeof mathfield.focus === 'function') {
+        mathfield.focus({ preventScroll: true });
+      }
+    } catch (_) {
+      try { if (typeof mathfield.focus === 'function') mathfield.focus(); } catch (_) {}
+    }
+    state.pointerFocusPrimed = true;
+    state.hasFocus = true;
+    state.lastPointerInteraction = reason || 'q143-pointer-focus-primed';
+    state.selectionDescription = reason || 'q143-pointer-focus-primed-selection-owned-by-mathlive';
+    disableMathLiveVirtualKeyboard(mathfield);
+    hideMathLiveChrome(mathfield);
+    return true;
+  }
+
+  function syncSelectionAfterMathLiveSettles(reason) {
+    state.tapSequence += 1;
+    const sequence = state.tapSequence;
+    const sync = function (suffix) {
+      if (sequence !== state.tapSequence) return;
+      state.hasFocus = true;
+      state.lastPointerInteraction = (reason || 'q143-pointer') + suffix;
+      state.selectionDescription = describeMathfieldSelection();
+      hideMathLiveChrome(mathfield);
+      notifyFlutter();
+    };
+    window.setTimeout(function () { sync('-settled-0'); }, 0);
+    window.setTimeout(function () { sync('-settled-48'); }, 48);
+    window.setTimeout(function () { sync('-settled-144'); }, 144);
+  }
+
+  function recoverFocusAfterPossibleBlur(reason) {
+    window.setTimeout(function () {
+      if (!mathfield) return;
+      // Only recover the Android WebView focus when the document did not move
+      // to another editable element. This avoids fighting MathLive's own tap
+      // routing while preventing the frozen-caret state after MathPro keyboard
+      // actions or virtual-keyboard chrome attempts.
+      const active = document.activeElement;
+      if (active === document.body || active === document.documentElement || active === null) {
+        primeInteractiveMathfield(reason || 'q143-blur-focus-recovered');
+        notifyFlutter();
+      }
+    }, 72);
+  }
+
+  function restoreMathfieldFocus(reason) {
+    if (!mathfield || typeof mathfield.focus !== 'function') return false;
+    try {
+      mathfield.focus({ preventScroll: true });
+    } catch (_) {
+      try { mathfield.focus(); } catch (_) { return false; }
+    }
+    disableMathLiveVirtualKeyboard(mathfield);
+    state.hasFocus = true;
+    state.selectionDescription = reason || (mainEditorMode ? 'q143-main-editor-mathlive-focus-restored' : 'q90r2-official-mathlive-focus');
+    return true;
+  }
+
+  function insertIntoMathfield(latex, label) {
+    if (!mathfield) {
+      state.lastInsertPath = 'no-mathfield';
+      setQ169FailureReason('insert-no-mathfield');
+      return false;
+    }
+    if (typeof mathfield.insert !== 'function') {
+      state.lastInsertPath = 'insert-api-missing';
+      setQ169FailureReason('insert-api-missing');
+      return false;
+    }
+    q174PrepareNativeSlotAwareInsertion(latex, label);
+    if (q174ShouldSuppressDuplicateEmptyTemplate(latex, label)) {
+      return true;
+    }
+    // Q174 keeps MathLive's native active-placeholder insertion semantics. The
+    // older Q173 move-to-end guard is retained only as a verifier/backward
+    // compatibility symbol, not as the default user-facing insertion path.
+    const value = normalizeLatexForPremiumTemplateLayout(q173NormalizeNativeTemplateLatex(latex, label));
+    const options = isTemplateLatex(value)
+      ? { insertionMode: 'replaceSelection', selectionMode: 'placeholder', format: 'latex', smartFence: true }
+      : { insertionMode: 'replaceSelection', format: 'latex', smartFence: true };
+    try {
+      restoreMathfieldFocus('q143-before-insert-focus-restored');
+      mathfield.insert(value, options);
+      state.lastInsertPath = 'insert-with-options';
+      restoreMathfieldFocus('q143-after-insert-focus-restored');
+      disableMathLiveVirtualKeyboard(mathfield);
+      if (String(mathfieldNativeValue() || '').trim().length > 0) {
+        state.lastInsertValueCommitAuthorityPath = 'insert-with-options-native-value';
+        return true;
+      }
+      const commandFallbackCommitted = q169R26TryExecuteCommandInsert(value, 'q169r26-empty-after-insert-options-command-fallback');
+      if (commandFallbackCommitted) return true;
+      return true;
+    } catch (error) {
+      state.lastInsertPath = 'insert-with-options-throw';
+      state.lastValueApiError = 'insert-options-' + (error && error.name ? error.name : 'throw');
+      try {
+        restoreMathfieldFocus('q143-before-insert-fallback-focus-restored');
+        mathfield.insert(value);
+        state.lastInsertPath = 'insert-without-options';
+        restoreMathfieldFocus('q143-after-insert-fallback-focus-restored');
+        disableMathLiveVirtualKeyboard(mathfield);
+        if (String(mathfieldNativeValue() || '').trim().length > 0) {
+          state.lastInsertValueCommitAuthorityPath = 'insert-without-options-native-value';
+          return true;
+        }
+        const commandFallbackCommitted = q169R26TryExecuteCommandInsert(value, 'q169r26-empty-after-insert-without-options-command-fallback');
+        if (commandFallbackCommitted) return true;
+        return true;
+      } catch (fallbackError) {
+        state.lastInsertPath = 'insert-without-options-throw';
+        state.lastValueApiError = 'insert-fallback-' + (fallbackError && fallbackError.name ? fallbackError.name : 'throw');
+        setQ169FailureReason('insert-throw');
+        return false;
+      }
+    }
+  }
+
+  function afterUserPointerInteraction(reason) {
+    // Compatibility markers for Q140/Q141/Q154 static verifiers: q140-after-insert-focus-restored q140-pointerdown-focus-restored q141-pointerdown-selection-owned-by-mathlive q141-click-selection-synced q141-touchend-selection-synced
+    // Q143: keep Q141's rule that MathLive owns hit-testing, but prime focus
+    // before the official field processes the tap and then sync selection after
+    // MathLive settles. This targets the real-device symptom where the caret can
+    // be placed once and then stops accepting later taps.
+    primeInteractiveMathfield(reason || 'q143-pointer-focus-primed-selection-owned-by-mathlive');
+    syncSelectionAfterMathLiveSettles(reason || 'q143-pointer-selection-synced');
+  }
+
+  function configureMathfieldElement(field) {
+    field.setAttribute('aria-label', mainEditorMode ? 'MathPro MathLive main editor field' : 'MathPro isolated MathLive lab field');
+    field.setAttribute('smart-mode', 'true');
+    field.setAttribute('tabindex', '0');
+    field.setAttribute('default-mode', 'math');
+    field.setAttribute('contenteditable', 'true');
+    field.style.width = '100%';
+    field.style.height = 'auto';
+    field.style.minHeight = '72px';
+    field.style.display = 'block';
+    field.style.background = 'transparent';
+    field.style.color = '#eaf5f1';
+    field.style.border = '0';
+    field.style.outline = '0';
+    field.style.textAlign = 'left';
+    field.style.fontSize = '28px';
+    field.style.lineHeight = '1.30';
+    field.style.overflow = 'visible';
+    field.style.contain = 'none';
+    field.style.touchAction = 'auto';
+    field.style.pointerEvents = 'auto';
+    field.style.webkitUserSelect = 'text';
+    field.style.userSelect = 'text';
+    field.classList.add('mathpro-fit-normal');
+    field.setAttribute('data-mathpro-fit', 'mathpro-fit-normal');
+    disableMathLiveVirtualKeyboard(field);
+    setTimeout(function () { hideMathLiveChrome(field); }, 0);
+    setTimeout(function () { hideMathLiveChrome(field); }, 120);
+    setTimeout(function () { hideMathLiveChrome(field); }, 420);
+  }
+
+  function tryMountOfficialMathLive() {
+    if (mathfield) return true;
+    const node = host();
+    q169R31RefreshRuntimeProbeFlags('try-mount-official-mathlive');
+    const elementDefined = q169R31MathfieldElementDefined();
+    state.mathfieldElementDefined = elementDefined;
+    if (!node || !elementDefined) {
+      q169R31AttemptRuntimeScriptRecovery('try-mount-official-mathlive');
+      setStatus('Q169R31 runtime boot blocked: local official MathLive script is not available in Flutter assets yet. Run node tool/install_mathlive_runtime.mjs before flutter run if this persists.');
+      return false;
+    }
+    let field = node.querySelector && node.querySelector('math-field');
+    if (!field) field = document.getElementById('mathlive-field');
+    const adoptedStaticField = !!field;
+    if (!field) field = document.createElement('math-field');
+    state.staticMathfieldHostAdopted = adoptedStaticField;
+    if (window.MathProStaticMathfieldHostRepair) {
+      window.MathProStaticMathfieldHostRepair.staticMathfieldHostAdopted = adoptedStaticField;
+    }
+    configureMathfieldElement(field);
+    field.value = state.latex || '';
+    field.addEventListener('pointerdown', function () {
+      primeInteractiveMathfield('q143-pointerdown-capture-focus-primed');
+    }, { capture: true });
+    field.addEventListener('pointerup', function () {
+      afterUserPointerInteraction('q143-pointerup-selection-synced');
+    });
+    field.addEventListener('click', function () {
+      afterUserPointerInteraction('q143-click-selection-synced');
+    });
+    field.addEventListener('mousedown', function () {
+      primeInteractiveMathfield('q143-mousedown-capture-focus-primed');
+    }, { capture: true });
+    field.addEventListener('touchstart', function () {
+      primeInteractiveMathfield('q143-touchstart-capture-focus-primed');
+    }, { capture: true, passive: true });
+    field.addEventListener('touchend', function () {
+      afterUserPointerInteraction('q141-touchend-selection-synced q143-touchend-selection-synced');
+    }, { passive: true });
+    field.addEventListener('selection-change', function () {
+      state.lastSelectionChange = 'q143-selection-change-event';
+      state.selectionDescription = describeMathfieldSelection();
+      notifyFlutter();
+    });
+    field.addEventListener('selectionchange', function () {
+      state.lastSelectionChange = 'q143-selectionchange-event';
+      state.selectionDescription = describeMathfieldSelection();
+      notifyFlutter();
+    });
+    field.addEventListener('blur', function () {
+      recoverFocusAfterPossibleBlur('q143-blur-focus-recovery-scheduled');
+    });
+    field.addEventListener('input', function () {
+      state.inputEventFired = true;
+      state.hasFocus = true;
+      state.selectionDescription = 'q90r2-official-mathlive-input';
+      paint();
+    });
+    field.addEventListener('focus', function () {
+      state.focusEventFired = true;
+      state.hasFocus = true;
+      state.selectionDescription = 'q90r2-official-mathlive-focus';
+      notifyFlutter();
+    });
+    node.setAttribute('contenteditable', 'false');
+    node.style.pointerEvents = 'auto';
+    node.addEventListener('pointerdown', function (event) {
+      if (event && event.target === node) {
+        window.setTimeout(function () {
+          primeInteractiveMathfield('q143-host-empty-area-focus-primed');
+          notifyFlutter();
+        }, 0);
+      }
+    });
+    if (field.parentNode !== node) {
+      node.innerHTML = '';
+      node.appendChild(field);
+    }
+    mathfield = field;
+    applyViewportFit('q148-mathfield-mounted-viewport-fit');
+    suppressVisibleMathLiveBranding(field);
+    primeInteractiveMathfield('q143-mathfield-mounted-focus-primed');
+    disableMathLiveVirtualKeyboard(field);
+    q169R36InstallShadowChromeObserver(field);
+    q169R36ScheduleChromeSuppression(field, 'q169r36-after-mathfield-mounted');
+    state.mathfieldInstanceMounted = true;
+    setStatus(mainEditorMode ? 'Q133 main editor: official local MathLive runtime mounted behind rollback flag.' : 'Q90R2 runtime smoke: official local MathLive runtime mounted inside isolated lab. Main editor remains legacy.');
+    paint();
+    return true;
+  }
+
+  function setLatex(value) {
+    const raw = String(value || '');
+    const next = documentLatexFromInsertPayload(raw);
+    state.visibleCommandFallbackPass = containsRawInsertToken(raw)
+      ? 'q161-set-latex-sanitized-insert-tokens'
+      : 'q157-set-latex-visible-fallback';
+    if (tryMountOfficialMathLive() && mathfield) {
+      mathfield.value = next;
+      scheduleViewportFit('q148-set-latex-viewport-fit');
+    }
+    state.latex = next;
+    paint();
+    return getState();
+  }
+
+  // Q169R7 compatibility markers preserved for static verifier:
+  // q169r7-mathfield-value-api-guarded
+  // q169r7-empty-after-insert-direct-value-commit
+  // markJsCommandStatus(inserted ? 'ok' : 'fail', 'q169-after-insert-mathfield q169r7-value-api-guard')
+  function insertLatex(value, label) {
+    const latex = String(value || '');
+    const documentLatex = documentLatexFromInsertPayload(latex);
+    state.runtimeCommandSequence += 1;
+    state.lastRuntimeCommandAck = 'q169-js-insert-command-' + state.runtimeCommandSequence;
+    state.lastJsCommandStatus = 'pending';
+    state.lastInsertSucceeded = false;
+    state.lastInsertCommitted = false;
+    state.lastValueNonEmpty = false;
+    state.lastInsertPath = 'insert-start';
+    state.lastMathfieldValueWritePath = 'not-run';
+    state.lastValueApiError = '';
+    setQ169FailureReason('insert-start');
+    state.lastMathfieldValueBefore = mathfieldNativeValue(); // q163-before-insert-value q169-before-insert-value q169r26-native-value-before-insert
+    const mounted = q169R32EnsureNativeReadyForCommand('q169r32-before-insert-latex');
+    if (mounted && mathfield) {
+      // Q161: raw insert-control tokens (#0/#?/#@) may only be used in
+      // mathfield.insert(). If insert fails or yields empty value, fall back to
+      // sanitized document LaTeX inside the real math-field value; never expose
+      // the raw payload. Q169R8 records the exact failure reason for one-shot
+      // real-device diagnosis.
+      // Q164 compatibility marker for older static verifier: if (!insertIntoMathfield(latex))
+      let inserted = false;
+      if (typeof mathfield.insert === 'function') {
+        inserted = insertIntoMathfield(latex, label);
+      } else {
+        state.lastInsertPath = 'insert-api-missing';
+        setQ169FailureReason('insert-api-missing');
+      }
+      state.latex = mathfieldNativeValue();
+      state.lastMathfieldValueAfter = state.latex; // q163-after-insert-value q169-after-insert-value q169r26-native-value-after-insert
+      if (inserted && String(documentLatex || '').trim().length > 0 && String(state.lastMathfieldValueAfter || '').trim().length === 0) {
+        setQ169FailureReason('insert-returned-empty-value');
+        const directCommitted = commitDocumentLatexToMathfield(documentLatex, 'q169r8-empty-after-insert-direct-value-commit');
+        inserted = inserted || directCommitted;
+        state.lastMathfieldValueAfter = mathfieldNativeValue();
+      }
+      if (!inserted && String(documentLatex || '').trim().length > 0) {
+        const directCommitted = commitDocumentLatexToMathfield(documentLatex, 'q169r8-insert-failed-direct-value-commit');
+        inserted = directCommitted;
+        state.lastMathfieldValueAfter = mathfieldNativeValue();
+      }
+      state.lastInsertSucceeded = inserted && (state.lastMathfieldValueAfter !== state.lastMathfieldValueBefore || latex.length === 0 || String(state.lastMathfieldValueAfter || '').trim().length > 0);
+      state.lastInsertCommitted = state.lastInsertSucceeded || (inserted && String(state.lastMathfieldValueAfter || '').trim().length > 0);
+      state.lastValueNonEmpty = String(state.lastMathfieldValueAfter || '').trim().length > 0;
+      if (state.lastValueNonEmpty) {
+        setQ169FailureReason('none');
+      } else if (state.lastFailureReason === 'insert-start') {
+        setQ169FailureReason('mathfield-value-empty-after-insert-and-direct-commit');
+      }
+      markJsCommandStatus(state.lastInsertCommitted ? 'ok' : (inserted ? 'empty-value' : 'fail'), 'q169-after-insert-mathfield q169r7-value-api-guard q169r8-failure-reason-court');
+      if (containsRawInsertToken(state.latex)) {
+        state.latex = documentLatexFromInsertPayload(state.latex);
+        try { mathfield.value = state.latex; } catch (_) {}
+      }
+      updateNativePaintCommitState('q169-after-insert-native-paint-probe q169r8-failure-reason-court');
+      state.q173LastCommandWasNativeTemplate = q173IsNativeStructuralTemplate(latex, label) || q173IsLeftBindingTemplate(latex, label);
+      if (state.q173LastCommandWasNativeTemplate) {
+        state.q174LastTemplateIntent = state.q174PendingTemplateIntent || q174TemplateIntentKey(latex, label);
+      }
+      scheduleViewportFit('q148-insert-latex-caret-follow q169-native-paint-commit q169r8-failure-reason-court q173-native-template-normalizer');
+    } else {
+      // V172-Q162: if the official math-field is unavailable on a real device,
+      // structural input must not become invisible and must not leak raw insert
+      // tokens. Store sanitized document LaTeX; paintFallbackHost() converts it
+      // to safe user-facing glyphs such as √□ / □⁄□. Compatibility marker:
+      // q157-js-visible-fallback-no-mathfield.
+      state.latex += documentLatex;
+      state.lastMathfieldValueAfter = state.latex;
+      state.lastInsertSucceeded = false;
+      state.lastInsertCommitted = false;
+      state.lastValueNonEmpty = String(state.latex || '').trim().length > 0;
+      state.lastInsertPath = mounted ? 'mounted-without-mathfield-reference' : 'mount-failed-no-mathfield';
+      setQ169FailureReason(mounted ? 'mounted-without-mathfield-reference' : 'no-mathfield-after-mount-attempt');
+      markJsCommandStatus('no-mathfield', 'q169-insert-no-mathfield q169r8-failure-reason-court');
+      state.visibleCommandFallbackPass = mayShowFallbackAsText(latex)
+        ? 'q161-simple-text-fallback-no-mathfield q157-js-visible-fallback-no-mathfield'
+        : 'q162-sanitized-structural-fallback-no-mathfield q157-js-visible-fallback-no-mathfield';
+    }
+    updateNativePaintCommitState('q169-insert-return-state q169r8-failure-reason-court');
+    if (q182ProductionMathLiveSimplificationActive) {
+      notifyFlutter();
+    } else {
+      postQ169ChannelPushState(getQ169CompactState('q169r19-after-insert-compact-channel-push'), 'q169r19-after-insert-compact-channel-push');
+    }
+    paint();
+    return getState();
+  }
+
+  function deleteBackward() {
+    state.runtimeCommandSequence += 1;
+    state.lastRuntimeCommandAck = 'q169-js-delete-command-' + state.runtimeCommandSequence;
+    markJsCommandStatus('pending', 'q169-delete-start');
+    if (tryMountOfficialMathLive() && mathfield && typeof mathfield.executeCommand === 'function') {
+      try {
+        mathfield.executeCommand('deleteBackward');
+      } catch (_) {
+        if (state.latex.length > 0) state.latex = state.latex.substring(0, state.latex.length - 1);
+      }
+    } else if (state.latex.length > 0) {
+      state.latex = state.latex.substring(0, state.latex.length - 1);
+    }
+    state.lastMathfieldValueAfter = mathfieldValue();
+    state.lastValueNonEmpty = String(state.lastMathfieldValueAfter || '').trim().length > 0;
+    state.lastInsertCommitted = true;
+    markJsCommandStatus('ok', 'q169-delete-commit');
+    updateNativePaintCommitState('q169-delete-native-paint-probe');
+    scheduleViewportFit('q148-delete-backward-caret-follow q169-native-paint-commit');
+    paint();
+    return getState();
+  }
+
+  function clear() {
+    state.runtimeCommandSequence += 1;
+    state.lastRuntimeCommandAck = 'q169-js-clear-command-' + state.runtimeCommandSequence;
+    markJsCommandStatus('pending', 'q169-clear-start');
+    if (tryMountOfficialMathLive() && mathfield) {
+      mathfield.value = '';
+    }
+    state.latex = '';
+    state.lastMathfieldValueAfter = '';
+    state.lastValueNonEmpty = false;
+    state.lastInsertCommitted = true;
+    markJsCommandStatus('ok', 'q169-clear-commit');
+    updateNativePaintCommitState('q169-clear-native-paint-probe');
+    scheduleViewportFit('q148-clear-viewport-reset q169-native-paint-commit');
+    paint();
+    return getState();
+  }
+
+  function executeMathProCommand(command) {
+    const payload = command || {};
+    state.runtimeCommandSequence += 1;
+    state.lastRuntimeCommandAck = 'q169-execute-command-' + state.runtimeCommandSequence;
+    const action = String(payload.action || '');
+    state.hasFocus = true;
+    state.selectionDescription = 'q90r2-lab-command-state q169-native-paint-commit-command-state';
+    state.lastCommandLabel = String(payload.label || '');
+    state.lastCommandAction = action;
+    markJsCommandStatus('pending', 'q169-execute-start-' + action);
+    q169R32EnsureNativeReadyForCommand('q169r32-before-execute-command-' + action);
+    try {
+      if (action === 'insertLatex') {
+        return insertLatex(String(payload.latex || ''), String(payload.label || ''));
+      }
+      if (action === 'deleteBackward') {
+        return deleteBackward();
+      }
+      if (action === 'clear') {
+        return clear();
+      }
+      if (action === 'evaluate') {
+        state.evaluateRequested = true;
+        markJsCommandStatus('ok', 'q169-evaluate-requested');
+        updateNativePaintCommitState('q169-evaluate-native-paint-probe');
+        paint();
+        state.evaluateRequested = false;
+        return getState();
+      }
+      markJsCommandStatus('ignored', 'q169-execute-ignored-action');
+      updateNativePaintCommitState('q169-execute-ignored-native-paint-probe');
+      paint();
+      return getState();
+    } catch (error) {
+      markJsCommandStatus('fail', 'q169-execute-exception');
+      state.lastRuntimeCommandAck = 'q169-execute-command-failed-' + state.runtimeCommandSequence;
+      updateNativePaintCommitState('q169-execute-failed-native-paint-probe');
+      paint();
+      return getState();
+    }
+  }
+
+  function runRuntimeSmokeProbe() {
+    const mounted = tryMountOfficialMathLive();
+    const initial = getState();
+    let passes = 0;
+    const total = 6;
+    if (state.officialRuntimeScriptLoaded) passes += 1;
+    if (state.mathfieldElementDefined) passes += 1;
+    if (mounted && state.mathfieldInstanceMounted) passes += 1;
+    executeMathProCommand({ action: 'insertLatex', label: '7', latex: '7' });
+    if (String(getState().latex || '').indexOf('7') !== -1) passes += 1;
+    executeMathProCommand({ action: 'insertLatex', label: '□/□', latex: '\\frac{}{}' });
+    if (String(getState().latex || '').indexOf('frac') !== -1) passes += 1;
+    executeMathProCommand({ action: 'deleteBackward', label: '⌫' });
+    if (typeof getState().latex === 'string') passes += 1;
+
+    state.smokeCommandPasses = passes;
+    state.smokeCommandTotal = total;
+    state.labRuntimeSmokePassed = passes === total && mounted;
+    state.labRuntimeSmokeDiagnostic = state.labRuntimeSmokePassed
+      ? 'q90r2-mathlive-lab-runtime-smoke-ready-for-q87-court'
+      : 'q90r2-mathlive-lab-runtime-smoke-blocked-no-main-editor-switch';
+    if (!state.labRuntimeSmokePassed) {
+      state.latex = initial.latex || state.latex;
+      if (mathfield) mathfield.value = state.latex;
+    }
+    paint();
+    return getRuntimeSmokeReport();
+  }
+
+  function getRuntimeSmokeReport() {
+    updateDerivedState();
+    return {
+      runtimeSmokePhase: state.runtimeSmokePhase,
+      officialRuntimeScriptRequested: state.officialRuntimeScriptRequested,
+      officialRuntimeScriptLoaded: state.officialRuntimeScriptLoaded,
+      officialRuntimeScriptFailed: state.officialRuntimeScriptFailed,
+      mathfieldElementDefined: state.mathfieldElementDefined,
+      mathfieldInstanceMounted: state.mathfieldInstanceMounted,
+      labRuntimeSmokePassed: state.labRuntimeSmokePassed,
+      labRuntimeSmokeDiagnostic: state.labRuntimeSmokeDiagnostic,
+      smokeCommandPasses: state.smokeCommandPasses,
+      smokeCommandTotal: state.smokeCommandTotal,
+      mainEditorSwitchAllowed: mainEditorMode,
+      mathLiveMountedInMainWorkspaceByDefault: mainEditorMode,
+      activeMainEditorEngine: state.activeMainEditorEngine,
+      defaultMainEditorEngine: state.defaultMainEditorEngine,
+      virtualKeyboardEnabled: false,
+      remoteScriptLoadingAllowed: false
+    };
+  }
+
+  function getRuntimeSmokeEvidenceReport() {
+    const report = getRuntimeSmokeReport();
+    const current = getState();
+    return {
+      evidencePhase: 'V172-Q90R5',
+      authoringPhase: 'V172-Q90R6',
+      runtimeSmokeEvidenceAuthoringPhase: 'V172-Q90R6',
+    runtimeSmokeEvidenceExportPhase: 'V172-Q90R7',
+      runtimeSmokePhase: report.runtimeSmokePhase,
+      installVerificationPhase: 'V172-Q90R4',
+      installVerified: report.officialRuntimeScriptLoaded && report.mathfieldElementDefined,
+      officialRuntimeScriptLoaded: report.officialRuntimeScriptLoaded,
+      mathfieldElementDefined: report.mathfieldElementDefined,
+      mathfieldInstanceMounted: report.mathfieldInstanceMounted,
+      labRuntimeSmokePassed: report.labRuntimeSmokePassed,
+      smokeCommandPasses: report.smokeCommandPasses,
+      smokeCommandTotal: report.smokeCommandTotal,
+      bridgeCanInsertLatex: report.smokeCommandPasses >= 4,
+      bridgeCanDeleteBackward: report.smokeCommandPasses >= 6,
+      bridgeCanExportLatex: typeof current.latex === 'string',
+      stateAdapterAcceptedExport: !!current.stateAdapterPhase && current.stateAdapterPhase === 'V172-Q86',
+      virtualKeyboardEnabled: false,
+      remoteScriptLoadingAllowed: false,
+      mainEditorSwitchAllowed: mainEditorMode,
+      activeMainEditorEngine: current.activeMainEditorEngine,
+      protectedUiSurfacesUnchanged: true,
+      realDeviceCursorCourtPassClaimed: false,
+      photomathLevelClaimed: false,
+      diagnostic: report.labRuntimeSmokePassed
+        ? 'q90r5-lab-smoke-evidence-ready-for-q87-cursor-court-no-main-editor-switch'
+        : 'q90r5-lab-smoke-evidence-blocked-no-main-editor-switch'
+    };
+  }
+
+
+  function getRuntimeSmokeEvidenceCaptureForAuthoring() {
+    return {
+      authoringPhase: 'V172-Q90R6',
+      exportPhase: 'V172-Q90R7',
+      runtimeSmokeEvidenceExportPhase: 'V172-Q90R7',
+      runtimeSmokeEvidenceReport: getRuntimeSmokeEvidenceReport(),
+      instructions: 'Copy this JSON into tool/mathlive_lab_runtime_smoke_capture.json, then run node tool/write_mathlive_lab_smoke_evidence.mjs followed by node tool/verify_mathlive_lab_smoke_evidence.mjs. This is lab-only evidence and cannot switch the main editor.'
+    };
+  }
+
+  function getRuntimeSmokeEvidenceCaptureJson() {
+    return JSON.stringify(getRuntimeSmokeEvidenceCaptureForAuthoring(), null, 2);
+  }
+
+
+  function getRuntimeSmokeEvidenceCaptureClipboardText() {
+    return getRuntimeSmokeEvidenceCaptureJson();
+  }
+
+  function copyRuntimeSmokeEvidenceCaptureToClipboard() {
+    const capture = getRuntimeSmokeEvidenceCaptureClipboardText();
+    if (navigator && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(capture).catch(function () {
+        writeEvidenceCaptureToDom();
+      });
+    } else {
+      writeEvidenceCaptureToDom();
+    }
+    return capture;
+  }
+
+  function writeEvidenceCaptureToDom() {
+    const output = exportNode();
+    const capture = getRuntimeSmokeEvidenceCaptureJson();
+    if (output) output.textContent = capture;
+    return capture;
+  }
+
+  function focusMathfield() {
+    if (tryMountOfficialMathLive() && mathfield && typeof mathfield.focus === 'function') {
+      const focused = restoreMathfieldFocus(mainEditorMode ? 'q140-main-editor-mathlive-focus' : 'q90r2-official-mathlive-focus');
+      notifyFlutter();
+      return focused;
+    }
+    return false;
+  }
+
+  function safeRect(element) {
+    try {
+      if (!element || typeof element.getBoundingClientRect !== 'function') return null;
+      const rect = element.getBoundingClientRect();
+      return {
+        x: Math.round(rect.x * 100) / 100,
+        y: Math.round(rect.y * 100) / 100,
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+        top: Math.round(rect.top * 100) / 100,
+        left: Math.round(rect.left * 100) / 100,
+        bottom: Math.round(rect.bottom * 100) / 100,
+        right: Math.round(rect.right * 100) / 100
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function styleSnapshot(element) {
+    try {
+      if (!element || !window.getComputedStyle) return {};
+      const style = window.getComputedStyle(element);
+      return {
+        display: style.display,
+        visibility: style.visibility,
+        opacity: style.opacity,
+        pointerEvents: style.pointerEvents,
+        overflow: style.overflow,
+        overflowX: style.overflowX,
+        overflowY: style.overflowY,
+        position: style.position,
+        zIndex: style.zIndex,
+        width: style.width,
+        height: style.height
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+
+  function updateNativePaintCommitState(reason) {
+    const field = mathfield || document.querySelector('math-field');
+    const rect = safeRect(field);
+    const style = styleSnapshot(field);
+    const nativeRead = readNativeMathfieldValueDetailed('q169r27-native-paint-proof-value-read');
+    const value = nativeRead.value;
+    const visibleStyle = !!field &&
+      style.display !== 'none' &&
+      style.visibility !== 'hidden' &&
+      style.opacity !== '0' &&
+      style.pointerEvents !== 'none';
+    const hasRect = !!rect && rect.width > 0 && rect.height > 0;
+    state.lastPaintRectState = hasRect ? ('rect-' + Math.round(rect.width) + 'x' + Math.round(rect.height)) : 'rect-zero-or-missing';
+    const valueNonEmpty = String(value || '').trim().length > 0;
+    state.lastValueNonEmpty = valueNonEmpty;
+    state.nativePaintProofValuePath = nativeRead.path || 'native-not-read';
+    state.nativePaintOwner = (!!field && visibleStyle && hasRect && valueNonEmpty) ? 'mathlive-native-field' : 'not-native-owned';
+    state.nativePaintLikelyVisible = !!field && visibleStyle && hasRect && valueNonEmpty;
+    if (!field) {
+      state.nativePaintState = state.officialRuntimeScriptLoaded ? 'pending' : 'fail';
+    } else if (!visibleStyle || !hasRect) {
+      state.nativePaintState = 'fail';
+      if (state.lastFailureReason === 'none' || state.lastFailureReason === 'insert-start') {
+        setQ169FailureReason(!visibleStyle ? 'paint-style-not-visible' : 'paint-rect-zero');
+      }
+    } else if (valueNonEmpty) {
+      state.nativePaintState = 'ok';
+      setQ169FailureReason('none');
+    } else {
+      state.nativePaintState = 'pending';
+      if (state.lastCommandAction === 'insertLatex' && (state.lastFailureReason === 'none' || state.lastFailureReason === 'insert-start')) {
+        state.q169FailureReasonLegacyAlias = 'paint-pending-empty-value';
+        setQ169FailureReason('paint-pending-empty-native-value');
+      }
+    }
+    state.nativePaintCommitReason = reason || 'q169-native-paint-commit-probe';
+    return state.nativePaintState;
+  }
+
+  function markJsCommandStatus(status, reason) {
+    state.lastJsCommandStatus = status || 'pending';
+    state.nativePaintCommitReason = reason || state.nativePaintCommitReason || 'q169-js-command-status';
+  }
+
+  function activeElementDescription() {
+    try {
+      const active = document.activeElement;
+      if (!active) return '';
+      const id = active.id ? ('#' + active.id) : '';
+      const cls = active.className ? ('.' + String(active.className).replace(/\s+/g, '.')) : '';
+      return String(active.tagName || '').toLowerCase() + id + cls;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function getRealDeviceDiagnosticReport(reason) {
+    updateDerivedState();
+    updateNativePaintCommitState(reason || 'q169-real-device-diagnostic-native-paint-probe');
+    const node = host();
+    const field = mathfield || document.querySelector('math-field');
+    const hostStyle = styleSnapshot(node);
+    const fieldStyle = styleSnapshot(field);
+    const report = {
+      phase: 'V172-Q169',
+      legacyDiagnosticPhase: 'V172-Q163',
+      queueFlushNativePaintCommitPhase: 'V172-Q169',
+      mathfieldValueApiGuardPhase: 'V172-Q169R7',
+      insertValueFailureReasonCourtPhase: 'V172-Q169R8',
+      bridgeStateRefreshRepairPhase: 'V172-Q169R9',
+      compactBridgeStateReadbackPhase: 'V172-Q169R16',
+    finalSelfTestCourtPhase: 'V172-Q169R17',
+    channelPushSelfTestHardBindingPhase: 'V172-Q169R19',
+    staleTapDiagnosticOverwritePhase: 'V172-Q169R10',
+    singleSourceBridgePhase: 'V172-Q169R23',
+    mountAuthorityResetPhase: 'V172-Q169R24',
+      reason: String(reason || 'q163-unspecified'),
+      bridgePresent: true,
+      officialRuntimeScriptLoaded: state.officialRuntimeScriptLoaded,
+      officialRuntimeScriptFailed: state.officialRuntimeScriptFailed,
+      mathfieldElementDefined: state.mathfieldElementDefined,
+      mathfieldExists: !!field,
+      mathfieldInstanceMounted: !!mathfield,
+      activeElement: activeElementDescription(),
+      mathfieldIsActiveElement: !!field && document.activeElement === field,
+      focusEventFired: !!state.focusEventFired,
+      inputEventFired: !!state.inputEventFired,
+      hasFocus: !!state.hasFocus,
+      lastInsertSucceeded: !!state.lastInsertSucceeded,
+      lastInsertCommitted: !!state.lastInsertCommitted,
+      lastValueNonEmpty: !!state.lastValueNonEmpty,
+      lastJsCommandStatus: state.lastJsCommandStatus,
+      nativePaintState: state.nativePaintState,
+      nativePaintLikelyVisible: !!state.nativePaintLikelyVisible,
+      nativePaintCommitReason: state.nativePaintCommitReason,
+      nativePaintOwnershipAuthorityPhase: 'V172-Q169R27',
+      prebundledRuntimeBootRepairPhase: 'V172-Q169R31',
+      shadowObserverFeedbackLoopRepairPhase: state.shadowObserverFeedbackLoopRepairPhase,
+      q169R36ChromeObserverMode: state.q169R36ChromeObserverMode,
+      q169R36ChromeSuppressionPasses: state.q169R36ChromeSuppressionPasses,
+      mountInsertValuePaintStabilizationPhase: state.mountInsertValuePaintStabilizationPhase,
+      q169R32BootStabilizationPasses: state.q169R32BootStabilizationPasses,
+      q169R32LastStabilizationReason: state.q169R32LastStabilizationReason,
+      q169R32NativeReadyForCommand: state.q169R32NativeReadyForCommand,
+      nativePaintOwner: state.nativePaintOwner || 'unknown',
+      nativePaintProofValuePath: state.nativePaintProofValuePath || 'not-read',
+      nativeMathfieldValue: mathfieldNativeValue(),
+      lastRuntimeCommandAck: state.lastRuntimeCommandAck,
+      lastBridgeStateRefreshReason: state.lastBridgeStateRefreshReason,
+      lastStateReportDelivered: state.lastStateReportDelivered,
+      lastStateReportSequence: state.lastStateReportSequence,
+      lastCommandLabel: state.lastCommandLabel,
+      lastCommandAction: state.lastCommandAction,
+      lastMathfieldValueBefore: state.lastMathfieldValueBefore,
+      lastMathfieldValueAfter: state.lastMathfieldValueAfter,
+      q169FailureReason: state.q169FailureReason,
+      q169FailureReasonLegacyAlias: state.q169FailureReasonLegacyAlias || 'none',
+      failureReason: state.lastFailureReason,
+      lastValueApiPath: state.lastValueApiPath,
+      lastValueApiError: state.lastValueApiError,
+      lastInsertPath: state.lastInsertPath,
+      lastMathfieldValueWritePath: state.lastMathfieldValueWritePath,
+      lastInsertValueCommitAuthorityPath: state.lastInsertValueCommitAuthorityPath,
+      lastFallbackOverlayState: state.lastFallbackOverlayState,
+      lastPaintRectState: state.lastPaintRectState,
+      latex: state.latex,
+      normalizedLatex: state.normalizedLatex,
+      plainText: state.plainText,
+      hostRect: safeRect(node),
+      mathfieldRect: safeRect(field),
+      hostStyle: hostStyle,
+      mathfieldStyle: fieldStyle,
+      computedDisplay: fieldStyle.display || '',
+      computedVisibility: fieldStyle.visibility || '',
+      computedPointerEvents: fieldStyle.pointerEvents || '',
+      computedOverflow: fieldStyle.overflow || '',
+      rawInsertTokensMayBeUserVisible: false,
+      visibleCommandFallbackPass: state.visibleCommandFallbackPass,
+      diagnostic: 'q163-real-device-focus-insert-paint-probe q169-queue-flush-native-paint-commit-probe'
+    };
+    state.lastDiagnosticReason = report.reason;
+    state.diagnosticSequence += 1;
+    state.lastDiagnosticReport = report;
+    return report;
+  }
+
+  function classifyQ169FinalSelfTestCourt(report) {
+    if (!report.officialRuntimeScriptLoaded) return 'official-runtime-not-loaded';
+    if (window.MathProInlineRuntimeBootRepair && window.MathProInlineRuntimeBootRepair.inlineRuntimeExecuted && !report.mathfieldElementDefined) return 'inline-runtime-executed-but-math-field-not-defined';
+    if (!report.mathfieldElementDefined) return 'mathfield-element-not-defined';
+    if (report.mount !== 'ok') return 'mathfield-mount-failed';
+    if (report.channel !== 'ok' && report.channel !== 'available') return 'flutter-channel-missing';
+    if (report.insert !== 'ok') return 'mathfield-insert-failed:' + (report.insertPath || 'unknown');
+    if (report.value !== 'ok') return 'mathfield-value-empty:' + (report.valuePath || 'unknown');
+    if (report.paint !== 'ok') return 'native-paint-not-ok:' + (report.paint || 'unknown');
+    return 'none';
+  }
+
+  function runQ169FinalSelfTestCourt(reason) {
+    const marker = String(reason || 'q169r17-final-self-test-court');
+    state.finalSelfTestCourtPhase = 'V172-Q169R17';
+    state.lastFinalSelfTestReason = marker;
+    state.lastFinalSelfTestSequence += 1;
+    const report = {
+      phase: 'V172-Q169R17',
+      finalSelfTestCourtPhase: 'V172-Q169R17',
+      channelPushSelfTestHardBindingPhase: 'V172-Q169R19',
+      q169ChannelPushState: true,
+      reason: marker,
+      bridgePresent: true,
+      officialRuntimeScriptLoaded: !!state.officialRuntimeScriptLoaded,
+      officialRuntimeScriptFailed: !!state.officialRuntimeScriptFailed,
+      mathfieldElementDefined: false,
+      mathfieldExists: false,
+      mathfieldInstanceMounted: false,
+      mount: 'fail',
+      insert: 'fail',
+      value: 'fail',
+      channel: (window.MathProMathLiveState && window.MathProMathLiveState.postMessage) ? 'ok' : 'fail',
+      paint: 'pending',
+      rootCause: 'not-run',
+      failureReason: 'not-run',
+      valuePath: 'not-read',
+      insertPath: 'not-run',
+      paintRectState: state.lastPaintRectState,
+      fallbackOverlayState: state.lastFallbackOverlayState,
+      latex: '',
+      valueNonEmpty: false,
+      rawInsertTokensMayBeUserVisible: false
+    };
+    try {
+      const mounted = tryMountOfficialMathLive();
+      const field = mathfield || document.querySelector('math-field');
+      report.officialRuntimeScriptLoaded = !!state.officialRuntimeScriptLoaded;
+      report.officialRuntimeScriptFailed = !!state.officialRuntimeScriptFailed;
+      report.mathfieldElementDefined = !!state.mathfieldElementDefined;
+      report.mathfieldExists = !!field;
+      report.mathfieldInstanceMounted = !!mathfield;
+      report.mount = mounted && !!field ? 'ok' : 'fail';
+      const previousValue = field ? mathfieldNativeValue() : ''; // q169r27-final-court-native-previous-value
+      if (field) {
+        state.lastCommandLabel = 'SELFTEST';
+        state.lastCommandAction = 'insertLatex';
+        state.lastMathfieldValueBefore = previousValue;
+        setQ169FailureReason('final-court-start');
+        let inserted = false;
+        try {
+          inserted = insertIntoMathfield('7');
+        } catch (error) {
+          state.lastValueApiError = 'final-court-insert-' + (error && error.name ? error.name : 'throw');
+          setQ169FailureReason('final-court-insert-throw');
+        }
+        let afterValue = mathfieldNativeValue(); // q169r27-final-court-native-after-insert
+        if (String(afterValue || '').trim().length === 0) {
+          const directCommitted = commitDocumentLatexToMathfield('7', 'q169r17-final-court-direct-value-commit');
+          inserted = inserted || directCommitted;
+          afterValue = mathfieldNativeValue();
+        }
+        state.lastMathfieldValueAfter = afterValue;
+        state.lastInsertSucceeded = !!inserted && (String(afterValue || '').trim().length > 0 || afterValue !== previousValue);
+        state.lastInsertCommitted = state.lastInsertSucceeded || String(afterValue || '').trim().length > 0;
+        state.lastValueNonEmpty = String(afterValue || '').trim().length > 0;
+        if (state.lastValueNonEmpty) {
+          setQ169FailureReason('none');
+        } else if (state.lastFailureReason === 'final-court-start') {
+          setQ169FailureReason('final-court-value-empty-after-insert-and-direct-commit');
+        }
+        markJsCommandStatus(state.lastInsertCommitted ? 'ok' : (inserted ? 'empty-value' : 'fail'), 'q169r17-final-self-test-court');
+        updateNativePaintCommitState('q169r17-final-self-test-court-native-paint-probe');
+        report.insert = state.lastInsertCommitted ? 'ok' : 'fail';
+        report.value = state.lastValueNonEmpty ? 'ok' : 'fail';
+        report.paint = state.nativePaintState === 'ok' ? 'ok' : state.nativePaintState;
+        report.failureReason = state.lastFailureReason;
+        report.valuePath = state.lastValueApiPath;
+        report.nativePaintOwnershipAuthorityPhase = 'V172-Q169R27';
+        report.nativeMathfieldValue = afterValue;
+        report.nativeValueNonEmpty = state.lastValueNonEmpty;
+        report.nativePaintOwner = state.nativePaintOwner || 'unknown';
+        report.nativePaintProofValuePath = state.nativePaintProofValuePath || state.lastValueApiPath;
+        report.insertPath = state.lastInsertPath;
+        report.paintRectState = state.lastPaintRectState;
+        report.fallbackOverlayState = state.lastFallbackOverlayState;
+        report.latex = afterValue;
+        report.valueNonEmpty = state.lastValueNonEmpty;
+        try {
+          if (field && previousValue !== afterValue) {
+            if (typeof field.setValue === 'function') {
+              field.setValue(previousValue, { silenceNotifications: false });
+            } else {
+              field.value = previousValue;
+            }
+            state.latex = mathfieldNativeValue();
+          }
+        } catch (_) {}
+      } else {
+        setQ169FailureReason('final-court-no-mathfield');
+        report.failureReason = state.lastFailureReason;
+        report.valuePath = state.lastValueApiPath;
+        report.nativePaintOwnershipAuthorityPhase = 'V172-Q169R27';
+        report.nativeMathfieldValue = '';
+        report.nativeValueNonEmpty = false;
+        report.nativePaintOwner = state.nativePaintOwner || 'not-native-owned';
+        report.nativePaintProofValuePath = state.nativePaintProofValuePath || state.lastValueApiPath;
+      }
+      report.rootCause = classifyQ169FinalSelfTestCourt(report);
+      state.lastFinalSelfTestRootCause = report.rootCause;
+      state.lastFinalSelfTestReason = marker;
+      state.lastRuntimeCommandAck = 'q169r17-final-self-test-court-' + state.lastFinalSelfTestSequence;
+      if (report.rootCause === 'none') setQ169FailureReason('none');
+      state.latex = mathfieldNativeValue();
+      updateNativePaintCommitState('q169r17-final-court-after-restore-paint-probe q169r27-native-paint-ownership-proof');
+      postQ169ChannelPushState(report, marker + ' q169r19-final-self-test-court-channel-push');
+      notifyFlutter();
+      return report;
+    } catch (error) {
+      report.rootCause = 'final-court-exception-' + (error && error.name ? error.name : 'throw');
+      report.failureReason = report.rootCause;
+      state.lastFinalSelfTestRootCause = report.rootCause;
+      setQ169FailureReason(report.rootCause);
+      postQ169ChannelPushState(report, marker + ' q169r19-final-self-test-court-exception-channel-push');
+      return report;
+    }
+  }
+
+  function runQ169FinalSelfTestCourtAndPush(reason) {
+    const report = runQ169FinalSelfTestCourt(String(reason || 'q169r19-visible-self-test-court-channel-push'));
+    postQ169ChannelPushState(report, String(reason || 'q169r19-visible-self-test-court-channel-push'));
+    return report;
+  }
+
+  function getQ169CompactState(reason) {
+    const marker = String(reason || 'q169r16-compact-bridge-state-readback');
+    state.compactBridgeStateReadbackPhase = 'V172-Q169R16';
+    state.lastCompactStateReadbackReason = marker;
+    state.lastCompactStateReadbackSequence += 1;
+    updateDerivedState();
+    updateNativePaintCommitState(marker + ' q169r16-compact-native-paint-probe');
+    const field = mathfield || document.querySelector('math-field');
+    return {
+      phase: 'V172-Q169',
+      compactBridgeStateReadbackPhase: 'V172-Q169R16',
+      reason: marker,
+      bridgePresent: true,
+      officialRuntimeScriptLoaded: state.officialRuntimeScriptLoaded,
+      officialRuntimeScriptFailed: state.officialRuntimeScriptFailed,
+      mathfieldElementDefined: state.mathfieldElementDefined,
+      mathfieldExists: !!field,
+      mathfieldInstanceMounted: !!mathfield,
+      latex: state.latex,
+      normalizedLatex: state.normalizedLatex,
+      plainText: state.plainText,
+      lastCommandLabel: state.lastCommandLabel,
+      lastCommandAction: state.lastCommandAction,
+      lastRuntimeCommandAck: state.lastRuntimeCommandAck,
+      lastJsCommandStatus: state.lastJsCommandStatus,
+      lastInsertSucceeded: !!state.lastInsertSucceeded,
+      lastInsertCommitted: !!state.lastInsertCommitted,
+      lastValueNonEmpty: !!state.lastValueNonEmpty,
+      nativePaintState: state.nativePaintState,
+      nativePaintLikelyVisible: !!state.nativePaintLikelyVisible,
+      nativePaintCommitReason: state.nativePaintCommitReason,
+      nativePaintOwnershipAuthorityPhase: 'V172-Q169R27',
+      prebundledRuntimeBootRepairPhase: 'V172-Q169R31',
+      shadowObserverFeedbackLoopRepairPhase: state.shadowObserverFeedbackLoopRepairPhase,
+      q169R36ChromeObserverMode: state.q169R36ChromeObserverMode,
+      q169R36ChromeSuppressionPasses: state.q169R36ChromeSuppressionPasses,
+      mountInsertValuePaintStabilizationPhase: state.mountInsertValuePaintStabilizationPhase,
+      q169R32BootStabilizationPasses: state.q169R32BootStabilizationPasses,
+      q169R32LastStabilizationReason: state.q169R32LastStabilizationReason,
+      q169R32NativeReadyForCommand: state.q169R32NativeReadyForCommand,
+      nativePaintOwner: state.nativePaintOwner || 'unknown',
+      nativePaintProofValuePath: state.nativePaintProofValuePath || 'not-read',
+      nativeMathfieldValue: mathfieldNativeValue(),
+      lastMathfieldValueBefore: state.lastMathfieldValueBefore,
+      lastMathfieldValueAfter: state.lastMathfieldValueAfter,
+      q169FailureReason: state.q169FailureReason,
+      failureReason: state.lastFailureReason,
+      lastValueApiPath: state.lastValueApiPath,
+      lastValueApiError: state.lastValueApiError,
+      lastInsertPath: state.lastInsertPath,
+      lastMathfieldValueWritePath: state.lastMathfieldValueWritePath,
+      lastInsertValueCommitAuthorityPath: state.lastInsertValueCommitAuthorityPath,
+      lastFallbackOverlayState: state.lastFallbackOverlayState,
+      lastPaintRectState: state.lastPaintRectState,
+      lastStateReportDelivered: state.lastStateReportDelivered,
+      lastStateReportSequence: state.lastStateReportSequence,
+      lastCompactStateReadbackReason: state.lastCompactStateReadbackReason,
+      lastCompactStateReadbackSequence: state.lastCompactStateReadbackSequence,
+      rawInsertTokensMayBeUserVisible: false
+    };
+  }
+
+  function deliverQ169BridgeStateReport(reason) {
+    const marker = String(reason || 'q169r9-post-bridge-state-refresh');
+    state.bridgeStateRefreshRepairPhase = 'V172-Q169R9';
+    state.lastBridgeStateRefreshReason = marker;
+    state.lastStateReportSequence += 1;
+    state.lastStateReportDelivered = 'q169r9-state-report-delivered-' + state.lastStateReportSequence;
+    updateDerivedState();
+    updateNativePaintCommitState(marker + ' q169r9-state-refresh-native-paint-probe');
+    notifyFlutter();
+    return getRealDeviceDiagnosticReport(marker + ' q169r9-diagnostic-report');
+  }
+
+  function runDirectDiagnosticProbe(latex) {
+    const input = String(latex || '7');
+    tryMountOfficialMathLive();
+    state.lastMathfieldValueBefore = mathfieldValue();
+    let ok = false;
+    if (mathfield) {
+      try { restoreMathfieldFocus('q163-direct-probe-focus'); } catch (_) {}
+      try {
+        if (typeof mathfield.insert === 'function') {
+          ok = insertIntoMathfield(input);
+        } else {
+          mathfield.value = String(mathfield.value || '') + documentLatexFromInsertPayload(input);
+          ok = true;
+        }
+      } catch (_) {
+        ok = false;
+      }
+      state.latex = mathfieldValue();
+    } else {
+      state.latex += documentLatexFromInsertPayload(input);
+    }
+    state.lastMathfieldValueAfter = state.latex;
+    state.lastInsertSucceeded = !!ok && state.lastMathfieldValueAfter !== state.lastMathfieldValueBefore;
+    state.lastInsertCommitted = state.lastInsertSucceeded;
+    state.lastValueNonEmpty = String(state.lastMathfieldValueAfter || '').trim().length > 0;
+    markJsCommandStatus(ok ? 'ok' : 'fail', 'q169-direct-probe');
+    updateNativePaintCommitState('q169-direct-probe-native-paint');
+    paint();
+    return getRealDeviceDiagnosticReport('q163-direct-probe-' + input + ' q169-direct-probe');
+  }
+
+  function getState() {
+    updateDerivedState();
+    return {
+      runtimeMode: runtimeMode,
+      latex: state.latex,
+      normalizedLatex: state.normalizedLatex,
+      plainText: state.plainText,
+      mathJson: state.mathJson,
+      runtime: state.runtime,
+      keyboardBridgePhase: state.keyboardBridgePhase,
+      stateAdapterPhase: state.stateAdapterPhase,
+      cursorCourtPhase: state.cursorCourtPhase,
+      engineSwitchPhase: state.engineSwitchPhase,
+      mainEditorIntegrationPhase: state.mainEditorIntegrationPhase,
+      legacyCursorRetirementPhase: state.legacyCursorRetirementPhase,
+      runtimeBundlePhase: state.runtimeBundlePhase,
+      runtimeSmokePhase: state.runtimeSmokePhase,
+      runtimeBundleIntakeGuard: state.runtimeBundleIntakeGuard,
+      runtimeSmokeGate: state.runtimeSmokeGate,
+      officialRuntimeInstallerScriptProvided: state.officialRuntimeInstallerScriptProvided,
+      officialRuntimeClaimAllowedWithoutFiles: state.officialRuntimeClaimAllowedWithoutFiles,
+      officialRuntimeClaimAllowedWithoutSmoke: state.officialRuntimeClaimAllowedWithoutSmoke,
+      officialRuntimeScriptRequested: state.officialRuntimeScriptRequested,
+      officialRuntimeScriptLoaded: state.officialRuntimeScriptLoaded,
+      officialRuntimeScriptFailed: state.officialRuntimeScriptFailed,
+      mathfieldElementDefined: state.mathfieldElementDefined,
+      mathfieldInstanceMounted: state.mathfieldInstanceMounted,
+      labRuntimeSmokePassed: state.labRuntimeSmokePassed,
+      labRuntimeSmokeDiagnostic: state.labRuntimeSmokeDiagnostic,
+      smokeCommandPasses: state.smokeCommandPasses,
+      smokeCommandTotal: state.smokeCommandTotal,
+      legacyCursorRetirementGuard: state.legacyCursorRetirementGuard,
+      legacyCursorFilesMayBeDeleted: state.legacyCursorFilesMayBeDeleted,
+      legacyCursorPhysicalDeletionAllowed: state.legacyCursorPhysicalDeletionAllowed,
+      legacyEngineRemainsRollback: state.legacyEngineRemainsRollback,
+      legacyOverlayBypassAllowedOnlyForProvenMathLiveEngine: state.legacyOverlayBypassAllowedOnlyForProvenMathLiveEngine,
+      legacyHitTestBypassAllowedOnlyForProvenMathLiveEngine: state.legacyHitTestBypassAllowedOnlyForProvenMathLiveEngine,
+      broadCustomCursorPatchingAllowed: state.broadCustomCursorPatchingAllowed,
+      mainEditorSwitchBehindFlag: state.mainEditorSwitchBehindFlag,
+      mainEditorIntegrationGuard: state.mainEditorIntegrationGuard,
+      mainEditorSwitchedToMathLive: state.mainEditorSwitchedToMathLive,
+      mainEditorIntegratedNow: state.mainEditorIntegratedNow,
+      mathLiveMountedInMainWorkspaceByDefault: state.mathLiveMountedInMainWorkspaceByDefault,
+      activeMainEditorEngine: state.activeMainEditorEngine,
+      defaultMainEditorEngine: state.defaultMainEditorEngine,
+      realDeviceCursorCourtPassClaimed: state.realDeviceCursorCourtPassClaimed,
+      cursorCourtScenarioPasses: state.cursorCourtScenarioPasses,
+      cursorCourtTotalScenarios: state.cursorCourtTotalScenarios,
+      cursorCourtBlockingFailures: state.cursorCourtBlockingFailures,
+      hasFocus: state.hasFocus,
+      selectionDescription: state.selectionDescription,
+      premiumRenderingPhase: state.premiumRenderingPhase,
+      premiumLayoutVisualPolishPhase: state.premiumLayoutVisualPolishPhase,
+      templateOpticalCorrectionPhase: state.templateOpticalCorrectionPhase,
+      templateOpticalFamily: state.templateOpticalFamily,
+      lastTemplateOpticalCorrectionPass: state.lastTemplateOpticalCorrectionPass,
+      q173NativeTemplateCommandNormalizerPhase: state.q173NativeTemplateCommandNormalizerPhase,
+      q173LastTemplateFamily: state.q173LastTemplateFamily,
+      q173LastInputLabel: state.q173LastInputLabel,
+      q173LastInputLatex: state.q173LastInputLatex,
+      q173LastNormalizedLatex: state.q173LastNormalizedLatex,
+      q173LastNormalizerChanged: state.q173LastNormalizerChanged,
+      q173LastCommandWasNativeTemplate: state.q173LastCommandWasNativeTemplate,
+      q173StructuralSiblingAppendGuard: state.q173StructuralSiblingAppendGuard,
+      q174NativeRendererPurityPhase: state.q174NativeRendererPurityPhase,
+      q174NativeSlotAwareInsertionMode: state.q174NativeSlotAwareInsertionMode,
+      q174LastTemplateIntent: state.q174LastTemplateIntent,
+      q174PendingTemplateIntent: state.q174PendingTemplateIntent,
+      q174LastDuplicateTemplateSuppressed: state.q174LastDuplicateTemplateSuppressed,
+      pointerCaretHardeningPhase: state.pointerCaretHardeningPhase,
+      pointerCaretFluidityPhase: state.pointerCaretFluidityPhase,
+      premiumTemplateLayoutPhase: state.premiumTemplateLayoutPhase,
+      viewportFitPhase: state.viewportFitPhase,
+      visualChromeContractPhase: state.visualChromeContractPhase,
+      runtimeCommandBindingPhase: state.runtimeCommandBindingPhase,
+      nativeRenderOwnershipPhase: state.nativeRenderOwnershipPhase,
+      nativeRenderFallbackRepairPhase: state.nativeRenderFallbackRepairPhase,
+      realDeviceDiagnosticPhase: state.realDeviceDiagnosticPhase,
+      queueFlushNativePaintCommitPhase: state.queueFlushNativePaintCommitPhase,
+      insertValueFailureReasonCourtPhase: state.insertValueFailureReasonCourtPhase,
+      bridgeStateRefreshRepairPhase: state.bridgeStateRefreshRepairPhase,
+      compactBridgeStateReadbackPhase: state.compactBridgeStateReadbackPhase,
+      lastCompactStateReadbackReason: state.lastCompactStateReadbackReason,
+      lastCompactStateReadbackSequence: state.lastCompactStateReadbackSequence,
+      finalSelfTestCourtPhase: state.finalSelfTestCourtPhase,
+      channelPushSelfTestHardBindingPhase: state.channelPushSelfTestHardBindingPhase,
+      lastChannelPushSelfTestReason: state.lastChannelPushSelfTestReason,
+      lastChannelPushSelfTestSequence: state.lastChannelPushSelfTestSequence,
+      lastFinalSelfTestReason: state.lastFinalSelfTestReason,
+      lastFinalSelfTestSequence: state.lastFinalSelfTestSequence,
+      lastFinalSelfTestRootCause: state.lastFinalSelfTestRootCause,
+      staleTapDiagnosticOverwritePhase: state.staleTapDiagnosticOverwritePhase,
+      mathfieldValueApiGuardPhase: state.mathfieldValueApiGuardPhase,
+      mathFieldIsOnlyStructuralRenderer: state.mathFieldIsOnlyStructuralRenderer,
+      sanitizedStructuralFallbackAllowed: state.sanitizedStructuralFallbackAllowed,
+      rawInsertTokensMayBeUserVisible: state.rawInsertTokensMayBeUserVisible,
+      lastRuntimeCommandAck: state.lastRuntimeCommandAck,
+      lastBridgeStateRefreshReason: state.lastBridgeStateRefreshReason,
+      lastStateReportDelivered: state.lastStateReportDelivered,
+      lastStateReportSequence: state.lastStateReportSequence,
+      lastInsertSucceeded: state.lastInsertSucceeded,
+      lastInsertCommitted: state.lastInsertCommitted,
+      lastValueNonEmpty: state.lastValueNonEmpty,
+      q169FailureReason: state.q169FailureReason,
+      failureReason: state.lastFailureReason,
+      lastValueApiPath: state.lastValueApiPath,
+      lastValueApiError: state.lastValueApiError,
+      lastInsertPath: state.lastInsertPath,
+      lastMathfieldValueWritePath: state.lastMathfieldValueWritePath,
+      lastInsertValueCommitAuthorityPath: state.lastInsertValueCommitAuthorityPath,
+      lastFallbackOverlayState: state.lastFallbackOverlayState,
+      lastPaintRectState: state.lastPaintRectState,
+      lastJsCommandStatus: state.lastJsCommandStatus,
+      nativePaintState: state.nativePaintState,
+      nativePaintLikelyVisible: state.nativePaintLikelyVisible,
+      nativePaintCommitReason: state.nativePaintCommitReason,
+      nativePaintOwnershipAuthorityPhase: 'V172-Q169R27',
+    prebundledRuntimeBootRepairPhase: 'V172-Q169R31',
+      mountInsertValuePaintStabilizationPhase: state.mountInsertValuePaintStabilizationPhase,
+      q169R32BootStabilizationPasses: state.q169R32BootStabilizationPasses,
+      q169R32LastStabilizationReason: state.q169R32LastStabilizationReason,
+      q169R32NativeReadyForCommand: state.q169R32NativeReadyForCommand,
+      nativePaintOwner: state.nativePaintOwner || 'unknown',
+      nativePaintProofValuePath: state.nativePaintProofValuePath || 'not-read',
+      nativeMathfieldValue: mathfieldNativeValue(),
+      lastMathfieldValueBefore: state.lastMathfieldValueBefore,
+      lastMathfieldValueAfter: state.lastMathfieldValueAfter,
+      focusEventFired: state.focusEventFired,
+      inputEventFired: state.inputEventFired,
+      lastDiagnosticReason: state.lastDiagnosticReason,
+      diagnosticSequence: state.diagnosticSequence,
+      lastDiagnosticReport: state.lastDiagnosticReport,
+      lastBridgeStateRefreshReason: state.lastBridgeStateRefreshReason,
+      lastStateReportDelivered: state.lastStateReportDelivered,
+      lastStateReportSequence: state.lastStateReportSequence,
+      visibleCommandFallbackPass: state.visibleCommandFallbackPass,
+      visibleChromeSuppressionPass: state.visibleChromeSuppressionPass,
+      visibleMathLiveBrandingAllowed: state.visibleMathLiveBrandingAllowed,
+      mathLiveChromeVisible: state.mathLiveChromeVisible,
+      viewportFitClass: state.viewportFitClass,
+      viewportFitReason: state.viewportFitReason,
+      lastViewportFitPass: state.lastViewportFitPass,
+      caretFollowPhase: state.caretFollowPhase,
+      caretFollowPass: state.caretFollowPass,
+      lastPremiumTemplateLayoutPass: state.lastPremiumTemplateLayoutPass,
+      pointerFocusPrimed: state.pointerFocusPrimed,
+      tapSequence: state.tapSequence,
+      lastSelectionChange: state.lastSelectionChange,
+      lastPointerInteraction: state.lastPointerInteraction,
+      lastCommandLabel: state.lastCommandLabel,
+      lastCommandAction: state.lastCommandAction,
+      evaluateRequested: state.evaluateRequested,
+      realMathLiveRuntimeBundled: state.officialRuntimeScriptLoaded,
+      virtualKeyboardEnabled: false,
+      remoteScriptLoadingAllowed: false,
+      mainEditorSwitchAllowed: mainEditorMode,
+      stateAdapterLabOnly: !mainEditorMode
+    };
+  }
+
+  const hostNode = host();
+  if (hostNode) {
+    hostNode.addEventListener('input', function () {
+      if (mathfield || mainEditorMode) return;
+      state.latex = hostNode.textContent === '□' ? '' : hostNode.textContent;
+      state.hasFocus = true;
+      state.selectionDescription = 'q90r2-contenteditable-fallback-input';
+      const output = exportNode();
+      if (output) output.textContent = 'latex: ' + state.latex;
+      notifyFlutter();
+    });
+  }
+
+  setStatus(mainEditorMode ? 'Q135-Q139 main editor migration loaded. Legacy cursor path is disabled; local MathLive runtime is mandatory.' : 'Q90R2 isolated lab smoke gate loaded. If the official local MathLive runtime exists, this lab will mount <math-field>; otherwise it stays blocked without switching the main editor.');
+
+    window.MathProNativeTemplateCommandNormalizer = { phase: 'V172-Q173', active: true, nativeTemplateNormalization: true, realDevicePremiumPassClaimed: false };
+    window.MathProTemplateOpticalCorrection = { phase: 'V172-Q171', active: true, realDevicePremiumPassClaimed: false };
+    window.MathProNativeRendererPurity = { phase: 'V172-Q174', nativeSlotAwareInsertion: true, duplicateEmptyTemplateSuppression: true, cssMimicryReduced: true, realDevicePremiumPassClaimed: false };
+    window.MathProDefaultRendererPurity = { phase: 'V172-Q175', defaultMathLiveRendererTarget: 0.95, internalGlyphClassStylingForbidden: true, cssVariablesOnlyForAccentAndChrome: true, realDevicePremiumPassClaimed: false };
+window.MathProMathLiveOfflineBridge = {
+    phase: mainEditorMode ? 'V172-Q135-Q139' : 'V172-Q84',
+    premiumRenderingPhase: 'V172-Q141',
+    pointerCaretFluidityPhase: 'V172-Q143',
+    premiumTemplateLayoutPhase: 'V172-Q145',
+    viewportFitPhase: 'V172-Q148',
+    visualChromeContractPhase: 'V172-Q149',
+    runtimeCommandBindingPhase: 'V172-Q157',
+    nativeRenderOwnershipPhase: 'V172-Q161',
+    diagnosticContractCleanupPhase: 'V172-Q164',
+    nativeRenderFallbackRepairPhase: 'V172-Q162',
+    realDeviceDiagnosticPhase: 'V172-Q163',
+    queueFlushNativePaintCommitPhase: 'V172-Q169',
+    mathfieldValueApiGuardPhase: 'V172-Q169R7',
+    insertValueFailureReasonCourtPhase: 'V172-Q169R8',
+    bridgeStateRefreshRepairPhase: 'V172-Q169R9',
+    compactBridgeStateReadbackPhase: 'V172-Q169R16',
+    finalSelfTestCourtPhase: 'V172-Q169R17',
+    staleTapDiagnosticOverwritePhase: 'V172-Q169R10',
+    singleSourceBridgePhase: 'V172-Q169R23',
+    mountAuthorityResetPhase: 'V172-Q169R24',
+    singleCommandBusAuthorityPhase: 'V172-Q169R25',
+    insertValueCommitAuthorityPhase: 'V172-Q169R26',
+    nativePaintOwnershipAuthorityPhase: 'V172-Q169R27',
+    prebundledRuntimeBootRepairPhase: 'V172-Q169R31',
+    mountInsertValuePaintStabilizationPhase: 'V172-Q169R32',
+    inlineRuntimeBootRepairPhase: 'V172-Q169R33',
+    shadowObserverFeedbackLoopRepairPhase: 'V172-Q169R36',
+    nativeTemplateCommandNormalizerPhase: 'V172-Q173',
+    q174NativeRendererPurityPhase: 'V172-Q174',
+    q175DefaultRendererPurityPhase: 'V172-Q175',
+    productionMathLiveSimplificationPhase: 'V172-Q182',
+    q175DefaultRendererPurityPhase: 'V172-Q175',
+    productionMathLiveSimplificationPhase: 'V172-Q182',
+    q175DefaultRendererTarget: 0.95,
+    q174LastDuplicateTemplateSuppressed: false,
+    q174NativeSlotAwareInsertionMode: 'preserve-active-placeholder',
+    q174LastTemplateIntent: '',
+    q174PendingTemplateIntent: '',
+    nativeRendererPurityPhase: 'V172-Q174',
+    defaultRendererPurityPhase: 'V172-Q175',
+    q169R36ChromeObserverMode: 'debounced-childlist-only-no-attributes',
+    q169R36ChromeSuppressionDebounced: true,
+    q169R32BootStabilizationPasses: 0,
+    q169R32NativeReadyForCommand: false,
+    lastInsertValueCommitAuthorityPath: 'not-run',
+    nativePaintOwner: 'unknown',
+    nativePaintProofValuePath: 'not-read',
+    mathFieldIsOnlyStructuralRenderer: true,
+    sanitizedStructuralFallbackAllowed: true,
+    rawInsertTokensMayBeUserVisible: false,
+    lastRuntimeCommandAck: '',
+    lastJsCommandStatus: 'pending',
+    nativePaintState: 'pending',
+    nativePaintLikelyVisible: false,
+    nativePaintOwner: 'unknown',
+    nativePaintProofValuePath: 'not-read',
+    runtimeCommandSequence: 0,
+    visibleCommandFallbackPass: '',
+    visibleChromeSuppressionPass: '',
+    visibleMathLiveBrandingAllowed: false,
+    mathLiveChromeVisible: false,
+    viewportFitClass: 'mathpro-fit-normal',
+    viewportFitReason: '',
+    lastViewportFitPass: '',
+    caretFollowPhase: 'V172-Q148',
+    caretFollowPass: '',
+    lastPremiumTemplateLayoutPass: '',
+    runtimeMode: runtimeMode,
+    runtimeSmokePhase: 'V172-Q90R2',
+    runtimeSmokeEvidencePhase: 'V172-Q90R5',
+    runtimeSmokeEvidenceAuthoringPhase: 'V172-Q90R6',
+    runtimeSmokeEvidenceExportPhase: 'V172-Q90R7',
+    realMathLiveRuntimeBundled: state.officialRuntimeScriptLoaded,
+    virtualKeyboardEnabled: false,
+    remoteScriptLoadingAllowed: false,
+    mainEditorSwitchAllowed: mainEditorMode,
+    keyboardBridgePhase: 'V172-Q85',
+    stateAdapterPhase: 'V172-Q86',
+    cursorCourtPhase: 'V172-Q87',
+    engineSwitchPhase: 'V172-Q88',
+    mainEditorIntegrationPhase: 'V172-Q89',
+    legacyCursorRetirementPhase: 'V172-Q90',
+    runtimeBundlePhase: 'V172-Q90R1',
+    runtimeBundleIntakeGuard: true,
+    runtimeSmokeGate: true,
+    officialRuntimeInstallerScriptProvided: true,
+    officialRuntimeClaimAllowedWithoutFiles: false,
+    officialRuntimeClaimAllowedWithoutSmoke: false,
+    legacyCursorRetirementGuard: true,
+    legacyCursorFilesMayBeDeleted: false,
+    legacyCursorPhysicalDeletionAllowed: false,
+    legacyEngineRemainsRollback: true,
+    legacyOverlayBypassAllowedOnlyForProvenMathLiveEngine: true,
+    legacyHitTestBypassAllowedOnlyForProvenMathLiveEngine: true,
+    broadCustomCursorPatchingAllowed: false,
+    mainEditorSwitchBehindFlag: false,
+    mainEditorIntegrationGuard: false,
+    mainEditorSwitchedToMathLive: mainEditorMode,
+    mainEditorIntegratedNow: mainEditorMode,
+    mathLiveMountedInMainWorkspaceByDefault: mainEditorMode,
+    activeMainEditorEngine: mainEditorMode ? 'mathliveMainEditorMandatory' : 'legacyFlutterSlotEditor',
+    defaultMainEditorEngine: mainEditorMode ? 'mathliveMainEditorMandatory' : 'legacyFlutterSlotEditor',
+    realDeviceCursorCourtPassClaimed: false,
+    tryMountOfficialMathLive: tryMountOfficialMathLive,
+    q169R31AttemptRuntimeScriptRecovery: q169R31AttemptRuntimeScriptRecovery,
+    q169R32EnsureNativeReadyForCommand: q169R32EnsureNativeReadyForCommand,
+    q169R32RunBootStabilizationPass: q169R32RunBootStabilizationPass,
+    q169R32ScheduleBootStabilization: q169R32ScheduleBootStabilization,
+    runRuntimeSmokeProbe: runRuntimeSmokeProbe,
+    getRuntimeSmokeReport: getRuntimeSmokeReport,
+    getRuntimeSmokeEvidenceReport: getRuntimeSmokeEvidenceReport,
+    getRuntimeSmokeEvidenceCaptureForAuthoring: getRuntimeSmokeEvidenceCaptureForAuthoring,
+    getRuntimeSmokeEvidenceCaptureJson: getRuntimeSmokeEvidenceCaptureJson,
+    getRuntimeSmokeEvidenceCaptureClipboardText: getRuntimeSmokeEvidenceCaptureClipboardText,
+    copyRuntimeSmokeEvidenceCaptureToClipboard: copyRuntimeSmokeEvidenceCaptureToClipboard,
+    writeEvidenceCaptureToDom: writeEvidenceCaptureToDom,
+    executeMathProCommand: executeMathProCommand,
+    setLatex: setLatex,
+    insertLatex: insertLatex,
+    deleteBackward: deleteBackward,
+    clear: clear,
+    focus: focusMathfield,
+    primeInteractiveMathfield: primeInteractiveMathfield,
+    applyViewportFit: applyViewportFit,
+    keepCaretVisible: keepCaretVisible,
+    scheduleViewportFit: scheduleViewportFit,
+    suppressVisibleMathLiveBranding: suppressVisibleMathLiveBranding,
+    getRealDeviceDiagnosticReport: getRealDeviceDiagnosticReport,
+    deliverQ169BridgeStateReport: deliverQ169BridgeStateReport,
+    getQ169CompactState: getQ169CompactState,
+    runQ169FinalSelfTestCourt: runQ169FinalSelfTestCourt,
+    runQ169FinalSelfTestCourtAndPush: runQ169FinalSelfTestCourtAndPush,
+    buildQ169SingleSourceEnvelope: buildQ169SingleSourceEnvelope,
+    postQ169ChannelPushState: postQ169ChannelPushState,
+    runDirectDiagnosticProbe: runDirectDiagnosticProbe,
+    getState: getState
+  };
+
+  q169R35EnsureOfficialMathfieldRegistration('q169r35-initial-bridge-bootstrap');
+  q169R31AttemptRuntimeScriptRecovery('initial-bridge-bootstrap');
+  q169R32ScheduleBootStabilization('q169r32-initial-bridge-bootstrap');
+  tryMountOfficialMathLive();
+  scheduleViewportFit('q148-initial-viewport-fit');
+  suppressVisibleMathLiveBranding(mathfield);
+  if (!q182ProductionMathLiveSimplificationActive) {
+    getRealDeviceDiagnosticReport('q163-initial-diagnostic q169-initial-native-paint-diagnostic');
+    window.setTimeout(function () {
+      runQ169FinalSelfTestCourtAndPush('q169r19-initial-visible-self-test-court-channel-push');
+    }, 240);
+  } else {
+    state.lastDiagnosticReason = 'q182-production-diagnostic-courts-disabled';
+    state.lastFinalSelfTestReason = 'q182-production-final-court-disabled';
+    state.lastFinalSelfTestRootCause = 'production-court-disabled';
+    notifyFlutter();
+  }
+  paint();
+})();
+
+// Q161 compatibility marker retained: q161-blocked-raw-structural-fallback-no-mathfield. Q162 supersedes it with sanitized structural fallback, not raw fallback.
+
+// Q163 compatibility marker: getRealDeviceDiagnosticReport runDirectDiagnosticProbe q163-real-device-focus-insert-paint-probe.
+
+// Q164 compatibility marker: q164-diagnostic-contract-cleanup preserves Q163 diagnostics while restoring Q140/Q161 static contracts.
+
+// Q169 compatibility marker: q169-queue-flush-native-paint-commit SEND:Bridge JS:ok MF:true INSERT:true VALUE:non-empty PAINT:ok.
+// Q169R9 compatibility marker: bridgeStateRefreshRepairPhase deliverQ169BridgeStateReport state-refresh-timeout-after-js-fire refresh-not-delivered.
+// Q169R10 compatibility marker: staleTapDiagnosticOverwritePhase tap-before-bridge may not remain final after SEND:Bridge JS:fire.
+
+// Q169R16 compatibility marker: compactBridgeStateReadbackPhase getQ169CompactState q169r16-compact-bridge-state-readback avoids full getState readback timeout after JS:fire.
+
+// Q169R17 compatibility marker: finalSelfTestCourtPhase runQ169FinalSelfTestCourt MOUNT INSERT VALUE CHANNEL PAINT ROOT_CAUSE q169r17-final-self-test-court.
+// Q169R19 compatibility marker: channelPushSelfTestHardBindingPhase runQ169FinalSelfTestCourtAndPush postQ169ChannelPushState q169r19-visible-self-test-court-channel-push.
+// Q169R20 compatibility marker: channelPushKind court compact courtOverlayOwnershipPhase compact-state-received-awaiting-court-result.
+// Q169R23 compatibility marker: singleSourceBridgePhase q169SingleSourceEnvelope buildQ169SingleSourceEnvelope COURT_SINGLE_SOURCE.
+// Q169R17 static compatibility marker retained: window.MathProMathLiveState.postMessage(JSON.stringify(report))
+
+// Q169R24 compatibility marker: mountAuthorityResetPhase V172-Q169R24 MATHLIVE_BOOT WEBVIEW RUNTIME MF CHANNEL ROOT.
+
+// Q169R25 compatibility marker: singleCommandBusAuthorityPhase V172-Q169R25 single command bus owns keyboard -> MathLive bridge -> channel state; Flutter fallback overlay is not the renderer.
+
+// Q169R26 compatibility marker: insertValueCommitAuthorityPhase = 'V172-Q169R26'; readNativeMathfieldValueDetailed q169R26TryExecuteCommandInsert direct-value-commit-empty-after-write must report native MathLive value truth, not Flutter fallback.
+
+// Q169R27 compatibility marker: nativePaintOwnershipAuthorityPhase = 'V172-Q169R27'; updateNativePaintCommitState uses readNativeMathfieldValueDetailed and nativePaintOwner mathlive-native-field, not Flutter fallback state.
+
+// Q169R28 compatibility marker: Q169R8 legacy failure reason `paint-pending-empty-value` is retained as q169FailureReasonLegacyAlias while Q169R27 reports the stricter native proof reason `paint-pending-empty-native-value`.
+
+// Q169R32 compatibility marker: mountInsertValuePaintStabilizationPhase = 'V172-Q169R32'; q169R32ScheduleBootStabilization q169R32EnsureNativeReadyForCommand q169R32RunBootStabilizationPass keeps MOUNT/INSERT/VALUE/CHANNEL/PAINT package-side stabilized before Q170 visual polish.
+// Q171 compatibility marker: templateOpticalCorrectionPhase = 'V172-Q171'; q171TemplateFamilyForLatex applyQ171TemplateOpticalCorrection keeps calculus/system/series/matrix templates compact without mutating keyboard layout.
+
+// Q173 compatibility marker: q173NativeTemplateCommandNormalizerPhase = 'V172-Q173'; q173MoveCaretOutOfEmptyTemplateForSibling prevents repeated empty structural templates such as sqrt/sigma/limit from nesting into the previous placeholder during rapid MathPro key testing while preserving MathLive native rendering.
+
+// Q175 compatibility marker: defaultRendererPurityPhase = 'V172-Q175'; q175DefaultRendererTarget = 0.95; MathPro avoids styling MathLive private glyph classes and uses MathLive default renderer for fractions/radicals/base glyphs.

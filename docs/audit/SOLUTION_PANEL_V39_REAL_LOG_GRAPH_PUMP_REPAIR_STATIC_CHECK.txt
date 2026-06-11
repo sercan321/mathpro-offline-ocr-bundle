@@ -1,0 +1,6 @@
+lib/features/graph/graph_painter.dart: brace balance 82/82; bracket balance 17/17
+lib/features/graph/graph_painter.dart: _clampAxisLabel helper present; tiny-plot guard present
+test/widget_test.dart: brace balance 91/91; bracket balance 7/7
+test/widget_test.dart: pumpAndSettle count 0
+Forbidden residue scan before packaging: clean
+Flutter/Dart local execution: unavailable in assistant container; no local Flutter PASS claimed

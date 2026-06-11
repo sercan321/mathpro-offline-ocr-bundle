@@ -1,0 +1,24 @@
+MathPro Premium Keyboard V29 Static Check
+==========================================
+layout_version_v37: PASS
+temel_f_removed: PASS
+cebir_f_preserved: PASS
+fixed_core_preserved: PASS
+root_longpress_contract: PASS
+integral_calc_contract: PASS
+cebir_integral_filter_preserved: PASS
+indicator_size_reduced: PASS
+indicator_opacity_reduced: PASS
+indicator_noise_rule_v29_present: PASS
+longpress_close_chip_absent: PASS
+longpress_compact_width: PASS
+more_safe_padding: PASS
+more_soft_radius: PASS
+fraction_glyph_rebalanced: PASS
+system_glyph_rebalanced: PASS
+matrix_glyph_rebalanced: PASS
+_mathishChipLabels_duplicate_free: PASS — []
+_mathishLabels_duplicate_free: PASS — []
+dirty_artifacts_absent: PASS
+
+result=STATIC_PASS

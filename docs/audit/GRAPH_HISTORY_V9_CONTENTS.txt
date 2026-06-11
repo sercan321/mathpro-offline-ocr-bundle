@@ -1,0 +1,17 @@
+MathProFlutterPhase17_GRAPH_HISTORY_V9_FULL.zip
+MathProFlutterPhase17_GRAPH_HISTORY_V9_META.zip
+
+V9 focus:
+- Premium History persistence hardening
+- Schema-versioned history storage
+- Legacy V1 migration
+- Corruption-safe restore
+- Bounded storage
+- Restore/persist test futures
+- Regression tests updated to current persistence law
+
+Critical preserved files:
+- lib/features/keyboard/key_config.dart
+- lib/features/keyboard/math_keyboard.dart
+- lib/features/keyboard/bottom_dock.dart
+- lib/features/keyboard/long_press_popup.dart

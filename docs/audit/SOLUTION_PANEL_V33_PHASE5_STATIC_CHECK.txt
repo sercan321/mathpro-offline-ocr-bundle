@@ -1,0 +1,28 @@
+Changed files against V32 baseline:
+- docs/audit/SOLUTION_PANEL_V33_PHASE5_AUDIT_REPORT.md
+- docs/audit/SOLUTION_PANEL_V33_PHASE5_CHANGED_FILES_MANIFEST.md
+- docs/audit/SOLUTION_PANEL_V33_PHASE5_RELEASE_HYGIENE_REPORT.md
+- docs/audit/SOLUTION_PANEL_V33_PHASE5_STATIC_CHECK.txt
+- lib/features/solution/solution_steps_panel.dart
+- lib/features/workspace/workspace_panel.dart
+- pubspec.yaml
+- test/widget_test.dart
+
+Frozen files hash comparison:
+UNCHANGED lib/features/keyboard/key_config.dart cc0421a869afea14fce1321d6738bbb35d1e81cd66aa269f6b1455246b64ca6c
+UNCHANGED lib/features/keyboard/bottom_dock.dart 346b4bc904a4f93e34b3e5b9bb7e44369347061227b42272c9404fd2f3c03a37
+UNCHANGED lib/features/keyboard/math_keyboard.dart f4f2a9acdc226cdc9838a265a96f2539a5b9ecf1f4feccd5fbb76745370b7ad2
+UNCHANGED lib/features/keyboard/premium_key.dart 8a5bd968224914830cc59f75ffe0e7fffd31b6e7f452a1f2dafe3a987c98c087
+UNCHANGED lib/features/keyboard/long_press_popup.dart 39cda6efcf2e0705e3dafa615117f9d80a0987d90ad0b37c82005513ff5e82b0
+UNCHANGED lib/features/keyboard/long_press_indicator.dart 2550c71d1d87058542390faf532d837da957ac04565849c567e7e2569000018e
+UNCHANGED lib/features/keyboard/key_model.dart da075decdcaf25bcc34eb9b3612a03dbac6946c2c8a602597242761eeae93f75
+UNCHANGED lib/features/graph/graph_card.dart c245cc5d61f94b0b4204c98031806ecd1e874c4d9f6cf9d0115d3fdbc615e78a
+UNCHANGED lib/features/history/history_panel.dart e8c2c13275e6560ec8028b8b15f341d769101f4fcd0150e3af42e850dfd7bf94
+UNCHANGED lib/app/app_shell.dart 8d08a7a0b3a2e889e9baa0394d6367a4f5576722c2afdc77d5485c26e2c1aeb7
+
+Basic delimiter counts:
+lib/features/solution/solution_steps_panel.dart: lines=568 parens=216/216 braces=39/39 brackets=23/23
+lib/features/workspace/workspace_panel.dart: lines=605 parens=219/219 braces=41/41 brackets=11/11
+test/widget_test.dart: lines=748 parens=821/821 braces=76/76 brackets=6/6
+
+Flutter/Dart execution: NOT RUN - executables unavailable in container
