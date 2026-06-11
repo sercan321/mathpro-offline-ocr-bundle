@@ -222,6 +222,7 @@ jobs:
           (cd "$BUNDLE_ROOT/bundle" && zip -r ../q389r5c_offline_formula_ocr_bundle_files.zip .)
 
       - name: Upload workflow artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: q389r5c-offline-formula-ocr-bundle
@@ -229,7 +230,7 @@ jobs:
             ${{ env.BUNDLE_ROOT }}/bundle/*
             ${{ env.BUNDLE_ROOT }}/reports/*
             ${{ env.BUNDLE_ROOT }}/q389r5c_offline_formula_ocr_bundle_files.zip
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Publish GitHub Release files when requested
@@ -243,6 +244,7 @@ jobs:
             ${{ env.BUNDLE_ROOT }}/bundle/*
             ${{ env.BUNDLE_ROOT }}/reports/*
             ${{ env.BUNDLE_ROOT }}/q389r5c_offline_formula_ocr_bundle_files.zip
+
 
 
 
