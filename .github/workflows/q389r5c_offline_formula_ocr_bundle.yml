@@ -91,8 +91,12 @@ jobs:
               ],
           )
           files = sorted(str(p.relative_to(target)) for p in target.rglob('*') if p.is_file() and '.git/' not in str(p))
-          if not any(name.endswith('.pdmodel') for name in files):
-              raise SystemExit('Formula OCR snapshot is missing inference/model .pdmodel')
+          graph_files = [
+              name for name in files
+              if name.endswith('.pdmodel') or Path(name).name in ('inference.json', 'model.json')
+          ]
+          if not graph_files:
+              raise SystemExit('Formula OCR snapshot is missing Paddle graph: inference.pdmodel/model.pdmodel or inference.json/model.json')
           if not any(name.endswith('.pdiparams') for name in files):
               raise SystemExit('Formula OCR snapshot is missing inference/model .pdiparams')
           (target / 'q389r5c_model_snapshot_report.json').write_text(json.dumps({
@@ -239,4 +243,5 @@ jobs:
             ${{ env.BUNDLE_ROOT }}/bundle/*
             ${{ env.BUNDLE_ROOT }}/reports/*
             ${{ env.BUNDLE_ROOT }}/q389r5c_offline_formula_ocr_bundle_files.zip
+
 

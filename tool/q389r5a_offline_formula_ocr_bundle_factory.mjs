@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -153,10 +153,10 @@ if (prebuiltNb) {
   const paddleLiteOpt = path.resolve(required('paddle-lite-opt'));
   if (!fs.existsSync(sourceDir) || !fs.statSync(sourceDir).isDirectory()) throw new Error(`--source-dir not found: ${sourceDir}`);
   if (!fs.existsSync(paddleLiteOpt) || !fs.statSync(paddleLiteOpt).isFile()) throw new Error(`--paddle-lite-opt not found: ${paddleLiteOpt}`);
-  const modelFile = findFirst(sourceDir, ['inference.pdmodel', 'model.pdmodel', 'model.pdmodel', '__model__']);
+  const modelFile = findFirst(sourceDir, ['inference.pdmodel', 'model.pdmodel', 'inference.json', 'model.json', '__model__']);
   const paramFile = findFirst(sourceDir, ['inference.pdiparams', 'model.pdiparams', 'params.pdiparams']);
   if (!modelFile || !paramFile) {
-    throw new Error(`source-dir must contain inference.pdmodel/model.pdmodel and inference.pdiparams/model.pdiparams: ${sourceDir}`);
+    throw new Error(`source-dir must contain inference.pdmodel/model.pdmodel/inference.json/model.json and inference.pdiparams/model.pdiparams: ${sourceDir}`);
   }
   const optimizeBase = path.join(conversionDir, nbName.replace(/\.nb$/i, ''));
   const commandArgs = [
@@ -294,3 +294,4 @@ console.log('PASS q389r5a_offline_formula_ocr_bundle_factory');
 console.log(`Bundle directory: ${bundleDir}`);
 console.log(`Manifest: ${manifestFile}`);
 console.log(`App dart-define URL: ${baseUrl}/q389r5_offline_formula_ocr_production_manifest.json`);
+
