@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -171,6 +171,9 @@ if (prebuiltNb) {
   const result = spawnSync(paddleLiteOpt, commandArgs, {encoding: 'utf8'});
   fs.writeFileSync(path.join(reportsDir, 'q389r5a_paddle_lite_opt_stdout.log'), result.stdout ?? '');
   fs.writeFileSync(path.join(reportsDir, 'q389r5a_paddle_lite_opt_stderr.log'), result.stderr ?? '');
+  const spawnError = result.error ? `${result.error.name}: ${result.error.message}` : '';
+  const stdoutPreview = (result.stdout ?? '').slice(0, 4000);
+  const stderrPreview = (result.stderr ?? '').slice(0, 4000);
   writeJson(path.join(reportsDir, 'q389r5a_paddle_lite_opt_command.json'), {
     phase: PHASE,
     startedAt,
@@ -179,9 +182,18 @@ if (prebuiltNb) {
     args: commandArgs,
     exitCode: result.status,
     signal: result.signal,
+    spawnError,
+    stdoutBytes: Buffer.byteLength(result.stdout ?? '', 'utf8'),
+    stderrBytes: Buffer.byteLength(result.stderr ?? '', 'utf8'),
     conversionPassClaimed: result.status === 0,
   });
-  if (result.status !== 0) throw new Error(`paddle_lite_opt failed with exit code ${result.status}; see ${reportsDir}`);
+  if (result.status !== 0) {
+    console.error('Q389R5A paddle_lite_opt stdout preview:');
+    console.error(stdoutPreview || '<empty>');
+    console.error('Q389R5A paddle_lite_opt stderr preview:');
+    console.error(stderrPreview || '<empty>');
+    throw new Error(`paddle_lite_opt failed with exit code ${result.status}; signal=${result.signal ?? ''}; spawnError=${spawnError}; stdout=${stdoutPreview}; stderr=${stderrPreview}; see ${reportsDir}`);
+  }
   const candidates = [optimizeBase, `${optimizeBase}.nb`, path.join(conversionDir, nbName)];
   nbSource = candidates.find((candidate) => fs.existsSync(candidate) && fs.statSync(candidate).isFile()) ?? '';
   if (!nbSource) throw new Error(`paddle_lite_opt did not produce .nb output. Checked: ${candidates.join(', ')}`);
@@ -285,15 +297,6 @@ fs.writeFileSync(path.join(bundleDir, 'README_UPLOAD_Q389R5A.txt'), [
   'Then run Flutter with:',
   `--dart-define=MATHPRO_OFFLINE_FORMULA_OCR_BUNDLE_MANIFEST_URL=${baseUrl}/q389r5_offline_formula_ocr_production_manifest.json`,
   '',
-  'Do not modify file names, file bytes, SHA256 values, or sizeBytes after this manifest is generated.',
-  'This bundle is for device-only offline Formula OCR after Modeli indir completes.',
-  '',
+  'Do not modify file names after manifest generation; SHA256 and sizeBytes are strict.',
 ].join('\n'));
-
-console.log('PASS q389r5a_offline_formula_ocr_bundle_factory');
-console.log(`Bundle directory: ${bundleDir}`);
-console.log(`Manifest: ${manifestFile}`);
-console.log(`App dart-define URL: ${baseUrl}/q389r5_offline_formula_ocr_production_manifest.json`);
-
-
-
+console.log(`PASS ${PHASE} generated ${manifestFile}`);
