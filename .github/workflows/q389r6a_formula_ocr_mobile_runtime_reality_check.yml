@@ -1,0 +1,176 @@
+name: Q389R6A Formula OCR Mobile Runtime Reality Check
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_repo:
+        description: "Formula OCR Hugging Face model repo"
+        required: true
+        default: "PaddlePaddle/PP-FormulaNet-S"
+      model_revision:
+        description: "Model revision, branch, tag, or commit"
+        required: true
+        default: "main"
+      opset_version:
+        description: "ONNX opset version"
+        required: true
+        default: "19"
+
+permissions:
+  contents: read
+
+env:
+  Q389R6A_ROOT: ${{ github.workspace }}/build/q389r6a_formula_ocr_runtime_check
+
+jobs:
+  paddle2onnx-reality-check:
+    name: Test Paddle2ONNX export and ONNX Runtime load
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout MathPro source
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime check dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install huggingface_hub onnx onnxruntime paddle2onnx paddlepaddle==3.0.0
+
+      - name: Download official Formula OCR model snapshot
+        shell: bash
+        env:
+          MODEL_REPO: ${{ inputs.model_repo }}
+          MODEL_REVISION: ${{ inputs.model_revision }}
+        run: |
+          set -euxo pipefail
+          mkdir -p "$Q389R6A_ROOT/model" "$Q389R6A_ROOT/reports" "$Q389R6A_ROOT/out"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from huggingface_hub import snapshot_download
+
+          root = Path(os.environ['Q389R6A_ROOT'])
+          model_dir = root / 'model'
+          repo = os.environ['MODEL_REPO']
+          revision = os.environ['MODEL_REVISION']
+          snapshot_download(
+              repo_id=repo,
+              revision=revision,
+              local_dir=str(model_dir),
+              local_dir_use_symlinks=False,
+              allow_patterns=['inference.json', 'inference.pdiparams', 'inference.yml', 'config.json', 'README.md', '*.txt', '*vocab*', '*token*', '*dict*', '*latex*'],
+          )
+          files = sorted(str(p.relative_to(model_dir)) for p in model_dir.rglob('*') if p.is_file())
+          report = {
+              'phase': 'V172-Q389R6A',
+              'repo': repo,
+              'revision': revision,
+              'files': files,
+              'hasInferenceJson': 'inference.json' in files,
+              'hasInferencePdiparams': 'inference.pdiparams' in files,
+          }
+          (root / 'reports' / 'q389r6a_model_snapshot_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          if 'inference.json' not in files or 'inference.pdiparams' not in files:
+              raise SystemExit('FormulaNet snapshot must contain inference.json and inference.pdiparams for Paddle2ONNX reality check')
+          PY
+
+      - name: Export Paddle JSON graph to ONNX
+        shell: bash
+        env:
+          OPSET_VERSION: ${{ inputs.opset_version }}
+        run: |
+          set +e
+          mkdir -p "$Q389R6A_ROOT/reports" "$Q389R6A_ROOT/out"
+          paddle2onnx \
+            --model_dir "$Q389R6A_ROOT/model" \
+            --model_filename inference.json \
+            --params_filename inference.pdiparams \
+            --save_file "$Q389R6A_ROOT/out/formula_ocr.onnx" \
+            --opset_version "$OPSET_VERSION" \
+            --enable_auto_update_opset True \
+            --enable_onnx_checker True \
+            --enable_verbose True \
+            > "$Q389R6A_ROOT/reports/q389r6a_paddle2onnx_stdout.log" \
+            2> "$Q389R6A_ROOT/reports/q389r6a_paddle2onnx_stderr.log"
+          STATUS=$?
+          set -e
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          root = Path(os.environ['Q389R6A_ROOT'])
+          onnx_path = root / 'out' / 'formula_ocr.onnx'
+          report = {
+              'phase': 'V172-Q389R6A',
+              'exportTool': 'paddle2onnx',
+              'onnxPath': str(onnx_path),
+              'onnxExists': onnx_path.exists(),
+              'onnxSizeBytes': onnx_path.stat().st_size if onnx_path.exists() else 0,
+          }
+          (root / 'reports' / 'q389r6a_paddle2onnx_export_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          PY
+          if [ "$STATUS" -ne 0 ]; then
+            echo "::group::Q389R6A Paddle2ONNX failure reports"
+            cat "$Q389R6A_ROOT/reports/q389r6a_paddle2onnx_stdout.log" || true
+            cat "$Q389R6A_ROOT/reports/q389r6a_paddle2onnx_stderr.log" || true
+            cat "$Q389R6A_ROOT/reports/q389r6a_paddle2onnx_export_report.json" || true
+            echo "::endgroup::"
+            exit "$STATUS"
+          fi
+
+      - name: Check ONNX and load with ONNX Runtime
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import onnx
+          import onnxruntime as ort
+
+          root = Path(os.environ['Q389R6A_ROOT'])
+          model_path = root / 'out' / 'formula_ocr.onnx'
+          report_path = root / 'reports' / 'q389r6a_onnxruntime_load_report.json'
+          report = {
+              'phase': 'V172-Q389R6A',
+              'onnxPath': str(model_path),
+              'onnxExists': model_path.exists(),
+              'onnxSizeBytes': model_path.stat().st_size if model_path.exists() else 0,
+              'onnxCheckerPassed': False,
+              'onnxRuntimeSessionCreated': False,
+              'inputs': [],
+              'outputs': [],
+          }
+          try:
+              onnx_model = onnx.load(str(model_path))
+              onnx.checker.check_model(onnx_model)
+              report['onnxCheckerPassed'] = True
+              session = ort.InferenceSession(str(model_path), providers=['CPUExecutionProvider'])
+              report['onnxRuntimeSessionCreated'] = True
+              report['inputs'] = [{'name': i.name, 'shape': i.shape, 'type': i.type} for i in session.get_inputs()]
+              report['outputs'] = [{'name': o.name, 'shape': o.shape, 'type': o.type} for o in session.get_outputs()]
+          finally:
+              report_path.write_text(json.dumps(report, indent=2), encoding='utf-8')
+          if not report['onnxCheckerPassed'] or not report['onnxRuntimeSessionCreated']:
+              raise SystemExit('ONNX checker/session smoke failed')
+          PY
+
+      - name: Upload Q389R6A runtime check artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r6a-formula-ocr-runtime-reality-check
+          path: |
+            build/q389r6a_formula_ocr_runtime_check/reports/**
+            build/q389r6a_formula_ocr_runtime_check/out/**
+          if-no-files-found: warn
