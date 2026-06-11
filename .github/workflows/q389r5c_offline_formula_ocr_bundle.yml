@@ -1,4 +1,4 @@
-name: Q389R5C Offline Formula OCR Bundle Builder
+﻿name: Q389R5C Offline Formula OCR Bundle Builder
 
 on:
   workflow_dispatch:
@@ -35,8 +35,8 @@ permissions:
 env:
   Q389R5C_PHASE: V172-Q389R5C_OFFLINE-CLOUD-MODEL-BUNDLE-BUILDER
   BUNDLE_ROOT: ${{ github.workspace }}/build/q389r5c_formula_ocr_bundle
-  MODEL_DIR: ${{ runner.temp }}/q389r5c_model
-  TOOLS_DIR: ${{ runner.temp }}/q389r5c_tools
+  MODEL_DIR: ${{ github.workspace }}/build/q389r5c_model
+  TOOLS_DIR: ${{ github.workspace }}/build/q389r5c_tools
 
 jobs:
   build-offline-formula-ocr-bundle:
@@ -239,3 +239,4 @@ jobs:
             ${{ env.BUNDLE_ROOT }}/bundle/*
             ${{ env.BUNDLE_ROOT }}/reports/*
             ${{ env.BUNDLE_ROOT }}/q389r5c_offline_formula_ocr_bundle_files.zip
+
