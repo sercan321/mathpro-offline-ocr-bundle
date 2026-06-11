@@ -295,3 +295,4 @@ console.log(`Bundle directory: ${bundleDir}`);
 console.log(`Manifest: ${manifestFile}`);
 console.log(`App dart-define URL: ${baseUrl}/q389r5_offline_formula_ocr_production_manifest.json`);
 
+
