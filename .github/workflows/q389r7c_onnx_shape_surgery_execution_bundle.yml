@@ -1,0 +1,305 @@
+name: Q389R7C ONNX shape-surgery execution-compatible Formula OCR bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: GitHub Release tag for the first execution-compatible ONNX bundle
+        required: true
+        default: q389r7c-onnx-shape-surgery-execution-compatible-formula-ocr-bundle
+      opsets:
+        description: Comma-separated opsets to try
+        required: true
+        default: '19,18,17'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  build:
+    name: Build and publish shape-surgery execution-compatible ONNX bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout MathPro source
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install conversion and verification dependencies
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade huggingface_hub numpy onnx onnxruntime paddle2onnx
+
+      - name: Export candidates, perform ONNX shape surgery, and require session.run
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          OPSETS: ${{ inputs.opsets }}
+        run: |
+          set -euxo pipefail
+          mkdir -p build/q389r7c/work build/q389r7c/reports build/q389r7c/bundle
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import shutil
+          import subprocess
+          import traceback
+          from pathlib import Path
+
+          import numpy as np
+          import onnx
+          import onnxruntime as ort
+          from huggingface_hub import snapshot_download
+
+          ROOT = Path.cwd()
+          OUT = ROOT / 'build' / 'q389r7c'
+          WORK = OUT / 'work'
+          REPORTS = OUT / 'reports'
+          BUNDLE = OUT / 'bundle'
+          for p in (WORK, REPORTS, BUNDLE):
+              p.mkdir(parents=True, exist_ok=True)
+
+          repos = [
+              'PaddlePaddle/PP-FormulaNet_plus-S',
+              'PaddlePaddle/PP-FormulaNet-S',
+          ]
+          opsets = [x.strip() for x in os.environ.get('OPSETS', '19,18,17').split(',') if x.strip()]
+          attempts = []
+
+          def sha256(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          def all_graphs(graph):
+              yield graph
+              for node in graph.node:
+                  for attr in node.attribute:
+                      if attr.type == onnx.AttributeProto.GRAPH:
+                          yield from all_graphs(attr.g)
+                      elif attr.type == onnx.AttributeProto.GRAPHS:
+                          for g in attr.graphs:
+                              yield from all_graphs(g)
+
+          def clear_value_info_and_subgraph_output_shapes(src: Path, dst: Path):
+              model = onnx.load(str(src))
+              for graph in all_graphs(model.graph):
+                  del graph.value_info[:]
+                  # Preserve top-level graph input shapes. Clear output shape hints in subgraphs
+                  # and dynamic control-flow graphs because Paddle2ONNX emitted scalar {} hints
+                  # while ORT observes {1} at runtime for If/Loop branch values.
+                  if graph is not model.graph:
+                      for out in graph.output:
+                          tt = out.type.tensor_type
+                          if tt.HasField('shape'):
+                              tt.ClearField('shape')
+              onnx.save(model, str(dst))
+
+          def force_scalar_outputs_to_vector1(src: Path, dst: Path):
+              model = onnx.load(str(src))
+              for graph in all_graphs(model.graph):
+                  if graph is model.graph:
+                      continue
+                  for out in graph.output:
+                      tt = out.type.tensor_type
+                      if not tt.HasField('shape') or len(tt.shape.dim) == 0:
+                          if tt.HasField('shape'):
+                              tt.ClearField('shape')
+                          d = tt.shape.dim.add()
+                          d.dim_value = 1
+                  for vi in graph.value_info:
+                      tt = vi.type.tensor_type
+                      if tt.HasField('shape') and len(tt.shape.dim) == 0:
+                          tt.ClearField('shape')
+                          d = tt.shape.dim.add()
+                          d.dim_value = 1
+              onnx.save(model, str(dst))
+
+          def clear_all_non_input_shapes(src: Path, dst: Path):
+              model = onnx.load(str(src))
+              for graph in all_graphs(model.graph):
+                  del graph.value_info[:]
+                  for out in graph.output:
+                      tt = out.type.tensor_type
+                      if tt.HasField('shape'):
+                          tt.ClearField('shape')
+              onnx.save(model, str(dst))
+
+          def verify_runtime_run(model_path: Path):
+              so = ort.SessionOptions()
+              so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
+              # Keep this strict: mobile will not be allowed to accept a model that only loads.
+              session = ort.InferenceSession(str(model_path), sess_options=so, providers=['CPUExecutionProvider'])
+              inp = session.get_inputs()[0]
+              shape = []
+              for i, d in enumerate(inp.shape):
+                  if isinstance(d, int) and d > 0:
+                      shape.append(d)
+                  elif i == 0:
+                      shape.append(1)
+                  elif i == 1:
+                      shape.append(1)
+                  else:
+                      shape.append(384)
+              arr = np.zeros(shape, dtype=np.float32)
+              outputs = session.run(None, {inp.name: arr})
+              return {
+                  'inputName': inp.name,
+                  'inputShape': shape,
+                  'outputCount': len(outputs),
+                  'outputTypes': [str(type(o)) for o in outputs],
+                  'outputShapes': [list(getattr(o, 'shape', [])) for o in outputs],
+              }
+
+          def export_onnx(model_dir: Path, out_path: Path, opset: str):
+              cmd = [
+                  'paddle2onnx',
+                  '--model_dir', str(model_dir),
+                  '--model_filename', 'inference.json',
+                  '--params_filename', 'inference.pdiparams',
+                  '--save_file', str(out_path),
+                  '--opset_version', str(opset),
+                  '--enable_onnx_checker', 'True',
+              ]
+              res = subprocess.run(cmd, cwd=str(ROOT), text=True, capture_output=True)
+              return res
+
+          selected = None
+          for repo in repos:
+              safe_repo = repo.lower().replace('/', '_').replace('-', '_')
+              repo_dir = WORK / safe_repo / 'snapshot'
+              try:
+                  snapshot_download(
+                      repo_id=repo,
+                      revision='main',
+                      local_dir=str(repo_dir),
+                      allow_patterns=['inference.json', 'inference.pdiparams', '*.txt', '*.json'],
+                  )
+              except Exception as e:
+                  attempts.append({'repo': repo, 'stage': 'snapshot_download', 'passed': False, 'error': repr(e), 'traceback': traceback.format_exc()})
+                  continue
+              if not (repo_dir / 'inference.json').exists() or not (repo_dir / 'inference.pdiparams').exists():
+                  attempts.append({'repo': repo, 'stage': 'model_files_missing', 'passed': False})
+                  continue
+              for opset in opsets:
+                  attempt_dir = WORK / safe_repo / f'opset_{opset}'
+                  attempt_dir.mkdir(parents=True, exist_ok=True)
+                  raw = attempt_dir / 'raw.onnx'
+                  res = export_onnx(repo_dir, raw, opset)
+                  (attempt_dir / 'paddle2onnx_stdout.log').write_text(res.stdout or '', encoding='utf-8')
+                  (attempt_dir / 'paddle2onnx_stderr.log').write_text(res.stderr or '', encoding='utf-8')
+                  if res.returncode != 0 or not raw.exists():
+                      attempts.append({'repo': repo, 'opset': opset, 'stage': 'paddle2onnx_export', 'passed': False, 'exportStatus': res.returncode, 'stderrTail': (res.stderr or '')[-2000:]})
+                      continue
+                  variants = [('raw', raw)]
+                  v1 = attempt_dir / 'clear_subgraph_output_shapes.onnx'
+                  v2 = attempt_dir / 'force_scalar_outputs_to_vector1.onnx'
+                  v3 = attempt_dir / 'clear_all_non_input_shapes.onnx'
+                  try:
+                      clear_value_info_and_subgraph_output_shapes(raw, v1)
+                      variants.append(('clear_subgraph_output_shapes', v1))
+                  except Exception as e:
+                      attempts.append({'repo': repo, 'opset': opset, 'variant': 'clear_subgraph_output_shapes', 'stage': 'shape_surgery', 'passed': False, 'error': repr(e)})
+                  try:
+                      force_scalar_outputs_to_vector1(raw, v2)
+                      variants.append(('force_scalar_outputs_to_vector1', v2))
+                  except Exception as e:
+                      attempts.append({'repo': repo, 'opset': opset, 'variant': 'force_scalar_outputs_to_vector1', 'stage': 'shape_surgery', 'passed': False, 'error': repr(e)})
+                  try:
+                      clear_all_non_input_shapes(raw, v3)
+                      variants.append(('clear_all_non_input_shapes', v3))
+                  except Exception as e:
+                      attempts.append({'repo': repo, 'opset': opset, 'variant': 'clear_all_non_input_shapes', 'stage': 'shape_surgery', 'passed': False, 'error': repr(e)})
+                  for variant, model_path in variants:
+                      try:
+                          onnx.checker.check_model(str(model_path))
+                          evidence = verify_runtime_run(model_path)
+                          target_model = BUNDLE / 'pp_formulanet_mobile_execution_compatible.onnx'
+                          shutil.copy2(model_path, target_model)
+                          # Copy lightweight sidecars that can be used by the app decoder/provenance path.
+                          for candidate in repo_dir.iterdir():
+                              if candidate.is_file() and candidate.name != 'inference.pdiparams' and candidate.name != 'inference.json':
+                                  shutil.copy2(candidate, BUNDLE / candidate.name)
+                          model_sha = sha256(target_model)
+                          model_size = target_model.stat().st_size
+                          manifest = {
+                              'phase': 'V172-Q389R7C',
+                              'manifestFormatVersion': 'q389r7c-onnx-shape-surgery-execution-compatible-bundle-v1',
+                              'modelId': 'pp_formulanet_execution_compatible_onnx_mobile',
+                              'modelDisplayName': f'{repo} ONNX Runtime execution-compatible Formula OCR',
+                              'sourceRevision': 'main',
+                              'conversionProvenance': f'paddle2onnx opset {opset}; variant {variant}; session.run verified on CI CPUExecutionProvider',
+                              'primaryRuntimeArtifactKind': 'onnx-runtime-model',
+                              'primaryRuntimeModelFileName': target_model.name,
+                              'onnxRuntimeMobileRequired': True,
+                              'files': [
+                                  {
+                                      'role': 'onnx-runtime-model',
+                                      'fileName': target_model.name,
+                                      'downloadUrl': f"https://github.com/sercan321/mathpro-offline-ocr-bundle/releases/download/{os.environ.get('RELEASE_TAG')}/{target_model.name}",
+                                      'sha256': model_sha,
+                                      'sizeBytes': model_size,
+                                      'required': True,
+                                  }
+                              ],
+                              'backendAllowed': False,
+                              'mlKitAllowed': False,
+                              'textOcrFallbackAllowed': False,
+                              'fakeLatexCandidateAllowed': False,
+                              'workspaceImportRequiresEditableReview': True,
+                          }
+                          # Ensure required decoder and preprocess sidecars exist for current app manifest gate.
+                          pre = BUNDLE / 'q389r7c_preprocess_metadata.json'
+                          dec = BUNDLE / 'q389r7c_decoder_metadata.json'
+                          pre.write_text(json.dumps({'role': 'preprocess-metadata', 'input': evidence['inputShape'], 'normalization': 'zero-to-one-debug-gate; app may override'}, indent=2), encoding='utf-8')
+                          dec.write_text(json.dumps({'role': 'decoder-metadata', 'note': 'Execution-compatible runtime artifact selected. Decoder integration remains app-side guarded.'}, indent=2), encoding='utf-8')
+                          manifest['files'].append({'role': 'preprocess-metadata', 'fileName': pre.name, 'downloadUrl': f"https://github.com/sercan321/mathpro-offline-ocr-bundle/releases/download/{os.environ.get('RELEASE_TAG')}/{pre.name}", 'sha256': sha256(pre), 'sizeBytes': pre.stat().st_size, 'required': True})
+                          manifest['files'].append({'role': 'decoder-metadata', 'fileName': dec.name, 'downloadUrl': f"https://github.com/sercan321/mathpro-offline-ocr-bundle/releases/download/{os.environ.get('RELEASE_TAG')}/{dec.name}", 'sha256': sha256(dec), 'sizeBytes': dec.stat().st_size, 'required': True})
+                          manifest_path = BUNDLE / 'q389r6b_onnx_formula_ocr_bundle_manifest.json'
+                          manifest_path.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+                          report = {'phase': 'V172-Q389R7C', 'status': 'EXECUTION_COMPATIBLE_ONNX_ARTIFACT_READY', 'selected': {'repo': repo, 'opset': opset, 'variant': variant, 'modelSizeBytes': model_size, 'modelSha256': model_sha, 'runtimeEvidence': evidence}, 'attempts': attempts}
+                          (REPORTS / 'q389r7c_execution_compatible_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+                          selected = report['selected']
+                          raise SystemExit(0)
+                      except SystemExit:
+                          raise
+                      except Exception as e:
+                          attempts.append({'repo': repo, 'opset': opset, 'variant': variant, 'stage': 'runtime_session_run', 'onnxExists': model_path.exists(), 'onnxSizeBytes': model_path.stat().st_size if model_path.exists() else 0, 'passed': False, 'error': repr(e), 'traceback': traceback.format_exc()})
+
+          report = {'phase': 'V172-Q389R7C', 'status': 'NO_EXECUTION_COMPATIBLE_ONNX_ARTIFACT_AFTER_SHAPE_SURGERY', 'attempts': attempts}
+          (REPORTS / 'q389r7c_execution_compatible_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          print(json.dumps(report, indent=2))
+          raise SystemExit(1)
+          PY
+
+      - name: Upload workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r7c-onnx-shape-surgery-execution-compatible-report
+          path: |
+            build/q389r7c/reports/**
+            build/q389r7c/bundle/**
+            build/q389r7c/work/**/paddle2onnx_stdout.log
+            build/q389r7c/work/**/paddle2onnx_stderr.log
+          if-no-files-found: warn
+
+      - name: Publish GitHub Release assets
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: Q389R7C ONNX shape-surgery execution-compatible Formula OCR bundle
+          body: |
+            Q389R7C publishes only if a converted ONNX model passes a real onnxruntime session.run smoke test.
+            This release is still review-first and offline-only: no backend, no ML Kit, no text OCR fallback, no fake LaTeX.
+          files: |
+            build/q389r7c/bundle/*
