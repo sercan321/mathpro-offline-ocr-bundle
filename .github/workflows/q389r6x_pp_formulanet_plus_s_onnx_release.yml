@@ -1,0 +1,300 @@
+name: Q389R6X PP-FormulaNet plus-S ONNX Bundle Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_repo:
+        description: "Formula OCR Hugging Face model repo"
+        required: true
+        default: "PaddlePaddle/PP-FormulaNet_plus-S"
+      model_revision:
+        description: "Model revision, branch, tag, or commit"
+        required: true
+        default: "main"
+      opset_version:
+        description: "ONNX opset version"
+        required: true
+        default: "19"
+      release_tag:
+        description: "GitHub Release tag for hosted download-only OCR bundle"
+        required: true
+        default: "q389r6x-pp-formulanet-plus-s-onnx-bundle"
+      base_url_override:
+        description: "Optional asset base URL override; leave blank for this repository release"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  Q389R6X_ROOT: ${{ github.workspace }}/build/q389r6x_pp_formulanet_plus_s_onnx_release
+
+jobs:
+  build-release-bundle:
+    name: Build and publish PP-FormulaNet plus-S ONNX bundle manifest
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout MathPro source
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install conversion and verification dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install huggingface_hub onnx onnxruntime paddle2onnx paddlepaddle==3.0.0
+
+      - name: Download official Formula OCR model snapshot
+        shell: bash
+        env:
+          MODEL_REPO: ${{ inputs.model_repo }}
+          MODEL_REVISION: ${{ inputs.model_revision }}
+        run: |
+          set -euxo pipefail
+          mkdir -p "$Q389R6X_ROOT/model" "$Q389R6X_ROOT/reports" "$Q389R6X_ROOT/bundle"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from huggingface_hub import snapshot_download
+
+          root = Path(os.environ['Q389R6X_ROOT'])
+          model_dir = root / 'model'
+          repo = os.environ['MODEL_REPO']
+          revision = os.environ['MODEL_REVISION']
+          snapshot_download(
+              repo_id=repo,
+              revision=revision,
+              local_dir=str(model_dir),
+              local_dir_use_symlinks=False,
+              allow_patterns=['inference.json', 'inference.pdiparams', 'inference.yml', 'config.json', 'README.md', '*.txt', '*vocab*', '*token*', '*dict*', '*latex*'],
+          )
+          files = sorted(str(p.relative_to(model_dir)) for p in model_dir.rglob('*') if p.is_file())
+          report = {
+              'phase': 'V172-Q389R6X',
+              'repo': repo,
+              'revision': revision,
+              'files': files,
+              'hasInferenceJson': 'inference.json' in files,
+              'hasInferencePdiparams': 'inference.pdiparams' in files,
+          }
+          (root / 'reports' / 'q389r6x_model_snapshot_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          if 'inference.json' not in files or 'inference.pdiparams' not in files:
+              raise SystemExit('FormulaNet snapshot must contain inference.json and inference.pdiparams')
+          PY
+
+      - name: Export Paddle JSON graph to ONNX
+        shell: bash
+        env:
+          OPSET_VERSION: ${{ inputs.opset_version }}
+        run: |
+          set +e
+          mkdir -p "$Q389R6X_ROOT/reports" "$Q389R6X_ROOT/bundle"
+          paddle2onnx \
+            --model_dir "$Q389R6X_ROOT/model" \
+            --model_filename inference.json \
+            --params_filename inference.pdiparams \
+            --save_file "$Q389R6X_ROOT/bundle/pp_formulanet_plus_s.onnx" \
+            --opset_version "$OPSET_VERSION" \
+            --enable_auto_update_opset True \
+            --enable_onnx_checker True \
+            --enable_verbose True \
+            > "$Q389R6X_ROOT/reports/q389r6x_paddle2onnx_stdout.log" \
+            2> "$Q389R6X_ROOT/reports/q389r6x_paddle2onnx_stderr.log"
+          STATUS=$?
+          set -e
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          root = Path(os.environ['Q389R6X_ROOT'])
+          onnx_path = root / 'bundle' / 'pp_formulanet_plus_s.onnx'
+          report = {
+              'phase': 'V172-Q389R6X',
+              'exportTool': 'paddle2onnx',
+              'onnxPath': str(onnx_path),
+              'onnxExists': onnx_path.exists(),
+              'onnxSizeBytes': onnx_path.stat().st_size if onnx_path.exists() else 0,
+          }
+          (root / 'reports' / 'q389r6x_paddle2onnx_export_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          PY
+          if [ "$STATUS" -ne 0 ]; then
+            echo "::group::Q389R6X Paddle2ONNX failure reports"
+            cat "$Q389R6X_ROOT/reports/q389r6x_paddle2onnx_stdout.log" || true
+            cat "$Q389R6X_ROOT/reports/q389r6x_paddle2onnx_stderr.log" || true
+            cat "$Q389R6X_ROOT/reports/q389r6x_paddle2onnx_export_report.json" || true
+            echo "::endgroup::"
+            exit "$STATUS"
+          fi
+
+      - name: Validate ONNX Runtime load and generate manifest sidecars
+        shell: bash
+        env:
+          MODEL_REPO: ${{ inputs.model_repo }}
+          MODEL_REVISION: ${{ inputs.model_revision }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          BASE_URL_OVERRIDE: ${{ inputs.base_url_override }}
+        run: |
+          set -euxo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import shutil
+          from pathlib import Path
+          import onnx
+          import onnxruntime as ort
+
+          root = Path(os.environ['Q389R6X_ROOT'])
+          bundle = root / 'bundle'
+          reports = root / 'reports'
+          model_dir = root / 'model'
+          model_path = bundle / 'pp_formulanet_plus_s.onnx'
+          repo = os.environ['MODEL_REPO']
+          revision = os.environ['MODEL_REVISION']
+          release_tag = os.environ['RELEASE_TAG']
+          base_url = os.environ.get('BASE_URL_OVERRIDE') or f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{release_tag}"
+
+          def sha256_file(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          onnx_model = onnx.load(str(model_path))
+          onnx.checker.check_model(onnx_model)
+          session = ort.InferenceSession(str(model_path), providers=['CPUExecutionProvider'])
+          inputs = [{'name': i.name, 'shape': i.shape, 'type': i.type} for i in session.get_inputs()]
+          outputs = [{'name': o.name, 'shape': o.shape, 'type': o.type} for o in session.get_outputs()]
+
+          preprocess = {
+              'phase': 'V172-Q389R6X',
+              'role': 'preprocess-metadata',
+              'modelRepo': repo,
+              'modelRevision': revision,
+              'runtime': 'ONNX Runtime Mobile',
+              'imageTensorPolicy': 'native bridge must construct the model input tensor; no backend, no ML Kit, no text OCR fallback',
+              'sourceFilesPresent': sorted(str(p.relative_to(model_dir)) for p in model_dir.rglob('*') if p.is_file()),
+          }
+          decoder = {
+              'phase': 'V172-Q389R6X',
+              'role': 'decoder-metadata',
+              'modelRepo': repo,
+              'modelRevision': revision,
+              'onnxInputs': inputs,
+              'onnxOutputs': outputs,
+              'fakeLatexCandidateAllowed': False,
+              'reviewFirstRequired': True,
+              'note': 'This sidecar records ONNX IO metadata. It does not authorize fabricated LaTeX; Android decoder must return a real decoded candidate or fail closed.',
+          }
+          preprocess_path = bundle / 'q389r6x_preprocess_metadata.json'
+          decoder_path = bundle / 'q389r6x_decoder_metadata.json'
+          preprocess_path.write_text(json.dumps(preprocess, indent=2), encoding='utf-8')
+          decoder_path.write_text(json.dumps(decoder, indent=2), encoding='utf-8')
+
+          for candidate in ['inference.yml', 'config.json', 'README.md']:
+              src = model_dir / candidate
+              if src.exists():
+                  shutil.copy2(src, bundle / candidate)
+
+          files = []
+          def add_file(role, file_name, required=True):
+              path = bundle / file_name
+              files.append({
+                  'role': role,
+                  'fileName': file_name,
+                  'downloadUrl': f'{base_url}/{file_name}',
+                  'sha256': sha256_file(path),
+                  'sizeBytes': path.stat().st_size,
+                  'required': required,
+              })
+
+          add_file('onnx-runtime-model', 'pp_formulanet_plus_s.onnx', True)
+          add_file('preprocess-metadata', 'q389r6x_preprocess_metadata.json', True)
+          add_file('decoder-metadata', 'q389r6x_decoder_metadata.json', True)
+          if (bundle / 'inference.yml').exists():
+              add_file('source-preprocess-config', 'inference.yml', False)
+          if (bundle / 'config.json').exists():
+              add_file('source-model-config', 'config.json', False)
+          if (bundle / 'README.md').exists():
+              add_file('source-readme', 'README.md', False)
+
+          manifest = {
+              'phase': 'V172-Q389R6X-PP-FORMULANET-PLUS-S-ONNX-BUNDLE-RELEASE',
+              'manifestFormatVersion': 'q389r6b-onnx-runtime-mobile-bundle-manifest-v1',
+              'modelId': 'pp_formulanet_plus_s_onnx_mobile',
+              'modelDisplayName': 'PP-FormulaNet_plus-S ONNX offline formula OCR',
+              'sourceRevision': f'{repo}@{revision}',
+              'conversionProvenance': f'GitHub Actions {os.environ.get("GITHUB_SERVER_URL")}/{os.environ.get("GITHUB_REPOSITORY")}/actions/runs/{os.environ.get("GITHUB_RUN_ID")}',
+              'primaryRuntimeArtifactKind': 'onnx-runtime-model',
+              'primaryRuntimeModelFileName': 'pp_formulanet_plus_s.onnx',
+              'onnxRuntimeMobileRequired': True,
+              'backendAllowed': False,
+              'mlKitAllowed': False,
+              'textOcrFallbackAllowed': False,
+              'modelBundledInBaseApp': False,
+              'fakeLatexCandidateAllowed': False,
+              'workspaceImportRequiresEditableReview': True,
+              'files': files,
+          }
+          manifest_path = bundle / 'q389r6b_onnx_formula_ocr_bundle_manifest.json'
+          manifest_path.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+
+          report = {
+              'phase': 'V172-Q389R6X',
+              'onnxCheckerPassed': True,
+              'onnxRuntimeSessionCreated': True,
+              'inputs': inputs,
+              'outputs': outputs,
+              'bundleFiles': files,
+              'manifestPath': str(manifest_path),
+          }
+          (reports / 'q389r6x_release_bundle_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+
+          expected_sha = '575353f72a804215329b128ed1b85e8de65fdb4b06730ac8e7954bae5c44e64d'
+          expected_size = 333913240
+          actual_sha = sha256_file(model_path)
+          actual_size = model_path.stat().st_size
+          if actual_sha != expected_sha or actual_size != expected_size:
+              raise SystemExit(f'ONNX evidence mismatch: sha={actual_sha} size={actual_size}')
+          PY
+
+      - name: Upload workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r6x-pp-formulanet-plus-s-onnx-bundle
+          path: |
+            build/q389r6x_pp_formulanet_plus_s_onnx_release/reports/**
+            build/q389r6x_pp_formulanet_plus_s_onnx_release/bundle/**
+          if-no-files-found: error
+
+      - name: Publish GitHub Release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: Q389R6X PP-FormulaNet plus-S ONNX Bundle
+          body: |
+            Device-only Formula OCR bundle for MathPro/Gauss Q389R6X.
+
+            This release hosts PP-FormulaNet_plus-S converted through Paddle2ONNX and verified with ONNX Runtime.
+            The model is download-only/app-private for the Android app. It is not bundled into the APK/AAB.
+            No backend, no ML Kit, no text OCR fallback, no fake LaTeX candidate is authorized by this release.
+          files: |
+            ${{ env.Q389R6X_ROOT }}/bundle/pp_formulanet_plus_s.onnx
+            ${{ env.Q389R6X_ROOT }}/bundle/q389r6b_onnx_formula_ocr_bundle_manifest.json
+            ${{ env.Q389R6X_ROOT }}/bundle/q389r6x_preprocess_metadata.json
+            ${{ env.Q389R6X_ROOT }}/bundle/q389r6x_decoder_metadata.json
+            ${{ env.Q389R6X_ROOT }}/bundle/inference.yml
+            ${{ env.Q389R6X_ROOT }}/bundle/config.json
+            ${{ env.Q389R6X_ROOT }}/reports/q389r6x_release_bundle_report.json
+          fail_on_unmatched_files: false
