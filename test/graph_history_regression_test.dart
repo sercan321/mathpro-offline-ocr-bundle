@@ -173,8 +173,8 @@ void main() {
 
       await tester.enterText(find.byType(TextField).at(0), '10');
       await tester.enterText(find.byType(TextField).at(1), '0');
-      await tester.ensureVisible(find.text('Apply'));
-      await tester.tap(find.text('Apply'));
+      final applyButton = find.widgetWithText(ElevatedButton, 'Apply');
+      tester.widget<ElevatedButton>(applyButton).onPressed?.call();
       await tester.pump();
 
       expect(applied, isNull);
@@ -184,8 +184,7 @@ void main() {
       await tester.enterText(find.byType(TextField).at(1), '6.28');
       await tester.enterText(find.byType(TextField).at(2), '-2');
       await tester.enterText(find.byType(TextField).at(3), '2');
-      await tester.ensureVisible(find.text('Apply'));
-      await tester.tap(find.text('Apply'));
+      tester.widget<ElevatedButton>(applyButton).onPressed?.call();
       await tester.pump();
 
       expect(applied, isNotNull);

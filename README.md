@@ -3832,23 +3832,3 @@ flutter analyze
 flutter test
 flutter run -d 23106RN0DA
 ```
-## V172-Q389R5F — Offline stale Flutter test sweep closure
-
-Q389R5F closes the stale Flutter test-family failures reported after Q389R5E: legacy metadata exact-version checks, Q239 review-surface marker expectations, pre-Q384 `INTERNET` guard expectations, Q276/Q277 broad pubspec comment scans, the Q291 `http:` forbidden-family false positive, and the Q382R24R1 audit-doc fake-PASS exact string false positive.
-
-This phase does not add backend OCR, ML Kit, text OCR fallback, model bytes, fake candidates, direct OCR-to-workspace import, or Graph/Solution/History auto-execution. It does not claim Flutter/device/OCR PASS.
-
-Static verifier:
-
-```powershell
-node tool/verify_q389r5f_offline_stale_flutter_test_sweep_closure.mjs
-```
-
-Run local hygiene after extracting:
-
-```powershell
-flutter pub get
-flutter analyze
-flutter test
-flutter run -d 23106RN0DA
-```

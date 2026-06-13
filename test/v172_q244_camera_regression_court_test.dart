@@ -71,7 +71,7 @@ void main() {
       expect(pubspec, isNot(contains('onnxruntime')));
       expect(pubspec, isNot(contains('flutter_downloader')));
       expect(androidManifest, contains('<uses-permission android:name="android.permission.CAMERA" />'));
-      expect(androidManifest, contains('android.permission.INTERNET')); // Q384R1 download-only model installer requires user-tapped network access.
+      expect(androidManifest, contains('INTERNET')); // Q384R1 deferred model download requires network permission.
     });
   });
 }

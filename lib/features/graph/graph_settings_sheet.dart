@@ -28,6 +28,10 @@ class _GraphSettingsSheetState extends State<GraphSettingsSheet> {
   late final TextEditingController _yMin;
   late final TextEditingController _yMax;
   late bool _traceEnabled;
+  late bool _showCriticalPoints;
+  late bool _showRootPoints;
+  late bool _showExtremaPoints;
+  late bool _showInterceptPoints;
   late GraphRenderMode _renderMode;
   late String _curveColorKey;
   String? _errorText;
@@ -41,6 +45,10 @@ class _GraphSettingsSheetState extends State<GraphSettingsSheet> {
     _yMin = TextEditingController(text: _format(expression.yMin));
     _yMax = TextEditingController(text: _format(expression.yMax));
     _traceEnabled = expression.traceEnabled;
+    _showCriticalPoints = expression.showCriticalPoints;
+    _showRootPoints = expression.showRootPoints;
+    _showExtremaPoints = expression.showExtremaPoints;
+    _showInterceptPoints = expression.showInterceptPoints;
     _renderMode = widget.renderMode;
     _curveColorKey = GraphFunctionColorPalette.byKey(expression.graphColorKey).key;
 
@@ -190,6 +198,20 @@ class _GraphSettingsSheetState extends State<GraphSettingsSheet> {
                   onChanged: (value) => setState(() => _traceEnabled = value),
                 ),
                 const SizedBox(height: 14),
+                const _SectionTitle(label: 'Noktalar'),
+                const SizedBox(height: 8),
+                _CriticalPointToggles(
+                  key: const ValueKey('mathpro-graph-critical-point-toggles-q389r6b'),
+                  showCriticalPoints: _showCriticalPoints,
+                  showRootPoints: _showRootPoints,
+                  showExtremaPoints: _showExtremaPoints,
+                  showInterceptPoints: _showInterceptPoints,
+                  onShowCriticalPointsChanged: (value) => setState(() => _showCriticalPoints = value),
+                  onShowRootPointsChanged: (value) => setState(() => _showRootPoints = value),
+                  onShowExtremaPointsChanged: (value) => setState(() => _showExtremaPoints = value),
+                  onShowInterceptPointsChanged: (value) => setState(() => _showInterceptPoints = value),
+                ),
+                const SizedBox(height: 14),
                 const _SectionTitle(label: 'Fonksiyon Rengi'),
                 const SizedBox(height: 8),
                 _CurveColorPicker(
@@ -276,6 +298,10 @@ class _GraphSettingsSheetState extends State<GraphSettingsSheet> {
         yMin: parsed.yMin,
         yMax: parsed.yMax,
         traceEnabled: _traceEnabled,
+        showCriticalPoints: _showCriticalPoints,
+        showRootPoints: _showRootPoints,
+        showExtremaPoints: _showExtremaPoints,
+        showInterceptPoints: _showInterceptPoints,
         graphColor: color.color,
         graphColorKey: color.key,
       ),
@@ -287,7 +313,15 @@ class _GraphSettingsSheetState extends State<GraphSettingsSheet> {
     _writeViewport(reset.xMin, reset.xMax, reset.yMin, reset.yMax);
     final color = GraphFunctionColorPalette.byKey(_curveColorKey);
     final updated = GraphViewportPolicy.sanitize(
-      reset.copyWith(traceEnabled: _traceEnabled, graphColor: color.color, graphColorKey: color.key),
+      reset.copyWith(
+        traceEnabled: _traceEnabled,
+        showCriticalPoints: _showCriticalPoints,
+        showRootPoints: _showRootPoints,
+        showExtremaPoints: _showExtremaPoints,
+        showInterceptPoints: _showInterceptPoints,
+        graphColor: color.color,
+        graphColorKey: color.key,
+      ),
     );
     widget.onApply?.call(updated);
     setState(() => _errorText = null);
@@ -598,6 +632,131 @@ class _TraceOption extends StatelessWidget {
             fontSize: 12.5,
             fontWeight: FontWeight.w900,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class _CriticalPointToggles extends StatelessWidget {
+  const _CriticalPointToggles({
+    super.key,
+    required this.showCriticalPoints,
+    required this.showRootPoints,
+    required this.showExtremaPoints,
+    required this.showInterceptPoints,
+    required this.onShowCriticalPointsChanged,
+    required this.onShowRootPointsChanged,
+    required this.onShowExtremaPointsChanged,
+    required this.onShowInterceptPointsChanged,
+  });
+
+  final bool showCriticalPoints;
+  final bool showRootPoints;
+  final bool showExtremaPoints;
+  final bool showInterceptPoints;
+  final ValueChanged<bool> onShowCriticalPointsChanged;
+  final ValueChanged<bool> onShowRootPointsChanged;
+  final ValueChanged<bool> onShowExtremaPointsChanged;
+  final ValueChanged<bool> onShowInterceptPointsChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: GraphStyle.cardAlt.withValues(alpha: 0.62),
+        gradient: GraphStyle.controlGradient,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: showCriticalPoints ? GraphStyle.accent.withValues(alpha: 0.32) : GraphStyle.graphiteLine),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
+        child: Column(
+          children: <Widget>[
+            _PointToggleRow(
+              label: 'Önemli noktalar',
+              description: 'Grafik üzerinde küçük marker ve dokununca bilgi',
+              value: showCriticalPoints,
+              onChanged: onShowCriticalPointsChanged,
+            ),
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 160),
+              opacity: showCriticalPoints ? 1 : 0.42,
+              child: IgnorePointer(
+                ignoring: !showCriticalPoints,
+                child: Column(
+                  children: <Widget>[
+                    const SizedBox(height: 4),
+                    _PointToggleRow(
+                      label: 'Kökler',
+                      description: 'x-ekseni kesişimleri',
+                      value: showRootPoints,
+                      onChanged: onShowRootPointsChanged,
+                      compact: true,
+                    ),
+                    _PointToggleRow(
+                      label: 'Maksimum / Minimum',
+                      description: 'tepe ve dip noktaları',
+                      value: showExtremaPoints,
+                      onChanged: onShowExtremaPointsChanged,
+                      compact: true,
+                    ),
+                    _PointToggleRow(
+                      label: 'Y-kesişimi',
+                      description: 'x = 0 noktasındaki değer',
+                      value: showInterceptPoints,
+                      onChanged: onShowInterceptPointsChanged,
+                      compact: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PointToggleRow extends StatelessWidget {
+  const _PointToggleRow({required this.label, required this.description, required this.value, required this.onChanged, this.compact = false});
+
+  final String label;
+  final String description;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 6, vertical: compact ? 5 : 7),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(label, style: TextStyle(color: value ? GraphStyle.text : GraphStyle.textSecondary, fontSize: compact ? 12.0 : 12.8, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 1),
+                  Text(description, style: TextStyle(color: GraphStyle.textSecondary.withValues(alpha: 0.78), fontSize: compact ? 10.4 : 10.8, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: GraphStyle.accent,
+              inactiveThumbColor: GraphStyle.axisLabel,
+              inactiveTrackColor: GraphStyle.graphiteLine,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ],
         ),
       ),
     );

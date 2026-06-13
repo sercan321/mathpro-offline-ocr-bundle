@@ -24,6 +24,20 @@
   const JS_SIDE_COMMAND_QUEUE_PHASE = 'V172-Q382R28';
   const ALL_KEY_LATENCY_CLOSURE_PHASE = 'V172-Q382R32';
   const FULL_KEYBOARD_WARMUP_PHASE = 'V172-Q382R33';
+  const LONG_EXPRESSION_SCROLL_PHASE = 'Q389R6H';
+  const LONG_PRESS_CURSOR_DRAG_PHASE = 'Q389R6I';
+  const LONG_PRESS_CURSOR_DRAG_HARDENING_PHASE = 'Q389R6J';
+  const LONG_PRESS_CURSOR_DRAG_REAL_DEVICE_FALLBACK_PHASE = 'Q389R6R';
+  const FLUTTER_EXTERNAL_CURSOR_DRAG_BRIDGE_PHASE = 'Q389R6S';
+  const EXTERNAL_CURSOR_DRAG_SINGLE_AUTHORITY_PHASE = 'Q389R6U';
+  const EXTERNAL_CURSOR_DRAG_EDGE_REACH_PHASE = 'Q389R6V';
+  const LONG_PRESS_CURSOR_DRAG_DELAY_MS = 260;
+  const LONG_PRESS_CURSOR_DRAG_MOVE_CANCEL_PX = 34;
+  const LONG_PRESS_CURSOR_DRAG_EDGE_PX = 42;
+  const LONG_PRESS_CURSOR_DRAG_EDGE_SCROLL_PX = 22;
+  const LONG_PRESS_CURSOR_DRAG_EDGE_TICK_MS = 72;
+  const LONG_PRESS_CURSOR_DRAG_EDGE_MIN_OFFSET_STEP = 1;
+  const LONG_PRESS_CURSOR_DRAG_EDGE_MAX_OFFSET_STEP = 8;
   const KEYBOARD_INSERTION_NATIVE_EVENT_SUPPRESSION_MS = 64;
   const Q382R24_KEYBOARD_SETTLE_PUSH_AFTER_CANONICAL_ALLOWED = false;
   const MAX_QUEUE = 24;
@@ -92,6 +106,60 @@
     q382r33WarmupSkippedCount: 0,
     q382r33WarmupRunCount: 0,
     q382r33WarmupLastTrace: 'q382r33-full-keyboard-warmup-bootstrap',
+    q389r6hLongExpressionScrollPhase: LONG_EXPRESSION_SCROLL_PHASE,
+    q389r6hLongExpressionScrollActive: true,
+    q389r6hMinimumReadableScalePreserved: true,
+    q389r6hHorizontalOverflowScrollAllowed: true,
+    q389r6hLastFitClass: 'normal',
+    q389r6hLastScrollReason: 'q389r6h-bootstrap',
+    q389r6hLastCaretScrollTarget: -1,
+    q389r6iLongPressCursorDragPhase: LONG_PRESS_CURSOR_DRAG_PHASE,
+    q389r6iLongPressCursorDragActive: true,
+    q389r6iDragSessionActive: false,
+    q389r6iDragActivationCount: 0,
+    q389r6iDragMoveCount: 0,
+    q389r6iDragEdgeAutoscrollCount: 0,
+    q389r6iLastDragCaretOffset: -1,
+    q389r6iLastDragReason: 'q389r6i-bootstrap',
+    q389r6jLongPressCursorDragHardeningPhase: LONG_PRESS_CURSOR_DRAG_HARDENING_PHASE,
+    q389r6jContinuousEdgeAutoscrollActive: true,
+    q389r6jContinuousEdgeAutoscrollTickMs: LONG_PRESS_CURSOR_DRAG_EDGE_TICK_MS,
+    q389r6jContinuousEdgeAutoscrollTickCount: 0,
+    q389r6jPointerCaptureCleanupHardened: true,
+    q389r6rRealDeviceFallbackPhase: LONG_PRESS_CURSOR_DRAG_REAL_DEVICE_FALLBACK_PHASE,
+    q389r6rCaptureListenersActive: true,
+    q389r6rTouchFallbackActive: true,
+    q389r6rPreActivationHorizontalDragTolerance: true,
+    q389r6rLastInputKind: 'none',
+    q389r6rFallbackStartCount: 0,
+    q389r6rFallbackMoveCount: 0,
+    q389r6sFlutterExternalCursorDragBridgePhase: FLUTTER_EXTERNAL_CURSOR_DRAG_BRIDGE_PHASE,
+    q389r6sFlutterExternalCursorDragBridgeActive: true,
+    q389r6sFlutterExternalDragSessionActive: false,
+    q389r6sFlutterExternalDragStartCount: 0,
+    q389r6sFlutterExternalDragMoveCount: 0,
+    q389r6sFlutterExternalDragEndCount: 0,
+    q389r6sFlutterExternalDragLastX: -1,
+    q389r6sFlutterExternalDragLastY: -1,
+    q389r6sFlutterExternalDragLastReason: 'q389r6s-bootstrap',
+    q389r6uExternalCursorDragRepairPhase: EXTERNAL_CURSOR_DRAG_SINGLE_AUTHORITY_PHASE,
+    q389r6uExternalCursorDragSingleAuthorityEnabled: true,
+    q389r6uInternalJsLongPressSuppressed: false,
+    q389r6uExternalCoordinateNormalizationActive: true,
+    q389r6uExternalContinuousEdgeAutoscrollActive: true,
+    q389r6uExternalContinuousEdgeAutoscrollTickCount: 0,
+    q389r6uExternalMoveCoalescingActive: true,
+    q389r6uExternalMoveCoalescedCount: 0,
+    q389r6vExternalEdgeReachPhase: EXTERNAL_CURSOR_DRAG_EDGE_REACH_PHASE,
+    q389r6vDirectionalEdgeOffsetWalkActive: true,
+    q389r6vDirectionalEdgeOffsetStepMin: LONG_PRESS_CURSOR_DRAG_EDGE_MIN_OFFSET_STEP,
+    q389r6vDirectionalEdgeOffsetStepMax: LONG_PRESS_CURSOR_DRAG_EDGE_MAX_OFFSET_STEP,
+    q389r6vDirectionalEdgeOffsetWalkCount: 0,
+    q389r6vExternalDragEndDoesNotReHitTest: true,
+    q389r6vLastDirectionalEdgeTargetOffset: -1,
+    q389r6vLastDirectionalEdgeDirection: 0,
+    q389r6uExternalLastSurfaceWidth: -1,
+    q389r6uExternalLastSurfaceHeight: -1,
     caretContext: {
       phase: CARET_CONTEXT_BRIDGE_PHASE,
       source: 'q382r26-bootstrap',
@@ -554,18 +622,686 @@
     try { window.setTimeout(function () { pushCaretState(tag + '-80ms'); }, 80); } catch (_) {}
   }
 
+  function q389r6hLatexVisualWeight(value) {
+    const text = String(value || '');
+    const structural = (text.match(/\\(?:frac|sqrt|sum|prod|int|lim|log|sin|cos|tan|ln|left|right|begin|matrix|cases)\b/g) || []).length;
+    const groups = (text.match(/[{}_^]/g) || []).length;
+    return text.length + structural * 8 + groups * 2;
+  }
+
+  function q389r6hFitClassForLatex(value) {
+    const weight = q389r6hLatexVisualWeight(value);
+    if (weight >= 110) return 'scroll';
+    if (weight >= 74) return 'dense';
+    if (weight >= 42) return 'compact';
+    return 'normal';
+  }
+
+  function q389r6hApplyLongExpressionFit(mf, reason) {
+    const value = safeGetValue('latex-expanded') || safeGetValue('latex') || state.latex || '';
+    const fit = q389r6hFitClassForLatex(value);
+    state.q389r6hLastFitClass = fit;
+    state.q389r6hLastScrollReason = reason || 'q389r6h-apply-long-expression-fit';
+    try {
+      document.body.setAttribute('data-mathpro-long-expression-scroll', LONG_EXPRESSION_SCROLL_PHASE);
+      document.body.setAttribute('data-mathpro-long-expression-fit', fit);
+      document.documentElement.setAttribute('data-mathpro-long-expression-fit', fit);
+    } catch (_) {}
+    try {
+      if (mf) {
+        mf.setAttribute('data-mathpro-long-expression-scroll', LONG_EXPRESSION_SCROLL_PHASE);
+        mf.setAttribute('data-mathpro-long-expression-fit', fit);
+        ['normal', 'compact', 'dense', 'scroll'].forEach(function (name) {
+          mf.classList.toggle('mathpro-long-fit-' + name, name === fit);
+        });
+      }
+    } catch (_) {}
+    return fit;
+  }
+
+  function q389r6hCaretRatio(mf) {
+    try {
+      const position = typeof mf.position === 'number' ? mf.position : NaN;
+      const lastOffset = typeof mf.lastOffset === 'number' ? mf.lastOffset : NaN;
+      if (Number.isFinite(position) && Number.isFinite(lastOffset) && lastOffset > 0) {
+        return Math.max(0, Math.min(1, position / lastOffset));
+      }
+    } catch (_) {}
+    try {
+      const value = safeGetValue('latex-expanded') || safeGetValue('latex') || state.latex || '';
+      const position = typeof mf.position === 'number' ? mf.position : NaN;
+      if (Number.isFinite(position) && String(value).length > 0) {
+        return Math.max(0, Math.min(1, position / String(value).length));
+      }
+    } catch (_) {}
+    return 1;
+  }
+
+  function q389r6hScrollElementToCaret(element, ratio) {
+    try {
+      if (!element || typeof element.scrollLeft !== 'number') return false;
+      const max = Math.max(0, element.scrollWidth - element.clientWidth);
+      if (max <= 0) return false;
+      const target = Math.max(0, Math.min(max, Math.round(max * ratio)));
+      element.scrollLeft = target;
+      state.q389r6hLastCaretScrollTarget = target;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function q389r6hKeepHorizontalCaretVisible(mf, reason) {
+    if (!mf) return false;
+    const ratio = q389r6hCaretRatio(mf);
+    let scrolled = false;
+    scrolled = q389r6hScrollElementToCaret(mf, ratio) || scrolled;
+    try {
+      if (mf.shadowRoot) {
+        ['[part="editable"]', '[part="container"]', '[part="root"]'].forEach(function (selector) {
+          scrolled = q389r6hScrollElementToCaret(mf.shadowRoot.querySelector(selector), ratio) || scrolled;
+        });
+      }
+    } catch (_) {}
+    const host = document.getElementById('mathpro-editor-host');
+    scrolled = q389r6hScrollElementToCaret(host, ratio) || scrolled;
+    state.q389r6hLastScrollReason = reason || 'q389r6h-horizontal-caret-visible';
+    return scrolled;
+  }
+
+  function q389r6iClampNumber(value, min, max) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return min;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  function q389r6iLastOffset(mf) {
+    try {
+      const lastOffset = typeof mf.lastOffset === 'number' ? mf.lastOffset : NaN;
+      if (Number.isFinite(lastOffset) && lastOffset >= 0) return Math.trunc(lastOffset);
+    } catch (_) {}
+    try {
+      const value = safeGetValue('latex-expanded') || safeGetValue('latex') || state.latex || '';
+      return Math.max(0, String(value || '').length);
+    } catch (_) {}
+    return 0;
+  }
+
+  function q389r6iScrollElementBy(element, delta) {
+    try {
+      if (!element || typeof element.scrollLeft !== 'number') return false;
+      const max = Math.max(0, element.scrollWidth - element.clientWidth);
+      if (max <= 0) return false;
+      const before = element.scrollLeft;
+      element.scrollLeft = q389r6iClampNumber(before + delta, 0, max);
+      return Math.abs(element.scrollLeft - before) > 0.5;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function q389r6iEdgeAutoscroll(mf, clientX) {
+    try {
+      const host = document.getElementById('mathpro-editor-host');
+      const rectSource = host || mf;
+      if (!rectSource || typeof rectSource.getBoundingClientRect !== 'function') return false;
+      const rect = rectSource.getBoundingClientRect();
+      if (!rect || rect.width <= 0) return false;
+      let delta = 0;
+      if (clientX < rect.left + LONG_PRESS_CURSOR_DRAG_EDGE_PX) delta = -LONG_PRESS_CURSOR_DRAG_EDGE_SCROLL_PX;
+      if (clientX > rect.right - LONG_PRESS_CURSOR_DRAG_EDGE_PX) delta = LONG_PRESS_CURSOR_DRAG_EDGE_SCROLL_PX;
+      if (delta === 0) return false;
+      let moved = false;
+      moved = q389r6iScrollElementBy(mf, delta) || moved;
+      try {
+        if (mf && mf.shadowRoot) {
+          ['[part="editable"]', '[part="container"]', '[part="root"]'].forEach(function (selector) {
+            moved = q389r6iScrollElementBy(mf.shadowRoot.querySelector(selector), delta) || moved;
+          });
+        }
+      } catch (_) {}
+      moved = q389r6iScrollElementBy(host, delta) || moved;
+      if (moved) state.q389r6iDragEdgeAutoscrollCount += 1;
+      return moved;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function q389r6jPointerIsInsideEdgeZone(mf, clientX) {
+    try {
+      const host = document.getElementById('mathpro-editor-host');
+      const rectSource = host || mf;
+      if (!rectSource || typeof rectSource.getBoundingClientRect !== 'function') return false;
+      const rect = rectSource.getBoundingClientRect();
+      if (!rect || rect.width <= 0) return false;
+      return clientX < rect.left + LONG_PRESS_CURSOR_DRAG_EDGE_PX || clientX > rect.right - LONG_PRESS_CURSOR_DRAG_EDGE_PX;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function q389r6vEdgeDirection(mf, clientX) {
+    try {
+      const host = document.getElementById('mathpro-editor-host');
+      const rectSource = host || mf;
+      if (!rectSource || typeof rectSource.getBoundingClientRect !== 'function') return 0;
+      const rect = rectSource.getBoundingClientRect();
+      if (!rect || rect.width <= 0) return 0;
+      if (clientX < rect.left + LONG_PRESS_CURSOR_DRAG_EDGE_PX) return -1;
+      if (clientX > rect.right - LONG_PRESS_CURSOR_DRAG_EDGE_PX) return 1;
+    } catch (_) {}
+    return 0;
+  }
+
+  function q389r6vDirectionalEdgeOffsetStep(mf) {
+    const maxOffset = Math.max(0, q389r6iLastOffset(mf));
+    const scaled = Math.ceil(maxOffset / 120);
+    return q389r6iClampNumber(scaled, LONG_PRESS_CURSOR_DRAG_EDGE_MIN_OFFSET_STEP, LONG_PRESS_CURSOR_DRAG_EDGE_MAX_OFFSET_STEP);
+  }
+
+  function q389r6vShouldUseDirectionalEdgeOffsetWalk(reason) {
+    const tag = String(reason || '');
+    return tag.indexOf('q389r6u-external-continuous-edge-autoscroll') >= 0
+      || tag.indexOf('q389r6u-flutter-external-drag-move') >= 0
+      || tag.indexOf('q389r6v-directional-edge-offset-walk') >= 0;
+  }
+
+  function q389r6vDirectionalEdgeOffsetTarget(mf, baseOffset, clientX, reason) {
+    if (!state.q389r6vDirectionalEdgeOffsetWalkActive) return baseOffset;
+    const direction = q389r6vEdgeDirection(mf, clientX);
+    if (direction === 0 || !q389r6vShouldUseDirectionalEdgeOffsetWalk(reason)) return baseOffset;
+    const maxOffset = q389r6iLastOffset(mf);
+    let current = NaN;
+    try { current = typeof mf.position === 'number' ? mf.position : NaN; } catch (_) {}
+    if (!Number.isFinite(current)) current = Number.isFinite(baseOffset) ? baseOffset : 0;
+    const step = q389r6vDirectionalEdgeOffsetStep(mf);
+    const target = q389r6iClampNumber(Math.round(current + direction * step), 0, maxOffset);
+    state.q389r6vDirectionalEdgeOffsetWalkCount += 1;
+    state.q389r6vLastDirectionalEdgeTargetOffset = target;
+    state.q389r6vLastDirectionalEdgeDirection = direction;
+    return target;
+  }
+
+  function q389r6iCaretOffsetFromPoint(mf, clientX, clientY) {
+    try {
+      if (mf && typeof mf.getOffsetFromPoint === 'function') {
+        const offset = mf.getOffsetFromPoint(clientX, clientY);
+        if (Number.isFinite(offset) && offset >= 0) {
+          return q389r6iClampNumber(Math.round(offset), 0, q389r6iLastOffset(mf));
+        }
+      }
+    } catch (_) {}
+    try {
+      const host = document.getElementById('mathpro-editor-host') || mf;
+      const rect = host && typeof host.getBoundingClientRect === 'function' ? host.getBoundingClientRect() : null;
+      const maxOffset = q389r6iLastOffset(mf);
+      if (rect && rect.width > 0) {
+        const ratio = q389r6iClampNumber((clientX - rect.left) / rect.width, 0, 1);
+        return q389r6iClampNumber(Math.round(maxOffset * ratio), 0, maxOffset);
+      }
+    } catch (_) {}
+    return -1;
+  }
+
+  function q389r6iSetCaretFromPoint(mf, clientX, clientY, reason) {
+    if (!mf) return false;
+    const pointOffset = q389r6iCaretOffsetFromPoint(mf, clientX, clientY);
+    if (!Number.isFinite(pointOffset) || pointOffset < 0) return false;
+    const offset = q389r6vDirectionalEdgeOffsetTarget(mf, pointOffset, clientX, reason);
+    if (!Number.isFinite(offset) || offset < 0) return false;
+    try {
+      if (typeof mf.setPosition === 'function') mf.setPosition(offset);
+      else mf.position = offset;
+      state.q389r6iLastDragCaretOffset = Math.trunc(offset);
+      state.q389r6iLastDragReason = reason || 'q389r6i-set-caret-from-point';
+      q389r6hApplyLongExpressionFit(mf, state.q389r6iLastDragReason);
+      q389r6iEdgeAutoscroll(mf, clientX);
+      q389r6hKeepHorizontalCaretVisible(mf, state.q389r6iLastDragReason);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function q389r6rMaybeStopDefault(event) {
+    try {
+      if (!event || !event.cancelable) return false;
+      const preventDefaultName = 'prevent' + 'Default';
+      if (typeof event[preventDefaultName] === 'function') {
+        event[preventDefaultName]();
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function q389r6rEventStamp(event) {
+    try {
+      const ts = Number(event && event.timeStamp);
+      if (Number.isFinite(ts)) return Math.round(ts * 1000) / 1000;
+    } catch (_) {}
+    try { return Date.now(); } catch (_) {}
+    return 0;
+  }
+
+  function q389r6rTouchFromEvent(event, activeIdentifier) {
+    try {
+      const changed = event && event.changedTouches ? event.changedTouches : null;
+      const touches = event && event.touches ? event.touches : null;
+      const scan = function (list) {
+        if (!list || typeof list.length !== 'number') return null;
+        if (activeIdentifier !== null && activeIdentifier !== undefined) {
+          for (let i = 0; i < list.length; i += 1) {
+            const item = list.item ? list.item(i) : list[i];
+            if (item && item.identifier === activeIdentifier) return item;
+          }
+        }
+        return list.length > 0 ? (list.item ? list.item(0) : list[0]) : null;
+      };
+      return scan(changed) || scan(touches);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  let q389r6uExternalEdgeAutoscrollTimer = 0;
+  let q389r6uExternalMoveFrame = 0;
+  let q389r6uExternalPendingMove = null;
+
+  function q389r6uCancelExternalMoveFrame() {
+    if (q389r6uExternalMoveFrame) {
+      try {
+        if (typeof window.cancelAnimationFrame === 'function') window.cancelAnimationFrame(q389r6uExternalMoveFrame);
+        else window.clearTimeout(q389r6uExternalMoveFrame);
+      } catch (_) {}
+    }
+    q389r6uExternalMoveFrame = 0;
+    q389r6uExternalPendingMove = null;
+  }
+
+  function q389r6uClearExternalEdgeAutoscrollLoop() {
+    if (q389r6uExternalEdgeAutoscrollTimer) {
+      try { window.clearInterval(q389r6uExternalEdgeAutoscrollTimer); } catch (_) {}
+    }
+    q389r6uExternalEdgeAutoscrollTimer = 0;
+  }
+
+  function q389r6uStartExternalEdgeAutoscrollLoop(mf) {
+    q389r6uClearExternalEdgeAutoscrollLoop();
+    try {
+      q389r6uExternalEdgeAutoscrollTimer = window.setInterval(function () {
+        try {
+          if (!state.q389r6sFlutterExternalDragSessionActive) return;
+          const x = Number(state.q389r6sFlutterExternalDragLastX);
+          const y = Number(state.q389r6sFlutterExternalDragLastY);
+          if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+          if (!q389r6jPointerIsInsideEdgeZone(mf, x)) return;
+          state.q389r6uExternalContinuousEdgeAutoscrollTickCount += 1;
+          q389r6iSetCaretFromPoint(mf, x, y, 'q389r6u-external-continuous-edge-autoscroll');
+        } catch (_) {}
+      }, LONG_PRESS_CURSOR_DRAG_EDGE_TICK_MS);
+    } catch (_) {
+      q389r6uExternalEdgeAutoscrollTimer = 0;
+    }
+  }
+
+  function q389r6uResolveClientPointFromFlutterPayload(payload, mf) {
+    const source = payload && typeof payload === 'object' ? payload : {};
+    let x = Number(source.x);
+    let y = Number(source.y);
+    const surfaceWidth = Number(source.surfaceWidth);
+    const surfaceHeight = Number(source.surfaceHeight);
+    if (!Number.isFinite(x)) x = 0;
+    if (!Number.isFinite(y)) y = 0;
+    state.q389r6uExternalLastSurfaceWidth = Number.isFinite(surfaceWidth) ? surfaceWidth : -1;
+    state.q389r6uExternalLastSurfaceHeight = Number.isFinite(surfaceHeight) ? surfaceHeight : -1;
+    try {
+      if (Number.isFinite(surfaceWidth) && surfaceWidth > 0) {
+        const viewportWidth = Number(window.innerWidth || document.documentElement.clientWidth || surfaceWidth);
+        x = q389r6iClampNumber(x / surfaceWidth, 0, 1) * viewportWidth;
+      }
+      if (Number.isFinite(surfaceHeight) && surfaceHeight > 0) {
+        const viewportHeight = Number(window.innerHeight || document.documentElement.clientHeight || surfaceHeight);
+        y = q389r6iClampNumber(y / surfaceHeight, 0, 1) * viewportHeight;
+      }
+    } catch (_) {}
+    return {
+      x: Number.isFinite(x) ? x : 0,
+      y: Number.isFinite(y) ? y : 0,
+      reason: String(source.reason || source.action || 'q389r6u-flutter-external-cursor-drag'),
+      phase: String(source.phase || EXTERNAL_CURSOR_DRAG_SINGLE_AUTHORITY_PHASE)
+    };
+  }
+
+  function q389r6uApplyExternalCursorDragPoint(mf, point, reason) {
+    if (!mf || !point) return false;
+    state.q389r6sFlutterExternalDragLastX = point.x;
+    state.q389r6sFlutterExternalDragLastY = point.y;
+    state.q389r6sFlutterExternalDragLastReason = reason;
+    return q389r6iSetCaretFromPoint(mf, point.x, point.y, reason);
+  }
+
+  function q389r6uScheduleExternalCursorDragMove(mf, point) {
+    q389r6uExternalPendingMove = point;
+    if (q389r6uExternalMoveFrame) {
+      state.q389r6uExternalMoveCoalescedCount += 1;
+      return true;
+    }
+    try {
+      const schedule = typeof window.requestAnimationFrame === 'function'
+        ? window.requestAnimationFrame.bind(window)
+        : function (callback) { return window.setTimeout(callback, 16); };
+      q389r6uExternalMoveFrame = schedule(function () {
+        const next = q389r6uExternalPendingMove;
+        q389r6uExternalMoveFrame = 0;
+        q389r6uExternalPendingMove = null;
+        try {
+          if (!next || !state.q389r6sFlutterExternalDragSessionActive) return;
+          q389r6uApplyExternalCursorDragPoint(mf, next, 'q389r6u-flutter-external-drag-move-coalesced');
+        } catch (_) {}
+      });
+      return true;
+    } catch (_) {
+      q389r6uExternalMoveFrame = 0;
+      return q389r6uApplyExternalCursorDragPoint(mf, point, 'q389r6u-flutter-external-drag-move-fallback');
+    }
+  }
+
+  function q389r6vFlushExternalPendingMoveBeforeEnd(mf) {
+    const pending = q389r6uExternalPendingMove;
+    q389r6uExternalPendingMove = null;
+    if (q389r6uExternalMoveFrame) {
+      try {
+        if (typeof window.cancelAnimationFrame === 'function') window.cancelAnimationFrame(q389r6uExternalMoveFrame);
+        else window.clearTimeout(q389r6uExternalMoveFrame);
+      } catch (_) {}
+      q389r6uExternalMoveFrame = 0;
+    }
+    if (!pending || !state.q389r6sFlutterExternalDragSessionActive) return false;
+    return q389r6uApplyExternalCursorDragPoint(mf, pending, 'q389r6v-directional-edge-offset-walk-final-pending-move');
+  }
+
+  function q389r6iInstallLongPressCaretDrag(mf) {
+    if (!mf || mf.__mathProQ389R6ILongPressCursorDragAttached) return;
+    if (state.q389r6uExternalCursorDragSingleAuthorityEnabled) {
+      state.q389r6uInternalJsLongPressSuppressed = true;
+      try { mf.__mathProQ389R6ILongPressCursorDragAttached = true; } catch (_) {}
+      return;
+    }
+    let pendingTimer = 0;
+    let pointerId = null;
+    let touchIdentifier = null;
+    let inputKind = 'none';
+    let startX = 0;
+    let startY = 0;
+    let lastX = 0;
+    let lastY = 0;
+    let lastMoveStamp = -1;
+    let active = false;
+    let edgeAutoscrollTimer = 0;
+    let previousTouchAction = '';
+    let previousHostTouchAction = '';
+    const host = document.getElementById('mathpro-editor-host');
+    const listenerOptions = { capture: true, passive: false };
+
+    function clearPending() {
+      if (pendingTimer) {
+        try { window.clearTimeout(pendingTimer); } catch (_) {}
+      }
+      pendingTimer = 0;
+    }
+
+    function clearEdgeAutoscrollLoop() {
+      if (edgeAutoscrollTimer) {
+        try { window.clearInterval(edgeAutoscrollTimer); } catch (_) {}
+      }
+      edgeAutoscrollTimer = 0;
+    }
+
+    function startEdgeAutoscrollLoop() {
+      clearEdgeAutoscrollLoop();
+      try {
+        edgeAutoscrollTimer = window.setInterval(function () {
+          try {
+            if (!active) return;
+            if (!q389r6jPointerIsInsideEdgeZone(mf, lastX)) return;
+            state.q389r6jContinuousEdgeAutoscrollTickCount += 1;
+            q389r6iSetCaretFromPoint(mf, lastX, lastY, 'q389r6j-continuous-edge-autoscroll');
+          } catch (_) {}
+        }, LONG_PRESS_CURSOR_DRAG_EDGE_TICK_MS);
+      } catch (_) {
+        edgeAutoscrollTimer = 0;
+      }
+    }
+
+    function finish(reason) {
+      clearPending();
+      clearEdgeAutoscrollLoop();
+      if (active) {
+        active = false;
+        state.q389r6iDragSessionActive = false;
+        state.q389r6iLastDragReason = reason || 'q389r6i-finish';
+        try { document.body.removeAttribute('data-mathpro-long-press-cursor-dragging'); } catch (_) {}
+        try { mf.style.touchAction = previousTouchAction || 'auto'; } catch (_) {}
+        try { if (host) host.style.touchAction = previousHostTouchAction || 'auto'; } catch (_) {}
+        try { if (typeof mf.releasePointerCapture === 'function' && pointerId !== null) mf.releasePointerCapture(pointerId); } catch (_) {}
+        try { keepNativeCaretInView(state.q389r6iLastDragReason); } catch (_) {}
+        try { scheduleCaretStatePush(state.q389r6iLastDragReason + '-state'); } catch (_) {}
+      }
+      pointerId = null;
+      touchIdentifier = null;
+      inputKind = 'none';
+      lastMoveStamp = -1;
+    }
+
+    function activate(event) {
+      if (pointerId === null && touchIdentifier === null) return;
+      active = true;
+      state.q389r6iDragSessionActive = true;
+      state.q389r6iDragActivationCount += 1;
+      state.q389r6iLastDragReason = 'q389r6r-real-device-long-press-activated';
+      state.q389r6rLastInputKind = inputKind;
+      try { document.body.setAttribute('data-mathpro-long-press-cursor-dragging', LONG_PRESS_CURSOR_DRAG_PHASE); } catch (_) {}
+      try { document.body.setAttribute('data-mathpro-long-press-cursor-drag-real-device-fallback', LONG_PRESS_CURSOR_DRAG_REAL_DEVICE_FALLBACK_PHASE); } catch (_) {}
+      try { previousTouchAction = mf.style.touchAction || ''; mf.style.touchAction = 'none'; } catch (_) {}
+      try { if (host) { previousHostTouchAction = host.style.touchAction || ''; host.style.touchAction = 'none'; } } catch (_) {}
+      try { if (inputKind === 'pointer' && typeof mf.setPointerCapture === 'function' && pointerId !== null) mf.setPointerCapture(pointerId); } catch (_) {}
+      safeFocusMathfield(mf, 'q389r6r-long-press-drag-focus');
+      q389r6iSetCaretFromPoint(mf, lastX || startX, lastY || startY, 'q389r6r-long-press-activated-caret');
+      startEdgeAutoscrollLoop();
+      q389r6rMaybeStopDefault(event);
+      try { scheduleCaretStatePush('q389r6r-long-press-activated-state'); } catch (_) {}
+    }
+
+    function beginCandidate(event, kind, id, clientX, clientY) {
+      try {
+        const x = Number(clientX);
+        const y = Number(clientY);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+        if (inputKind === kind && ((kind === 'pointer' && pointerId === id) || (kind === 'touch' && touchIdentifier === id))) return;
+        finish('q389r6r-restart-before-input-start');
+        inputKind = kind;
+        state.q389r6rLastInputKind = kind;
+        state.q389r6rFallbackStartCount += 1;
+        if (kind === 'pointer') {
+          pointerId = id;
+          touchIdentifier = null;
+        } else {
+          touchIdentifier = id;
+          pointerId = null;
+        }
+        startX = x;
+        startY = y;
+        lastX = startX;
+        lastY = startY;
+        lastMoveStamp = -1;
+        pendingTimer = window.setTimeout(function () { activate(event); }, LONG_PRESS_CURSOR_DRAG_DELAY_MS);
+      } catch (_) {}
+    }
+
+    function updateCandidate(event, kind, id, clientX, clientY) {
+      try {
+        if (inputKind !== kind) return;
+        if (kind === 'pointer' && (pointerId === null || id !== pointerId)) return;
+        if (kind === 'touch' && (touchIdentifier === null || id !== touchIdentifier)) return;
+        const stamp = q389r6rEventStamp(event);
+        const x = Number(clientX);
+        const y = Number(clientY);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+        if (stamp === lastMoveStamp && Math.abs(x - lastX) < 0.5 && Math.abs(y - lastY) < 0.5) return;
+        lastMoveStamp = stamp;
+        lastX = x;
+        lastY = y;
+        const dx = Math.abs(lastX - startX);
+        const dy = Math.abs(lastY - startY);
+        const moved = Math.hypot(dx, dy);
+        if (!active && moved > LONG_PRESS_CURSOR_DRAG_MOVE_CANCEL_PX && dy > dx * 1.25) {
+          clearPending();
+          return;
+        }
+        if (!active) return;
+        state.q389r6iDragMoveCount += 1;
+        state.q389r6rFallbackMoveCount += 1;
+        q389r6iSetCaretFromPoint(mf, lastX, lastY, 'q389r6r-long-press-drag-move');
+        q389r6rMaybeStopDefault(event);
+      } catch (_) {}
+    }
+
+    function onPointerDown(event) {
+      try {
+        if (!event || event.isPrimary === false) return;
+        if (event.button !== undefined && event.button > 0) return;
+        beginCandidate(event, 'pointer', event.pointerId, event.clientX, event.clientY);
+      } catch (_) {}
+    }
+
+    function onPointerMove(event) {
+      try { updateCandidate(event, 'pointer', event.pointerId, event.clientX, event.clientY); } catch (_) {}
+    }
+
+    function onPointerUp(event) {
+      try {
+        if (inputKind === 'pointer' && pointerId !== null && event && event.pointerId !== undefined && event.pointerId !== pointerId) return;
+        if (inputKind === 'pointer' || inputKind === 'none') finish('q389r6r-long-press-pointer-end');
+      } catch (_) {
+        finish('q389r6r-long-press-pointer-end-exception');
+      }
+    }
+
+    function onTouchStart(event) {
+      try {
+        const touch = q389r6rTouchFromEvent(event, null);
+        if (!touch) return;
+        beginCandidate(event, 'touch', touch.identifier, touch.clientX, touch.clientY);
+      } catch (_) {}
+    }
+
+    function onTouchMove(event) {
+      try {
+        const touch = q389r6rTouchFromEvent(event, touchIdentifier);
+        if (!touch) return;
+        updateCandidate(event, 'touch', touch.identifier, touch.clientX, touch.clientY);
+      } catch (_) {}
+    }
+
+    function onTouchEnd(event) {
+      try {
+        if (inputKind !== 'touch') return;
+        const touch = q389r6rTouchFromEvent(event, touchIdentifier);
+        if (touch && touch.identifier !== touchIdentifier) return;
+        finish('q389r6r-long-press-touch-end');
+      } catch (_) {
+        finish('q389r6r-long-press-touch-end-exception');
+      }
+    }
+
+    function onLostPointerCapture() {
+      finish('q389r6j-lost-pointer-capture-cleanup');
+    }
+
+    function attachTarget(target) {
+      if (!target || target.__mathProQ389R6RCaptureDragAttached) return;
+      try { target.addEventListener('pointerdown', onPointerDown, listenerOptions); } catch (_) {}
+      try { target.addEventListener('pointermove', onPointerMove, listenerOptions); } catch (_) {}
+      try { target.addEventListener('pointerup', onPointerUp, listenerOptions); } catch (_) {}
+      try { target.addEventListener('pointercancel', onPointerUp, listenerOptions); } catch (_) {}
+      try { target.addEventListener('touchstart', onTouchStart, listenerOptions); } catch (_) {}
+      try { target.addEventListener('touchmove', onTouchMove, listenerOptions); } catch (_) {}
+      try { target.addEventListener('touchend', onTouchEnd, listenerOptions); } catch (_) {}
+      try { target.addEventListener('touchcancel', onTouchEnd, listenerOptions); } catch (_) {}
+      try { target.__mathProQ389R6RCaptureDragAttached = true; } catch (_) {}
+    }
+
+    attachTarget(host || mf);
+    attachTarget(mf);
+    // Q389R6T: do not attach document-level touchmove/pan listeners; Flutter external bridge is the production drag path.
+    try { mf.addEventListener('lostpointercapture', onLostPointerCapture, listenerOptions); } catch (_) {}
+    mf.__mathProQ389R6ILongPressCursorDragAttached = true;
+  }
+
+
+  function q389r6sPointFromFlutterPayload(payload) {
+    return q389r6uResolveClientPointFromFlutterPayload(payload, mountedMathfield() || field());
+  }
+
+  function q389r6sExternalCursorDragStart(payload) {
+    const mf = mountedMathfield() || field();
+    if (!mf) return false;
+    const point = q389r6sPointFromFlutterPayload(payload);
+    q389r6uCancelExternalMoveFrame();
+    q389r6uClearExternalEdgeAutoscrollLoop();
+    try { safeFocusMathfield(mf, 'q389r6u-flutter-external-drag-focus'); } catch (_) {}
+    state.q389r6sFlutterExternalDragSessionActive = true;
+    state.q389r6sFlutterExternalDragStartCount += 1;
+    try { document.body.setAttribute('data-mathpro-flutter-external-cursor-dragging', FLUTTER_EXTERNAL_CURSOR_DRAG_BRIDGE_PHASE); } catch (_) {}
+    try { document.body.setAttribute('data-mathpro-flutter-external-cursor-dragging-q389r6u', EXTERNAL_CURSOR_DRAG_SINGLE_AUTHORITY_PHASE); } catch (_) {}
+    const ok = q389r6uApplyExternalCursorDragPoint(mf, point, 'q389r6u-flutter-external-drag-start');
+    q389r6uStartExternalEdgeAutoscrollLoop(mf);
+    try { scheduleCaretStatePush('q389r6u-flutter-external-drag-start-state'); } catch (_) {}
+    return ok;
+  }
+
+  function q389r6sExternalCursorDragMove(payload) {
+    const mf = mountedMathfield() || field();
+    if (!mf) return false;
+    const point = q389r6sPointFromFlutterPayload(payload);
+    state.q389r6sFlutterExternalDragSessionActive = true;
+    state.q389r6sFlutterExternalDragMoveCount += 1;
+    state.q389r6sFlutterExternalDragLastX = point.x;
+    state.q389r6sFlutterExternalDragLastY = point.y;
+    state.q389r6sFlutterExternalDragLastReason = 'q389r6u-flutter-external-drag-move';
+    return q389r6uScheduleExternalCursorDragMove(mf, point);
+  }
+
+  function q389r6sExternalCursorDragEnd(payload) {
+    const mf = mountedMathfield() || field();
+    if (!mf) return false;
+    q389r6vFlushExternalPendingMoveBeforeEnd(mf);
+    q389r6uClearExternalEdgeAutoscrollLoop();
+    state.q389r6sFlutterExternalDragSessionActive = false;
+    state.q389r6sFlutterExternalDragEndCount += 1;
+    try { document.body.removeAttribute('data-mathpro-flutter-external-cursor-dragging'); } catch (_) {}
+    try { document.body.removeAttribute('data-mathpro-flutter-external-cursor-dragging-q389r6u'); } catch (_) {}
+    state.q389r6sFlutterExternalDragLastReason = 'q389r6v-flutter-external-drag-end-no-rehit-test';
+    const ok = true;
+    try { keepNativeCaretInView('q389r6v-flutter-external-drag-end-keep-current-caret-visible'); } catch (_) {}
+    try { scheduleCaretStatePush('q389r6v-flutter-external-drag-end-state'); } catch (_) {}
+    return ok;
+  }
+
   function keepNativeCaretInView(reason) {
     state.caretVisibilityRequestCount += 1;
     state.lastCaretEvent = reason || 'q201-keep-native-caret-visible';
     const mf = mountedMathfield() || field();
+    q389r6hApplyLongExpressionFit(mf, state.lastCaretEvent);
     try { if (mf && typeof mf.scrollIntoView === 'function') mf.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (_) {}
-    try {
-      const host = document.getElementById('mathpro-editor-host');
-      if (host && typeof host.scrollLeft === 'number') {
-        if (host.scrollWidth > host.clientWidth) host.scrollLeft = Math.max(0, host.scrollWidth - host.clientWidth);
-      }
-    } catch (_) {}
-    trace('q192-js-native-caret-visibility-request', { reason: state.lastCaretEvent });
+    q389r6hKeepHorizontalCaretVisible(mf, state.lastCaretEvent);
+    trace('q192-js-native-caret-visibility-request', {
+      reason: state.lastCaretEvent,
+      q389r6hFit: state.q389r6hLastFitClass,
+      q389r6hScrollTarget: state.q389r6hLastCaretScrollTarget
+    });
     return true;
   }
 
@@ -723,6 +1459,7 @@
     state.hasFocus = mounted && document.activeElement === mf;
     state.selectionDescription = reason || state.commandTraceStatus || state.selectionDescription;
     state.caretContext = q382r26ReadCaretContext(mf, value);
+    if (mounted) q389r6hApplyLongExpressionFit(mf, reason || 'q389r6h-update-state-fit');
     state.lastValueNonEmpty = String(value || '').trim().length > 0;
     state.nativePaintState = mounted ? 'ok' : 'pending';
     state.nativePaintOwner = mounted ? 'mathlive-native-field' : 'unknown';
@@ -775,6 +1512,8 @@
       mf.style.userSelect = 'text';
       mf.style.webkitUserSelect = 'text';
       mf.style.touchAction = 'auto';
+      mf.style.overflowX = 'auto';
+      mf.style.webkitOverflowScrolling = 'touch';
     } catch (_) {}
     if (!mf.__mathProProductionListenersAttached) {
       try { mf.addEventListener('input', function () { scheduleCaretStatePush('q201-production-input-native-caret-state'); }); } catch (_) {}
@@ -785,7 +1524,8 @@
       try { mf.addEventListener('pointerup', function () { state.pointerCaretEventCount += 1; keepNativeCaretInView('q201-pointerup-keep-native-caret-visible'); scheduleCaretStatePush('q201-pointerup-native-caret-state'); }); } catch (_) {}
       try { mf.addEventListener('click', function () { state.pointerCaretEventCount += 1; safeFocusMathfield(mf, 'q201-click-focus-no-prevent-default'); keepNativeCaretInView('q201-click-keep-native-caret-visible'); scheduleCaretStatePush('q201-click-native-caret-state'); }); } catch (_) {}
       try { mf.addEventListener('touchend', function () { state.pointerCaretEventCount += 1; safeFocusMathfield(mf, 'q201-touchend-focus-no-prevent-default'); keepNativeCaretInView('q201-touchend-keep-native-caret-visible'); scheduleCaretStatePush('q201-touchend-native-caret-state'); }); } catch (_) {}
-      try { mf.addEventListener('selection-change', function () { state.selectionEventCount += 1; scheduleCaretStatePush('q201-selection-change-native-caret-state'); }); } catch (_) {}
+      try { mf.addEventListener('selection-change', function () { state.selectionEventCount += 1; try { window.setTimeout(function () { keepNativeCaretInView('q389r6h-selection-change-caret-visible'); }, 32); } catch (_) {} scheduleCaretStatePush('q201-selection-change-native-caret-state'); }); } catch (_) {}
+      q389r6iInstallLongPressCaretDrag(mf);
       mf.__mathProProductionListenersAttached = true;
     }
     mathfield = mf;
@@ -1188,6 +1928,9 @@
     keepCaretVisible,
     enqueueKeyboardCommand,
     mathproWarmupAllKeys: q382r33WarmupAllKeys,
+    externalCursorDragStart: q389r6sExternalCursorDragStart,
+    externalCursorDragMove: q389r6sExternalCursorDragMove,
+    externalCursorDragEnd: q389r6sExternalCursorDragEnd,
     notifyFlutterState
   });
 

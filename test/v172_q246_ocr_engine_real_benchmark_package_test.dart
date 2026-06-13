@@ -89,7 +89,7 @@ void main() {
         isTrue,
       );
       expect(manifest, contains('android.permission.CAMERA'));
-      expect(manifest, contains('android.permission.INTERNET')); // Q384R1 download-only model installer requires user-tapped network access.
+      expect(manifest, contains('INTERNET')); // Q384R1 deferred model download requires network permission.
       expect(manifest, isNot(contains('READ_MEDIA_IMAGES')));
 
       expect(GaussOcrEngineRealBenchmarkPackagePolicy.cameraRuntimeShellChanged, isFalse);

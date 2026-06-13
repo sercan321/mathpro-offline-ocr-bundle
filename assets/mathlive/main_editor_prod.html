@@ -44,11 +44,11 @@ __MATHPRO_INLINE_MATHLIVE_STATIC_CSS__
       box-sizing: border-box;
       width: 100%;
       height: 100%;
-      min-height: 92px;
+      min-height: 84px;
       display: flex;
       align-items: center;
       justify-content: stretch;
-      padding: 9px 11px;
+      padding: 7px 10px;
       overflow: hidden;
       min-width: 0;
       pointer-events: auto;
@@ -58,23 +58,34 @@ __MATHPRO_INLINE_MATHLIVE_STATIC_CSS__
       box-sizing: border-box;
       width: 100%;
       height: 100%;
-      min-height: 72px;
+      min-height: 62px;
       display: block;
       color: var(--mathpro-text);
       background: transparent;
       border: 0;
       outline: none;
       font-family: KaTeX_Main, KaTeX_Math, "Noto Sans Math", "STIX Two Math", "Cambria Math", serif;
-      font-size: clamp(28px, 7.8vw, 38px);
-      line-height: 1.24;
-      padding: 8px 4px;
+      /* Q389R6G: Fotomath-like compact editor scale; native MathLive caret remains authoritative. */
+      /* Q389R6H: long-expression policy keeps a readable minimum scale, then scrolls horizontally. */
+      /* Q389R6I: long-press cursor drag uses MathLive native offsets; no legacy Flutter cursor. */
+      /* Q389R6R: real-device touch fallback attaches capture listeners without changing keyboard dispatch. */
+      font-size: clamp(23px, 6.35vw, 31px);
+      line-height: 1.20;
+      padding: 5px 3px;
       overflow-x: auto;
       overflow-y: visible;
       white-space: nowrap;
+      max-width: 100%;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
+      scroll-padding-inline: 24px;
       touch-action: auto;
       pointer-events: auto;
       -webkit-user-select: text;
       user-select: text;
+      -webkit-touch-callout: none;
       caret-color: var(--mathpro-accent);
       --caret-color: var(--mathpro-accent);
       --selection-background-color: rgba(127, 199, 184, 0.24);
@@ -82,10 +93,48 @@ __MATHPRO_INLINE_MATHLIVE_STATIC_CSS__
       --placeholder-color: rgba(244, 251, 248, 0.42);
       --placeholder-background-color: rgba(127, 199, 184, 0.08);
     }
+    math-field::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+    math-field.mathpro-long-fit-normal {
+      font-size: clamp(23px, 6.35vw, 31px);
+    }
+    math-field.mathpro-long-fit-compact {
+      font-size: clamp(22px, 6.05vw, 30px);
+    }
+    math-field.mathpro-long-fit-dense,
+    math-field.mathpro-long-fit-scroll {
+      font-size: clamp(21px, 5.75vw, 28px);
+    }
+    body[data-mathpro-long-expression-fit="scroll"] math-field {
+      font-size: clamp(21px, 5.75vw, 28px);
+    }
+
+    body[data-mathpro-long-press-cursor-dragging="Q389R6I"] {
+      overscroll-behavior: contain;
+      touch-action: none;
+    }
+
+    body[data-mathpro-long-press-cursor-dragging="Q389R6I"] math-field {
+      touch-action: none;
+      cursor: text;
+      -webkit-touch-callout: none;
+    }
+    body[data-mathpro-flutter-external-cursor-dragging="Q389R6S"] {
+      overscroll-behavior: contain;
+      touch-action: none;
+    }
+    body[data-mathpro-flutter-external-cursor-dragging="Q389R6S"] math-field {
+      touch-action: none;
+      cursor: text;
+      -webkit-touch-callout: none;
+    }
     math-field::part(root),
     math-field::part(container),
     math-field::part(editable) {
-      min-height: 62px;
+      min-height: 54px;
       overflow: visible;
       touch-action: auto;
     }
@@ -112,9 +161,9 @@ __MATHPRO_INLINE_MATHLIVE_STATIC_CSS__
   </style>
 </head>
 <body data-mathpro-production-surface="V172-Q184" data-mathpro-production-html="V172-Q185" data-mathpro-caret-focus-slot-contract="V172-Q192" data-mathpro-official-font-bundle-closure="V172-Q196" data-mathpro-local-font-files-bundled="true" data-mathpro-official-font-data-urls="true" data-mathpro-hidden-chrome="true" data-mathpro-production-caret-focus-slot-finalization="V172-Q201"
-  data-mathpro-final-static-production-freeze="V172-Q203" data-mathpro-native-caret-authority="mathlive">
+  data-mathpro-final-static-production-freeze="V172-Q203" data-mathpro-native-caret-authority="mathlive" data-mathpro-workspace-compact-expression-scale="Q389R6G" data-mathpro-long-expression-scroll="Q389R6H" data-mathpro-long-expression-fit="normal" data-mathpro-long-press-cursor-drag="Q389R6I" data-mathpro-long-press-cursor-drag-hardening="Q389R6J" data-mathpro-long-press-cursor-drag-real-device-fallback="Q389R6R" data-mathpro-flutter-external-cursor-drag-bridge="Q389R6S" data-mathpro-external-cursor-drag-single-authority="Q389R6U" data-mathpro-external-cursor-drag-edge-reach="Q389R6V">
   <div id="mathpro-editor-host">
-    <math-field id="mathlive-field" virtual-keyboard-mode="off" smart-mode smart-fence tabindex="0" data-mathpro-native-caret-authority="V172-Q201" data-mathpro-final-static-production-freeze="V172-Q203"></math-field>
+    <math-field id="mathlive-field" virtual-keyboard-mode="off" smart-mode smart-fence tabindex="0" data-mathpro-native-caret-authority="V172-Q201" data-mathpro-final-static-production-freeze="V172-Q203" data-mathpro-long-expression-scroll="Q389R6H" data-mathpro-external-cursor-drag-edge-reach="Q389R6V"></math-field>
   </div>
   <script>
 __MATHPRO_INLINE_MATHLIVE_RUNTIME__

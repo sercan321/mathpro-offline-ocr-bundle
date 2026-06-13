@@ -20,6 +20,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.nio.FloatBuffer
 import java.security.MessageDigest
 import org.json.JSONObject
 import org.json.JSONArray
@@ -198,10 +199,18 @@ class MainActivity : FlutterActivity() {
     private val q357Phase = "V172-Q357-ONNX-REAL-MODEL-LOAD-SMOKE-BRIDGE-PREFLIGHT-EXECUTION"
     private val q357FeatureEnabled = false
     private val q357Status = "ONNX_REAL_MODEL_LOAD_SMOKE_BRIDGE_PRESENT_DEFAULT_OFF_NO_AUTO_EXECUTION_NO_OCR"
-    private val q357SelectedDependencyCoordinate = "com.microsoft." + "onnx" + "runtime:onnx" + "runtime-android:1.26.0"
-    private val q357OnnxModelFileName = "pp_formulanet_s.onnx"
-    private val q357ExpectedOnnxSha256 = "6d24333f86478d765fe6fa6fc3bd8061c52044433aafda18399f49cde3fe4d6a"
-    private val q357ExpectedOnnxSizeBytes = 308743097L
+    private val q389R6BPhase = "V172-Q389R6B-ONNX-RUNTIME-MOBILE-DOWNLOAD-ONLY-INTEGRATION"
+    private val q389R6BSelectedDependencyCoordinate = "com.microsoft." + "onnx" + "runtime:onnx" + "runtime-android:1.20.0"
+    private val q389R6BInstallDirectoryName = "ocr_models/PP-FormulaNet_plus-S-ONNX"
+    private val q389R6BOnnxModelFileName = "pp_formulanet_plus_s.onnx"
+    private val q389R6BExpectedOnnxSha256 = "575353f72a804215329b128ed1b85e8de65fdb4b06730ac8e7954bae5c44e64d"
+    private val q389R6BExpectedOnnxSizeBytes = 333913240L
+    private val q389R6BNativeRuntimeManifestFileName = "q389r6b_onnx_runtime_manifest.json"
+    private val q389R6BPrimaryEngine = "ONNX Runtime Mobile device-only FormulaRecognition / PP-FormulaNet_plus-S"
+    private val q357SelectedDependencyCoordinate = q389R6BSelectedDependencyCoordinate
+    private val q357OnnxModelFileName = q389R6BOnnxModelFileName
+    private val q357ExpectedOnnxSha256 = q389R6BExpectedOnnxSha256
+    private val q357ExpectedOnnxSizeBytes = q389R6BExpectedOnnxSizeBytes
     private val q357UiProtectionStatus = "UI_PROTECTED_NO_WORKSPACE_KEYBOARD_MORE_LONGPRESS_MATHLIVE_GRAPH_SOLUTION_HISTORY_SPLASH_ICON_CHANGE"
     private val q358Phase = "V172-Q358-ONNX-DUMMY-INPUT-RUNTIME-CALL-GUARD-PREFLIGHT"
     private val q358FeatureEnabled = false
@@ -349,6 +358,9 @@ class MainActivity : FlutterActivity() {
     private val q387R1ProductionNbArtifactBundledInBaseApp = false
     private val q387R1ProductionInferencePassClaimed = false
     private val q379VocabularyFileNames = listOf(
+        "q389r6b_tokens.txt",
+        "pp_formulanet_plus_s_vocab.txt",
+        "pp_formulanet_plus_s_tokens.txt",
         "pp_formulanet_plus_l_vocab.txt",
         "pp_formulanet_plus_l_tokens.txt",
         "pp_formulanet_plus_vocab.txt",
@@ -3611,52 +3623,15 @@ class MainActivity : FlutterActivity() {
 
 
     private fun q365OnnxRealModelLoadSmokeExecution(method: String): Map<String, Any> {
-        val storageRoot = File(filesDir, q318PrivateModelDirectoryName)
-        val modelFile = File(storageRoot, q365OnnxModelFileName)
-        val modelExists = modelFile.exists() && modelFile.isFile
-        val modelSizeBytes = if (modelExists) modelFile.length() else 0L
-        val actualSha256 = if (modelExists) {
-            try { q318Sha256File(modelFile) } catch (_: Exception) { "" }
-        } else {
-            ""
-        }
-        return mapOf(
-            "phase" to q365Phase,
-            "repairPhase" to q384Phase,
+        val smoke = q389R6BOnnxModelLoadSmoke(method, null)
+        return smoke + mapOf(
+            "repairPhase" to q389R6BPhase,
             "sourcePhase" to q364Phase,
-            "method" to method,
-            "channel" to ocrRuntimeBridgeChannelName,
-            "status" to q384Status,
-            "engine" to "PP-FormulaNet_plus",
-            "selectedDependencyCoordinate" to q365SelectedDependencyCoordinate,
-            "removedDependencyCoordinate" to q384OnnxRuntimeRemovedDependencyCoordinate,
             "featureFlagDefaultEnabled" to q365FeatureEnabled,
-            "privateStorageRoot" to storageRoot.absolutePath,
-            "modelPath" to modelFile.absolutePath,
-            "expectedModelFileName" to q365OnnxModelFileName,
-            "expectedModelSizeBytes" to q365ExpectedOnnxSizeBytes,
-            "actualModelSizeBytes" to modelSizeBytes,
-            "modelExists" to modelExists,
-            "sizeMatchesExpected" to (modelSizeBytes == q365ExpectedOnnxSizeBytes),
-            "expectedSha256" to q365ExpectedOnnxSha256,
-            "actualSha256" to actualSha256,
-            "sha256MatchesExpected" to (actualSha256.isNotEmpty() && actualSha256 == q365ExpectedOnnxSha256),
-            "sha256Error" to "",
-            "dependencyClassAvailable" to false,
-            "dependencyClassError" to "q384-onnx-runtime-android-removed-from-base-apk",
-            "blockedReason" to "q384-download-only-ocr-contract-onnx-runtime-not-bundled",
-            "baseApkOnnxRuntimeBundled" to q384OnnxRuntimeBundledInBaseApk,
-            "downloadOnlyOcrRuntimeContract" to q384DownloadOnlyOcrRuntimeContract,
-            "modelLoadAttempted" to false,
-            "modelLoaded" to false,
-            "modelLoadError" to "q384-onnx-runtime-removed-from-base-apk",
-            "modelLoadDurationMs" to 0L,
-            "inputNames" to "",
-            "outputNames" to "",
-            "sessionClosed" to false,
-            "sessionOptionsClosed" to false,
-            "realRuntimeExecutionBlockedByBaseApkContract" to true,
-            "runtimeStartupExecuted" to false,
+            "baseApkOnnxRuntimeBundled" to true,
+            "downloadOnlyOcrRuntimeContract" to "MODEL_DOWNLOAD_ONLY_RUNTIME_DEPENDENCY_PACKAGED_NO_MODEL_BYTES_IN_APK",
+            "realRuntimeExecutionBlockedByBaseApkContract" to false,
+            "runtimeStartupExecuted" to (smoke["modelLoaded"] == true),
             "dummyRuntimeCallExecuted" to false,
             "realImageToLatexInferenceExecuted" to false,
             "editableMathLiveReviewOpened" to false,
@@ -4424,12 +4399,15 @@ class MainActivity : FlutterActivity() {
             "q384r2-paddle-runtime-binding-not-enabled" -> "Model dosyaları hazır. OCR çalışma motoru bağlama fazı tamamlanmadan sahte kamera sonucu üretilmez."
             "q386-paddle-native-library-not-loaded", "q386-paddle-lite-api-not-available" -> "Paddle OCR çalışma motoru bu cihazda yüklenemedi. Uygulama sahte sonuç üretmedi; build/runtime logu kontrol edilmeli."
             "q386-paddle-lite-model-load-failed-or-artifact-format-incompatible" -> "Model dosyaları indirildi ama Paddle Lite bu artifact formatını yükleyemedi. Uyumluluk/conversion fazı tamamlanmadan kamera sonucu üretilmez."
-            "q389r4-offline-formula-ocr-production-bundle-source-missing", "q389r4-offline-formula-ocr-production-bundle-not-ready" -> "Offline Formula OCR paketi bu cihazda hazır değil. Modeli indir ile doğrulanmış tam PP-FormulaNet_plus .nb + decoder/tokenizer + preprocess paketi kurulmadan kamera formül okuma açılmaz."
+            "q389r4-offline-formula-ocr-production-bundle-source-missing", "q389r4-offline-formula-ocr-production-bundle-not-ready", "q389r6b-onnx-model-missing", "q389r6b-onnx-model-file-not-found-or-empty" -> "Offline Formula OCR paketi bu cihazda hazır değil. Modeli indir ile doğrulanmış PP-FormulaNet_plus-S ONNX + decoder/preprocess paketi kurulmadan kamera formül okuma açılmaz."
             "q387-paddle-lite-nb-model-required", "q387-paddle-inference-directory-not-loadable-by-current-mobileconfig", "q387-current-paddlepredictor-jar-has-no-setModelDir" -> "Bu cihazdaki Paddle Lite MobileConfig mevcut indirme formatını doğrudan yükleyemiyor. Android için optimize edilmiş .nb model download-only olarak hazırlanıp doğrulanmadan kamera OCR sonucu üretilmez."
             "q387r1-real-paddle-lite-nb-artifact-evidence-required", "q387r1-nb-manifest-missing", "q387r1-nb-manifest-invalid", "q387r1-nb-sha256-mismatch", "q387r1-nb-artifact-kind-mismatch" -> "Android için optimize edilmiş .nb model manifest/SHA/provenance kanıtı eksik veya geçersiz. Doğrulanmamış modelle kamera OCR sonucu üretilmez."
             "q386-tensor-preprocess-failed", "q386-paddle-inference-run-failed", "q386-runtime-exception" -> "OCR çalışma motoru güvenli şekilde durdu. Uygulama sahte sonuç üretmedi; fotoğrafı veya model uyumluluğunu kontrol et."
             "q384-download-only-ocr-contract-onnx-runtime-not-bundled" -> "Model dosyaları hazır olsa bile OCR çalışma motoru bu base APK’da yok. Runtime pack hazır olmadan kamera okuma çalışmaz."
-            "onnx-model-size-mismatch", "onnx-model-sha256-mismatch" -> "OCR modeli doğrulanamadı. Bozuk veya yanlış model dosyası kullanılmayacak."
+            "onnx-model-size-mismatch", "onnx-model-sha256-mismatch", "q389r6b-onnx-model-size-mismatch", "q389r6b-onnx-model-sha256-mismatch" -> "OCR modeli doğrulanamadı. Bozuk veya yanlış ONNX model dosyası kullanılmayacak."
+            "q389r6b-onnx-runtime-session-failed", "q389r6b-onnx-runtime-inference-failed" -> "ONNX Runtime Mobile cihazda güvenli şekilde durdu. Uygulama sahte sonuç üretmedi; build/runtime logu kontrol edilmeli."
+            "q389r6b-source-image-decode-failed" -> "Fotoğraf dosyası okunamadı. Tekrar çekip deneyebilirsin."
+            "q389r6b-onnx-output-decoder-no-readable-candidate" -> "Model çalıştı ama okunabilir LaTeX adayı çıkarılamadı. Uygulama sahte sonuç üretmedi; decoder/vocabulary yan dosyası kontrol edilmeli."
             "source-image-path-missing", "source-image-file-missing", "source-image-file-empty", "source-image-decode-failed" -> "Fotoğraf dosyası okunamadı. Tekrar çekip deneyebilirsin."
             "q381-crop-preprocess-failed", "q381-crop-input-not-ready" -> "Kırpma görüntüsü hazırlanamadı. Fotoğrafı tekrar çekip çerçeveyi yeniden kullan."
             "q381r1-native-worker-exception" -> "OCR işlemi cihazda güvenli şekilde durdu. Uygulama sahte sonuç üretmedi; fotoğrafı tekrar deneyebilirsin."
@@ -4479,6 +4457,12 @@ class MainActivity : FlutterActivity() {
             !file.exists() || !file.isFile || file.length() <= 0L
         }
         val paddleInferenceDirectoryReady = modelDirectoryExists && primaryExists && primarySizeBytes >= q384R2MinimumPrimarySizeBytes && primarySha256MatchesExpected && missingArtifacts.isEmpty()
+        val q387CandidateNbModelFile = q387FindPaddleLiteNbModelFile(sourceFile ?: primaryModelFile, modelDirectory)
+        val q387R1NbManifestEvidence = q387R1ValidateNbManifestEvidence(q387CandidateNbModelFile)
+        val q387PaddleLiteNbModelReady = q387CandidateNbModelFile != null &&
+            q387IsPaddleLiteNbModelFile(q387CandidateNbModelFile) &&
+            q387R1NbManifestEvidence["q387r1NbArtifactReady"] == true
+        val modelArtifactReady = paddleInferenceDirectoryReady || q387PaddleLiteNbModelReady
         var predictorClassAvailable = false
         var configClassAvailable = false
         var apiProbeError = ""
@@ -4491,12 +4475,12 @@ class MainActivity : FlutterActivity() {
             apiProbeError = error.javaClass.name + ": " + (error.message ?: "no-message")
         }
         val blockedReason = when {
-            !sourcePathProvided && !paddleInferenceDirectoryReady -> "q384r2-paddle-model-source-path-missing"
-            !modelDirectoryExists -> "q384r2-paddle-model-directory-missing"
-            !primaryExists -> "q384r2-paddle-primary-model-missing"
-            primarySizeBytes < q384R2MinimumPrimarySizeBytes -> "q384r2-paddle-primary-model-too-small"
-            !primarySha256MatchesExpected -> "q384r2-paddle-primary-sha256-mismatch"
-            missingArtifacts.isNotEmpty() -> "q384r2-paddle-sidecar-missing"
+            !sourcePathProvided && !modelArtifactReady -> "q384r2-paddle-model-source-path-missing"
+            !modelArtifactReady && !modelDirectoryExists -> "q384r2-paddle-model-directory-missing"
+            !modelArtifactReady && !primaryExists -> "q384r2-paddle-primary-model-missing"
+            !modelArtifactReady && primarySizeBytes < q384R2MinimumPrimarySizeBytes -> "q384r2-paddle-primary-model-too-small"
+            !modelArtifactReady && !primarySha256MatchesExpected -> "q384r2-paddle-primary-sha256-mismatch"
+            !modelArtifactReady && missingArtifacts.isNotEmpty() -> "q384r2-paddle-sidecar-missing"
             else -> q384R2RuntimeBindingBlockedReason
         }
         return mapOf(
@@ -4525,7 +4509,10 @@ class MainActivity : FlutterActivity() {
             "presentArtifactFiles" to presentArtifacts,
             "missingArtifactFiles" to missingArtifacts,
             "paddleInferenceDirectoryReady" to paddleInferenceDirectoryReady,
-            "modelArtifactReady" to (paddleInferenceDirectoryReady || bridgeEvidence["q387PaddleLiteNbModelReady"] == true),
+            "q387CandidateNbModelPath" to (q387CandidateNbModelFile?.absolutePath ?: ""),
+            "q387PaddleLiteNbModelReady" to q387PaddleLiteNbModelReady,
+            "q387R1NbManifestEvidence" to q387R1NbManifestEvidence,
+            "modelArtifactReady" to modelArtifactReady,
             "paddleLitePredictorClassName" to q347PredictorClassName,
             "paddleLiteConfigClassName" to q347ConfigClassName,
             "paddleLitePredictorApiClassAvailable" to predictorClassAvailable,
@@ -5037,6 +5024,298 @@ class MainActivity : FlutterActivity() {
         )
     }
 
+
+    private fun q389R6BCloseQuietly(value: Any?) {
+        try { (value as? AutoCloseable)?.close() } catch (_: Throwable) {}
+    }
+
+    private fun q389R6BIsOnnxModelFile(file: File?): Boolean {
+        return file != null && file.exists() && file.isFile && file.name.endsWith(".onnx", ignoreCase = true) && file.length() > 0L
+    }
+
+    private fun q389R6BFindOnnxModelFile(modelSourcePath: String?): File? {
+        val normalized = (modelSourcePath ?: "").trim()
+        if (normalized.isNotEmpty()) {
+            val source = File(normalized)
+            if (q389R6BIsOnnxModelFile(source)) return source
+            if (source.exists() && source.isDirectory) {
+                val direct = File(source, q389R6BOnnxModelFileName)
+                if (q389R6BIsOnnxModelFile(direct)) return direct
+                val largest = source.listFiles()
+                    ?.filter { q389R6BIsOnnxModelFile(it) }
+                    ?.sortedByDescending { it.length() }
+                    ?.firstOrNull()
+                if (largest != null) return largest
+            }
+            val sibling = File(source.parentFile ?: File(""), q389R6BOnnxModelFileName)
+            if (q389R6BIsOnnxModelFile(sibling)) return sibling
+        }
+        val q389R6BInstalled = File(File(filesDir, q389R6BInstallDirectoryName), q389R6BOnnxModelFileName)
+        if (q389R6BIsOnnxModelFile(q389R6BInstalled)) return q389R6BInstalled
+        val q318Installed = File(File(filesDir, q318PrivateModelDirectoryName), q389R6BOnnxModelFileName)
+        if (q389R6BIsOnnxModelFile(q318Installed)) return q318Installed
+        return null
+    }
+
+    private fun q389R6BOnnxModelFileEvidence(modelFile: File?): Map<String, Any> {
+        val exists = q389R6BIsOnnxModelFile(modelFile)
+        val size = if (exists) modelFile!!.length() else 0L
+        val sha = if (exists) {
+            try { q318Sha256File(modelFile!!) } catch (error: Throwable) { "sha-error:${error.javaClass.simpleName}" }
+        } else ""
+        val ready = exists && size == q389R6BExpectedOnnxSizeBytes && sha == q389R6BExpectedOnnxSha256
+        val blockedReason = when {
+            modelFile == null -> "q389r6b-onnx-model-missing"
+            !exists -> "q389r6b-onnx-model-file-not-found-or-empty"
+            size != q389R6BExpectedOnnxSizeBytes -> "q389r6b-onnx-model-size-mismatch"
+            sha != q389R6BExpectedOnnxSha256 -> "q389r6b-onnx-model-sha256-mismatch"
+            else -> ""
+        }
+        return mapOf(
+            "phase" to q389R6BPhase,
+            "modelPath" to (modelFile?.absolutePath ?: ""),
+            "expectedModelFileName" to q389R6BOnnxModelFileName,
+            "expectedSha256" to q389R6BExpectedOnnxSha256,
+            "expectedSizeBytes" to q389R6BExpectedOnnxSizeBytes,
+            "actualSha256" to sha,
+            "actualSizeBytes" to size,
+            "modelExists" to exists,
+            "sha256MatchesExpected" to (sha == q389R6BExpectedOnnxSha256),
+            "sizeMatchesExpected" to (size == q389R6BExpectedOnnxSizeBytes),
+            "q389r6bOnnxModelReady" to ready,
+            "blockedReason" to blockedReason
+        )
+    }
+
+    private fun q389R6BOnnxModelLoadSmoke(method: String, modelSourcePath: String?): Map<String, Any> {
+        val modelFile = q389R6BFindOnnxModelFile(modelSourcePath)
+        val fileEvidence = q389R6BOnnxModelFileEvidence(modelFile)
+        if (fileEvidence["q389r6bOnnxModelReady"] != true) {
+            return mapOf(
+                "phase" to q389R6BPhase,
+                "sourcePhase" to q357Phase,
+                "method" to method,
+                "status" to "Q389R6B_ONNX_MODEL_NOT_READY",
+                "engine" to q389R6BPrimaryEngine,
+                "selectedDependencyCoordinate" to q389R6BSelectedDependencyCoordinate,
+                "modelFileEvidence" to fileEvidence,
+                "dependencyClassAvailable" to false,
+                "blockedReason" to (fileEvidence["blockedReason"] as? String ?: "q389r6b-onnx-model-not-ready"),
+                "modelLoadAttempted" to false,
+                "modelLoaded" to false,
+                "ocrPassClaimed" to false,
+                "androidRealDevicePassClaimedByPackage" to false
+            )
+        }
+        var session: Any? = null
+        var options: Any? = null
+        var env: Any? = null
+        val started = System.currentTimeMillis()
+        return try {
+            val envClass = Class.forName("ai.onnxruntime.OrtEnvironment")
+            val optionsClass = Class.forName("ai.onnxruntime.OrtSession\$SessionOptions")
+            env = envClass.getMethod("getEnvironment").invoke(null)
+            options = optionsClass.getDeclaredConstructor().newInstance()
+            val createSession = env!!.javaClass.methods.firstOrNull { it.name == "createSession" && it.parameterCount == 2 }
+                ?: throw IllegalStateException("createSession(String, SessionOptions) missing")
+            session = createSession.invoke(env, modelFile!!.absolutePath, options)
+            val inputInfo = session!!.javaClass.methods.firstOrNull { it.name == "getInputInfo" && it.parameterCount == 0 }?.invoke(session) as? Map<*, *>
+            val outputInfo = session!!.javaClass.methods.firstOrNull { it.name == "getOutputInfo" && it.parameterCount == 0 }?.invoke(session) as? Map<*, *>
+            mapOf(
+                "phase" to q389R6BPhase,
+                "sourcePhase" to q357Phase,
+                "method" to method,
+                "status" to "Q389R6B_ONNX_RUNTIME_SESSION_CREATED",
+                "engine" to q389R6BPrimaryEngine,
+                "selectedDependencyCoordinate" to q389R6BSelectedDependencyCoordinate,
+                "modelFileEvidence" to fileEvidence,
+                "dependencyClassAvailable" to true,
+                "blockedReason" to "",
+                "modelLoadAttempted" to true,
+                "modelLoaded" to true,
+                "modelLoadDurationMs" to (System.currentTimeMillis() - started),
+                "inputNames" to ((inputInfo?.keys ?: emptySet<Any>()).joinToString(",")),
+                "outputNames" to ((outputInfo?.keys ?: emptySet<Any>()).joinToString(",")),
+                "inputInfoSummary" to q380DescribeNodeInfoMap(inputInfo as? Map<String, *>),
+                "outputInfoSummary" to q380DescribeNodeInfoMap(outputInfo as? Map<String, *>),
+                "ocrPassClaimed" to false,
+                "androidRealDevicePassClaimedByPackage" to false
+            )
+        } catch (error: Throwable) {
+            mapOf(
+                "phase" to q389R6BPhase,
+                "sourcePhase" to q357Phase,
+                "method" to method,
+                "status" to "Q389R6B_ONNX_RUNTIME_SESSION_FAILED",
+                "engine" to q389R6BPrimaryEngine,
+                "selectedDependencyCoordinate" to q389R6BSelectedDependencyCoordinate,
+                "modelFileEvidence" to fileEvidence,
+                "dependencyClassAvailable" to (error !is ClassNotFoundException),
+                "dependencyClassError" to (error.javaClass.name + ": " + (error.message ?: "unknown")),
+                "blockedReason" to "q389r6b-onnx-runtime-session-failed",
+                "modelLoadAttempted" to true,
+                "modelLoaded" to false,
+                "modelLoadDurationMs" to (System.currentTimeMillis() - started),
+                "ocrPassClaimed" to false,
+                "androidRealDevicePassClaimedByPackage" to false
+            )
+        } finally {
+            q389R6BCloseQuietly(session)
+            q389R6BCloseQuietly(options)
+        }
+    }
+
+    private fun q389R6BRealOnnxFormulaInference(
+        method: String,
+        imagePath: String?,
+        modelSourcePath: String?,
+        decoderLatexOverride: String?
+    ): Map<String, Any> {
+        val overrideCandidate = q379NormalizeLatexCandidate(decoderLatexOverride ?: "")
+        val normalizedImagePath = (imagePath ?: "").trim()
+        val modelFile = q389R6BFindOnnxModelFile(modelSourcePath)
+        val fileEvidence = q389R6BOnnxModelFileEvidence(modelFile)
+        var session: Any? = null
+        var options: Any? = null
+        var tensor: Any? = null
+        var resultSet: Any? = null
+        var bitmap: Bitmap? = null
+        val started = System.currentTimeMillis()
+        if (overrideCandidate.isNotEmpty()) {
+            return mapOf(
+                "phase" to q389R6BPhase,
+                "method" to method,
+                "engine" to q389R6BPrimaryEngine,
+                "candidateLatex" to overrideCandidate,
+                "candidateConfidence" to 0.99,
+                "candidateSource" to "q389r6b-explicit-decoder-override",
+                "candidateAlternatives" to listOf(overrideCandidate),
+                "blockedReason" to "",
+                "q389r6bOnnxRuntimePathSelected" to true,
+                "ocrPassClaimed" to false
+            )
+        }
+        if (fileEvidence["q389r6bOnnxModelReady"] != true) {
+            return mapOf(
+                "phase" to q389R6BPhase,
+                "method" to method,
+                "engine" to q389R6BPrimaryEngine,
+                "modelFileEvidence" to fileEvidence,
+                "q389r6bOnnxRuntimePathSelected" to true,
+                "dependencyClassAvailable" to false,
+                "blockedReason" to (fileEvidence["blockedReason"] as? String ?: "q389r6b-onnx-model-not-ready"),
+                "candidateLatex" to "",
+                "candidateConfidence" to 0.0,
+                "candidateSource" to "q389r6b-no-model",
+                "candidateAlternatives" to emptyList<Any>(),
+                "ocrPassClaimed" to false
+            )
+        }
+        return try {
+            val imageFile = File(normalizedImagePath)
+            bitmap = if (normalizedImagePath.isNotEmpty() && imageFile.exists()) BitmapFactory.decodeFile(imageFile.absolutePath) else null
+            if (bitmap == null) {
+                return mapOf(
+                    "phase" to q389R6BPhase,
+                    "method" to method,
+                    "engine" to q389R6BPrimaryEngine,
+                    "modelFileEvidence" to fileEvidence,
+                    "q389r6bOnnxRuntimePathSelected" to true,
+                    "blockedReason" to "q389r6b-source-image-decode-failed",
+                    "imageDecodeAttempted" to true,
+                    "imageDecoded" to false,
+                    "candidateLatex" to "",
+                    "candidateConfidence" to 0.0,
+                    "candidateSource" to "q389r6b-image-decode-failed",
+                    "candidateAlternatives" to emptyList<Any>(),
+                    "ocrPassClaimed" to false
+                )
+            }
+            val envClass = Class.forName("ai.onnxruntime.OrtEnvironment")
+            val optionsClass = Class.forName("ai.onnxruntime.OrtSession\$SessionOptions")
+            val tensorClass = Class.forName("ai.onnxruntime.OnnxTensor")
+            val env = envClass.getMethod("getEnvironment").invoke(null)
+            options = optionsClass.getDeclaredConstructor().newInstance()
+            val createSession = env.javaClass.methods.firstOrNull { it.name == "createSession" && it.parameterCount == 2 }
+                ?: throw IllegalStateException("createSession(String, SessionOptions) missing")
+            session = createSession.invoke(env, modelFile!!.absolutePath, options)
+            val inputInfo = session!!.javaClass.methods.firstOrNull { it.name == "getInputInfo" && it.parameterCount == 0 }?.invoke(session) as? Map<*, *>
+            val firstInputName = inputInfo?.keys?.firstOrNull()?.toString() ?: "x"
+            val rawShape = q380ExtractShapeFromNodeInfo(inputInfo?.get(firstInputName))
+            val tensorPlan = q380ResolveInputTensorPlan(rawShape)
+            val tensorValues = q380BuildImageTensorValues(bitmap!!, tensorPlan)
+            val createTensor = tensorClass.methods.firstOrNull { it.name == "createTensor" && it.parameterCount == 3 && it.parameterTypes.getOrNull(1)?.name == "java.nio.FloatBuffer" }
+                ?: throw IllegalStateException("OnnxTensor.createTensor(FloatBuffer) missing")
+            tensor = createTensor.invoke(null, env, FloatBuffer.wrap(tensorValues), tensorPlan.shape)
+            val inputs = HashMap<String, Any>()
+            inputs[firstInputName] = tensor!!
+            val runMethod = session!!.javaClass.methods.firstOrNull { it.name == "run" && it.parameterCount == 1 }
+                ?: throw IllegalStateException("OrtSession.run(Map) missing")
+            resultSet = runMethod.invoke(session, inputs)
+            val decoderEvidence = q380DecodeLogitOrTokenOutputs(resultSet)
+            val candidateLatex = q379NormalizeLatexCandidate(decoderEvidence["candidateLatex"] as? String ?: "")
+            val blockedReason = if (candidateLatex.isNotEmpty()) "" else (decoderEvidence["decoderBlockedReason"] as? String ?: "q389r6b-onnx-output-decoder-no-readable-candidate")
+            mapOf(
+                "phase" to q389R6BPhase,
+                "method" to method,
+                "engine" to q389R6BPrimaryEngine,
+                "selectedDependencyCoordinate" to q389R6BSelectedDependencyCoordinate,
+                "modelFileEvidence" to fileEvidence,
+                "q389r6bOnnxRuntimePathSelected" to true,
+                "q389r6bOnnxModelReady" to true,
+                "dependencyClassAvailable" to true,
+                "blockedReason" to blockedReason,
+                "modelLoadAttempted" to true,
+                "modelLoaded" to true,
+                "imageDecodeAttempted" to true,
+                "imageDecoded" to true,
+                "tensorPreprocessAttempted" to true,
+                "tensorPreprocessSucceeded" to true,
+                "tensorPlan" to tensorPlan.toString(),
+                "inputName" to firstInputName,
+                "imageToLatexInferenceAttempted" to true,
+                "imageToLatexInferenceExecuted" to true,
+                "imageToLatexInferenceSucceeded" to candidateLatex.isNotEmpty(),
+                "candidateLatex" to candidateLatex,
+                "candidateConfidence" to if (candidateLatex.isNotEmpty()) (decoderEvidence["candidateConfidence"] as? Number)?.toDouble()?.coerceIn(0.0, 1.0) ?: 0.56 else 0.0,
+                "candidateSource" to if (candidateLatex.isNotEmpty()) (decoderEvidence["candidateSource"] as? String ?: "q389r6b-onnx-runtime-output-decoder") else "q389r6b-no-readable-candidate",
+                "candidateAlternatives" to (decoderEvidence["candidateAlternatives"] as? List<*> ?: emptyList<Any>()),
+                "outputDecoderSummary" to (decoderEvidence["outputDecoderSummary"] as? String ?: ""),
+                "decoderBlockedReason" to blockedReason,
+                "runtimeDurationMs" to (System.currentTimeMillis() - started),
+                "editableMathLiveReviewRequiredBeforeImport" to true,
+                "directOcrToWorkspaceImportBlocked" to true,
+                "directOcrToSolveGraphSolutionHistoryBlocked" to true,
+                "ocrPassClaimed" to false,
+                "androidRealDevicePassClaimedByPackage" to false
+            )
+        } catch (error: Throwable) {
+            mapOf(
+                "phase" to q389R6BPhase,
+                "method" to method,
+                "engine" to q389R6BPrimaryEngine,
+                "modelFileEvidence" to fileEvidence,
+                "q389r6bOnnxRuntimePathSelected" to true,
+                "dependencyClassAvailable" to (error !is ClassNotFoundException),
+                "dependencyClassError" to (error.javaClass.name + ": " + (error.message ?: "unknown")),
+                "blockedReason" to "q389r6b-onnx-runtime-inference-failed",
+                "candidateLatex" to "",
+                "candidateConfidence" to 0.0,
+                "candidateSource" to "q389r6b-runtime-error",
+                "candidateAlternatives" to emptyList<Any>(),
+                "runtimeDurationMs" to (System.currentTimeMillis() - started),
+                "ocrPassClaimed" to false,
+                "androidRealDevicePassClaimedByPackage" to false
+            )
+        } finally {
+            q389R6BCloseQuietly(resultSet)
+            q389R6BCloseQuietly(tensor)
+            q389R6BCloseQuietly(session)
+            q389R6BCloseQuietly(options)
+            if (bitmap != null && !bitmap!!.isRecycled) bitmap!!.recycle()
+        }
+    }
+
     private fun q380OcrRuntimeReadinessAdaptiveInputDecoderCompletion(
         method: String,
         imagePath: String?,
@@ -5046,21 +5325,33 @@ class MainActivity : FlutterActivity() {
         val normalizedImagePath = (imagePath ?: "").trim()
         val normalizedModelSourcePath = (modelSourcePath ?: "").trim()
         val overrideCandidate = q379NormalizeLatexCandidate(decoderLatexOverride ?: "")
-        val bridgeEvidence = q386RealPaddleOcrInferenceBridge(
+        val onnxModelCandidate = q389R6BFindOnnxModelFile(normalizedModelSourcePath)
+        val onnxRuntimeBridgeEvidence = if (overrideCandidate.isEmpty() && q389R6BIsOnnxModelFile(onnxModelCandidate)) {
+            q389R6BRealOnnxFormulaInference(
+                "q380-q389r6b-real-onnx-runtime-mobile-bridge",
+                normalizedImagePath,
+                normalizedModelSourcePath,
+                decoderLatexOverride
+            )
+        } else {
+            null
+        }
+        val bridgeEvidence = onnxRuntimeBridgeEvidence ?: q386RealPaddleOcrInferenceBridge(
             "q380-q386-real-paddle-inference-bridge",
             normalizedImagePath,
             normalizedModelSourcePath,
             decoderLatexOverride
         )
-        val modelBindingEvidence = bridgeEvidence["modelBindingEvidence"] as? Map<*, *> ?: emptyMap<String, Any>()
+        val modelBindingEvidence = bridgeEvidence["modelBindingEvidence"] as? Map<*, *> ?: bridgeEvidence["modelFileEvidence"] as? Map<*, *> ?: emptyMap<String, Any>()
         val paddleInferenceDirectoryReady = bridgeEvidence["paddleInferenceDirectoryReady"] == true
+        val onnxRuntimeModelReady = bridgeEvidence["q389r6bOnnxModelReady"] == true || (bridgeEvidence["modelFileEvidence"] as? Map<*, *>)?.get("q389r6bOnnxModelReady") == true
         val bridgeCandidate = q379NormalizeLatexCandidate(bridgeEvidence["candidateLatex"] as? String ?: "")
         val candidateLatex = if (overrideCandidate.isNotEmpty()) overrideCandidate else bridgeCandidate
         val bridgeBlockedReason = bridgeEvidence["blockedReason"] as? String ?: bridgeEvidence["decoderBlockedReason"] as? String ?: ""
         val blockedReason = when {
             candidateLatex.isNotEmpty() -> ""
             bridgeBlockedReason.isNotEmpty() -> bridgeBlockedReason
-            !(paddleInferenceDirectoryReady || bridgeEvidence["q387PaddleLiteNbModelReady"] == true) -> "q389r4-offline-formula-ocr-production-bundle-not-ready"
+            !(paddleInferenceDirectoryReady || onnxRuntimeModelReady || bridgeEvidence["q387PaddleLiteNbModelReady"] == true) -> "q389r4-offline-formula-ocr-production-bundle-not-ready"
             else -> q386IncompatibleArtifactBlockedReason
         }
         return mapOf(
@@ -5070,7 +5361,7 @@ class MainActivity : FlutterActivity() {
             "method" to method,
             "channel" to ocrRuntimeBridgeChannelName,
             "status" to if (candidateLatex.isNotEmpty()) "REVIEW_READY" else q386Status,
-            "engine" to "PP-FormulaNet_plus",
+            "engine" to (bridgeEvidence["engine"] as? String ?: "PP-FormulaNet_plus"),
             "decoderVersion" to q380DecoderVersion,
             "modelSourcePathProvided" to normalizedModelSourcePath.isNotEmpty(),
             "sourceImagePath" to normalizedImagePath,
@@ -5078,13 +5369,16 @@ class MainActivity : FlutterActivity() {
             "modelBindingEvidence" to modelBindingEvidence,
             "privateStorageActivationEvidence" to modelBindingEvidence,
             "q386PaddleRuntimeBridgeEvidence" to bridgeEvidence,
+            "q389R6BOnnxRuntimeBridgeEvidence" to (onnxRuntimeBridgeEvidence ?: emptyMap<String, Any>()),
             "paddleInferenceDirectoryReady" to paddleInferenceDirectoryReady,
+            "onnxRuntimeModelReady" to onnxRuntimeModelReady,
             "dependencyClassAvailable" to (bridgeEvidence["dependencyClassAvailable"] == true),
             "dependencyClassError" to (bridgeEvidence["dependencyClassError"] as? String ?: ""),
             "blockedReason" to blockedReason,
-            "baseApkOnnxRuntimeBundled" to q384OnnxRuntimeBundledInBaseApk,
-            "downloadOnlyOcrRuntimeContract" to q384DownloadOnlyOcrRuntimeContract,
-            "modelArtifactReady" to (paddleInferenceDirectoryReady || bridgeEvidence["q387PaddleLiteNbModelReady"] == true),
+            "baseApkOnnxRuntimeBundled" to (onnxRuntimeBridgeEvidence != null),
+            "modelBytesBundledInBaseApk" to false,
+            "downloadOnlyOcrRuntimeContract" to "ONNX_RUNTIME_DEPENDENCY_PACKAGED_MODEL_DOWNLOAD_ONLY_NO_MODEL_BYTES_IN_APK",
+            "modelArtifactReady" to (paddleInferenceDirectoryReady || onnxRuntimeModelReady || bridgeEvidence["q387PaddleLiteNbModelReady"] == true),
             "modelLoadAttempted" to (bridgeEvidence["modelLoadAttempted"] == true),
             "modelLoaded" to (bridgeEvidence["modelLoaded"] == true),
             "imageDecodeAttempted" to (bridgeEvidence["imageDecodeAttempted"] == true),
@@ -5096,12 +5390,12 @@ class MainActivity : FlutterActivity() {
             "imageToLatexInferenceSucceeded" to candidateLatex.isNotEmpty(),
             "candidateLatex" to candidateLatex,
             "candidateConfidence" to if (candidateLatex.isNotEmpty()) (bridgeEvidence["candidateConfidence"] as? Number)?.toDouble()?.coerceIn(0.0, 1.0) ?: 0.51 else 0.0,
-            "candidateSource" to if (candidateLatex.isNotEmpty()) (bridgeEvidence["candidateSource"] as? String ?: "q386-real-paddle-output-decoder") else (bridgeEvidence["candidateSource"] as? String ?: "q386-no-readable-candidate"),
+            "candidateSource" to if (candidateLatex.isNotEmpty()) (bridgeEvidence["candidateSource"] as? String ?: "q389r6b-or-q386-real-output-decoder") else (bridgeEvidence["candidateSource"] as? String ?: "q389r6b-or-q386-no-readable-candidate"),
             "candidateAlternatives" to (bridgeEvidence["candidateAlternatives"] as? List<*> ?: emptyList<Any>()),
             "candidateLatexDecoded" to candidateLatex.isNotEmpty(),
             "outputDecodingImplemented" to true,
             "outputDecoderVersion" to q380DecoderVersion,
-            "outputDecoderSummary" to (bridgeEvidence["outputDecoderSummary"] as? String ?: "q386-real-paddle-bridge-no-summary"),
+            "outputDecoderSummary" to (bridgeEvidence["outputDecoderSummary"] as? String ?: "q389r6b-or-q386-bridge-no-summary"),
             "decoderBlockedReason" to blockedReason,
             "editableMathLiveReviewRequiredBeforeImport" to true,
             "explicitUserApprovalRequiredBeforeImport" to true,

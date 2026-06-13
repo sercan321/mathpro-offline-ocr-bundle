@@ -21578,33 +21578,5 @@
     "flutterAnalyzePassClaimedByPackage": false,
     "flutterTestPassClaimedByPackage": false,
     "notes": "Q389R5E sweeps the remaining stale Q317-Q325 broad string guard tests reported by the user after Q389R5D. It keeps executable runtime markers blocked but no longer fails on successor class-name evidence strings. No real OCR PASS is claimed."
-  },
-  "v172Q389R5FOfflineStaleFlutterTestSweepClosure": {
-    "phase": "V172-Q389R5F_OFFLINE",
-    "sourcePhase": "V172-Q389R5E_OFFLINE",
-    "status": "STALE_FLUTTER_TEST_SWEEP_CLOSURE_READY_REAL_USER_SIDE_FLUTTER_TEST_EVIDENCE_STILL_REQUIRED",
-    "verifier": "tool/verify_q389r5f_offline_stale_flutter_test_sweep_closure.mjs",
-    "legacyMetadataVersionRestoredInPubspec": true,
-    "q239ReviewSurfaceLegacyManagerMarkerRestored": true,
-    "q240ToQ247InternetPermissionGuardsMadeSuccessorAware": true,
-    "q276Q277DependencyScansMadeLineAware": true,
-    "q291HttpDependencyGuardMadeSuccessorAware": true,
-    "graphHistoryAuditFakePassExactPhraseRemoved": true,
-    "backendAllowed": false,
-    "mlKitAllowed": false,
-    "textOcrFallbackAllowed": false,
-    "modelBundledInBaseApp": false,
-    "fakeLatexCandidateAllowed": false,
-    "q382KeyboardOrderingTouched": false,
-    "keyboardLayoutTouched": false,
-    "graphHistorySolutionSolverTouched": false,
-    "androidManifestRuntimeSemanticsTouched": false,
-    "gradleTouched": false,
-    "splashIconStartupTouched": false,
-    "ocrPassClaimedByPackage": false,
-    "androidRealDevicePassClaimedByPackage": false,
-    "flutterAnalyzePassClaimedByPackage": false,
-    "flutterTestPassClaimedByPackage": false,
-    "notes": "Q389R5F performs a broader stale Flutter test closure after the user-side Q389R5E log: old metadata exact-version tests, pre-Q384 INTERNET guards, broad pubspec comment scans, Q291 http dependency guard, and fake PASS exact phrase false-positive are repaired. No production OCR/device/Flutter PASS is claimed."
   }
 }

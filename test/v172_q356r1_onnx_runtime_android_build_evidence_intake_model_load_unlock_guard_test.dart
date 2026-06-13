@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+
+import 'v172_q389r6w_onnx_runtime_successor_test_helper.dart';
 import 'package:mathpro_flutter_phase17/features/camera/gauss_onnx_runtime_android_build_evidence_intake_model_load_unlock_guard_q356r1.dart';
 import 'package:mathpro_flutter_phase17/features/camera/gauss_onnx_runtime_android_build_evidence_intake_model_load_unlock_guard_q356r1_policy.dart';
 
@@ -63,7 +65,7 @@ void main() {
     final manifest = jsonDecode(File('assets/mathlive/manifest.json').readAsStringSync()) as Map<String, dynamic>;
 
     expect(buildGradle, contains("implementation files('libs/PaddlePredictor.jar')"));
-    expect(buildGradle.toLowerCase(), isNot(contains('onnxruntime-android')));
+    expectQ389R6WOnnxRuntimeDependencySurface(buildGradle);
     expect(pubspec, isNot(contains('onnxruntime')));
     expect(androidManifest, isNot(contains('ONNX')));
 

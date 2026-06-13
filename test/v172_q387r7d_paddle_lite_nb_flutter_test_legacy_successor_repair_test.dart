@@ -40,7 +40,7 @@ void main() {
     expect(q352r1, contains('pubspecRuntimeSection'));
     expect(q352, isNot(contains("expect(pubspec.toLowerCase(), isNot(contains('onnx')));")));
     expect(q352r1, isNot(contains("expect(pubspec.toLowerCase(), isNot(contains('onnx')));")));
-    expect(pubspec.toLowerCase(), contains('onnx'));
+    expect(pubspec.toLowerCase(), isNot(contains('onnx')));
     expect(pubspecRuntimeSection, isNot(contains('onnxruntime')));
     expect(pubspecRuntimeSection, isNot(contains('onnxruntime-android')));
     expect(pubspecRuntimeSection, isNot(contains('onnx:')));

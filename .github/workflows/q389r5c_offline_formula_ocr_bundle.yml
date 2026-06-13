@@ -1,4 +1,4 @@
-﻿name: Q389R5C Offline Formula OCR Bundle Builder
+name: Q389R5C Offline Formula OCR Bundle Builder
 
 on:
   workflow_dispatch:
@@ -35,8 +35,8 @@ permissions:
 env:
   Q389R5C_PHASE: V172-Q389R5C_OFFLINE-CLOUD-MODEL-BUNDLE-BUILDER
   BUNDLE_ROOT: ${{ github.workspace }}/build/q389r5c_formula_ocr_bundle
-  MODEL_DIR: ${{ github.workspace }}/build/q389r5c_model
-  TOOLS_DIR: ${{ github.workspace }}/build/q389r5c_tools
+  MODEL_DIR: ${{ runner.temp }}/q389r5c_model
+  TOOLS_DIR: ${{ runner.temp }}/q389r5c_tools
 
 jobs:
   build-offline-formula-ocr-bundle:
@@ -91,12 +91,8 @@ jobs:
               ],
           )
           files = sorted(str(p.relative_to(target)) for p in target.rglob('*') if p.is_file() and '.git/' not in str(p))
-          graph_files = [
-              name for name in files
-              if name.endswith('.pdmodel') or Path(name).name in ('inference.json', 'model.json')
-          ]
-          if not graph_files:
-              raise SystemExit('Formula OCR snapshot is missing Paddle graph: inference.pdmodel/model.pdmodel or inference.json/model.json')
+          if not any(name.endswith('.pdmodel') for name in files):
+              raise SystemExit('Formula OCR snapshot is missing inference/model .pdmodel')
           if not any(name.endswith('.pdiparams') for name in files):
               raise SystemExit('Formula OCR snapshot is missing inference/model .pdiparams')
           (target / 'q389r5c_model_snapshot_report.json').write_text(json.dumps({
@@ -222,7 +218,6 @@ jobs:
           (cd "$BUNDLE_ROOT/bundle" && zip -r ../q389r5c_offline_formula_ocr_bundle_files.zip .)
 
       - name: Upload workflow artifact
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: q389r5c-offline-formula-ocr-bundle
@@ -230,7 +225,7 @@ jobs:
             ${{ env.BUNDLE_ROOT }}/bundle/*
             ${{ env.BUNDLE_ROOT }}/reports/*
             ${{ env.BUNDLE_ROOT }}/q389r5c_offline_formula_ocr_bundle_files.zip
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
 
       - name: Publish GitHub Release files when requested
@@ -244,7 +239,3 @@ jobs:
             ${{ env.BUNDLE_ROOT }}/bundle/*
             ${{ env.BUNDLE_ROOT }}/reports/*
             ${{ env.BUNDLE_ROOT }}/q389r5c_offline_formula_ocr_bundle_files.zip
-
-
-
-

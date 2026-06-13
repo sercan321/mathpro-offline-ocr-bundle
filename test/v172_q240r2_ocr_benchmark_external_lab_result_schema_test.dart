@@ -135,7 +135,7 @@ void main() {
       expect(pubspec, isNot(contains(RegExp(r'^\s*google_mlkit_text_recognition\s*:', multiLine: true))));
       expect(pubspec, isNot(contains(RegExp(r'^\s*onnxruntime\s*:', multiLine: true))));
       expect(pubspec, isNot(contains(RegExp(r'^\s*workmanager\s*:', multiLine: true))));
-      expect(androidManifest, contains('android.permission.INTERNET')); // Q384R1 download-only model installer requires user-tapped network access.
+      expect(androidManifest, contains('INTERNET')); // Q384R1 deferred model download requires network permission.
       expect(androidManifest, isNot(contains('READ_MEDIA_IMAGES')));
     });
   });

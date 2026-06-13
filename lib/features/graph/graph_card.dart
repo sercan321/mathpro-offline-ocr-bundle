@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'graph_models.dart';
 import 'graph_curve_painter.dart';
+import 'graph_interaction_overlay.dart';
 import 'graph_style.dart';
 import 'graph_surface.dart';
 import 'graph_surface_3d.dart';
@@ -172,7 +173,7 @@ class _GraphCardState extends State<GraphCard> with SingleTickerProviderStateMix
   static String _animationKey(GraphExpression expression) => expression.historyIdentityKey;
 
   static String _surfaceKey(GraphExpression expression) {
-    return '${expression.historyIdentityKey}|${expression.xMin.toStringAsFixed(3)}|${expression.xMax.toStringAsFixed(3)}|${expression.yMin.toStringAsFixed(3)}|${expression.yMax.toStringAsFixed(3)}|${expression.traceEnabled}|${expression.graphColor.toARGB32()}';
+    return '${expression.historyIdentityKey}|${expression.xMin.toStringAsFixed(3)}|${expression.xMax.toStringAsFixed(3)}|${expression.yMin.toStringAsFixed(3)}|${expression.yMax.toStringAsFixed(3)}|${expression.traceEnabled}|${expression.showCriticalPoints}|${expression.showRootPoints}|${expression.showExtremaPoints}|${expression.showInterceptPoints}|${expression.graphColor.toARGB32()}';
   }
 
   static List<BoxShadow> _premiumShadow(bool traceEnabled) {
@@ -226,11 +227,17 @@ class _GraphCanvasPreview extends StatelessWidget {
                   switchOutCurve: Curves.easeInCubic,
                   transitionBuilder: _GraphCardState._surfaceTransition,
                   child: renderMode == GraphRenderMode.twoD
-                      ? GraphSurface(
-                          key: ValueKey('graph-surface-2d-${_GraphCardState._surfaceKey(expression)}'),
+                      ? GraphInteractiveSurface(
+                          key: ValueKey('graph-surface-2d-interactive-${_GraphCardState._surfaceKey(expression)}'),
                           expression: expression,
                           compact: canvasCompact,
                           pixelTight: canvasPixelTight,
+                          child: GraphSurface(
+                            key: ValueKey('graph-surface-2d-${_GraphCardState._surfaceKey(expression)}'),
+                            expression: expression,
+                            compact: canvasCompact,
+                            pixelTight: canvasPixelTight,
+                          ),
                         )
                       : GraphSurface3D(
                           key: ValueKey('graph-surface-3d-${_GraphCardState._surfaceKey(expression)}'),

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'graph_models.dart';
+import 'graph_interaction_overlay.dart';
 import 'graph_painter.dart';
 import 'graph_settings_sheet.dart';
 import 'graph_style.dart';
@@ -99,58 +100,66 @@ class _GraphFullscreenPageState extends State<GraphFullscreenPage> {
                               math.max(1.0, constraints.maxWidth),
                               math.max(1.0, constraints.maxHeight),
                             );
+                            final surfaceStack = Stack(
+                              children: <Widget>[
+                                Positioned.fill(
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 180),
+                                    switchInCurve: Curves.easeOutCubic,
+                                    switchOutCurve: Curves.easeInCubic,
+                                    child: _renderMode == GraphRenderMode.twoD
+                                        ? GraphInteractiveSurface(
+                                            key: ValueKey('fullscreen-graph-2d-interactive-${_surfaceKey(_expression)}'),
+                                            expression: _expression,
+                                            child: GraphSurface(
+                                              key: ValueKey('fullscreen-graph-2d-${_surfaceKey(_expression)}'),
+                                              expression: _expression,
+                                            ),
+                                          )
+                                        : GraphSurface3D(
+                                            key: ValueKey('fullscreen-graph-3d-${_surfaceKey(_expression)}'),
+                                            expression: _expression,
+                                          ),
+                                  ),
+                                ),
+                                Positioned.fill(child: IgnorePointer(child: _FullscreenGlassSheen(traceEnabled: _expression.traceEnabled))),
+                                Positioned(
+                                  left: 14,
+                                  top: 14,
+                                  child: _ViewportChip(expression: _expression, renderMode: _renderMode),
+                                ),
+                                Positioned(
+                                  right: 14,
+                                  top: 14,
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 160),
+                                    child: _renderMode == GraphRenderMode.twoD && _expression.traceEnabled
+                                        ? GraphTraceOverlay(
+                                            key: const ValueKey('mathpro-fullscreen-trace-overlay'),
+                                            xLabel: _format(_traceX()),
+                                            yLabel: _format(_traceY()),
+                                          )
+                                        : const SizedBox.shrink(key: ValueKey('mathpro-fullscreen-trace-hidden')),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: 14,
+                                  right: 14,
+                                  bottom: 14,
+                                  child: _GestureHint(traceEnabled: _expression.traceEnabled, renderMode: _renderMode),
+                                ),
+                              ],
+                            );
+                            if (_renderMode == GraphRenderMode.threeD) {
+                              return surfaceStack;
+                            }
                             return GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onDoubleTap: _reset,
                               onScaleStart: (details) => _onScaleStart(details, surfaceSize),
                               onScaleUpdate: (details) => _onScaleUpdate(details, surfaceSize),
                               onScaleEnd: (_) => _clearGestureState(),
-                              child: Stack(
-                                children: <Widget>[
-                                  Positioned.fill(
-                                    child: AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 180),
-                                      switchInCurve: Curves.easeOutCubic,
-                                      switchOutCurve: Curves.easeInCubic,
-                                      child: _renderMode == GraphRenderMode.twoD
-                                          ? GraphSurface(
-                                              key: ValueKey('fullscreen-graph-2d-${_surfaceKey(_expression)}'),
-                                              expression: _expression,
-                                            )
-                                          : GraphSurface3D(
-                                              key: ValueKey('fullscreen-graph-3d-${_surfaceKey(_expression)}'),
-                                              expression: _expression,
-                                            ),
-                                    ),
-                                  ),
-                                  Positioned.fill(child: IgnorePointer(child: _FullscreenGlassSheen(traceEnabled: _expression.traceEnabled))),
-                                  Positioned(
-                                    left: 14,
-                                    top: 14,
-                                    child: _ViewportChip(expression: _expression, renderMode: _renderMode),
-                                  ),
-                                  Positioned(
-                                    right: 14,
-                                    top: 14,
-                                    child: AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 160),
-                                      child: _renderMode == GraphRenderMode.twoD && _expression.traceEnabled
-                                          ? GraphTraceOverlay(
-                                              key: const ValueKey('mathpro-fullscreen-trace-overlay'),
-                                              xLabel: _format(_traceX()),
-                                              yLabel: _format(_traceY()),
-                                            )
-                                          : const SizedBox.shrink(key: ValueKey('mathpro-fullscreen-trace-hidden')),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    left: 14,
-                                    right: 14,
-                                    bottom: 14,
-                                    child: _GestureHint(traceEnabled: _expression.traceEnabled, renderMode: _renderMode),
-                                  ),
-                                ],
-                              ),
+                              child: surfaceStack,
                             );
                           },
                         ),
@@ -178,7 +187,7 @@ class _GraphFullscreenPageState extends State<GraphFullscreenPage> {
   }
 
   String _surfaceKey(GraphExpression expression) {
-    return '${_renderMode.name}|${expression.historyIdentityKey}|${expression.xMin.toStringAsFixed(3)}|${expression.xMax.toStringAsFixed(3)}|${expression.yMin.toStringAsFixed(3)}|${expression.yMax.toStringAsFixed(3)}|${expression.traceEnabled}|${expression.graphColor.toARGB32()}';
+    return '${_renderMode.name}|${expression.historyIdentityKey}|${expression.xMin.toStringAsFixed(3)}|${expression.xMax.toStringAsFixed(3)}|${expression.yMin.toStringAsFixed(3)}|${expression.yMax.toStringAsFixed(3)}|${expression.traceEnabled}|${expression.showCriticalPoints}|${expression.showRootPoints}|${expression.showExtremaPoints}|${expression.showInterceptPoints}|${expression.graphColor.toARGB32()}';
   }
 
   void _setRenderMode(GraphRenderMode mode) {
@@ -552,13 +561,21 @@ class _ViewportChip extends StatelessWidget {
         child: Text(
           renderMode == GraphRenderMode.twoD
               ? 'x: ${_short(expression.xMin)} … ${_short(expression.xMax)}   y: ${_short(expression.yMin)} … ${_short(expression.yMax)}'
-              : '3D window  x: ${_short(expression.xMin)} … ${_short(expression.xMax)}   y: ${_short(expression.yMin)} … ${_short(expression.yMax)}',
+              : _threeDLabel(expression),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(color: GraphStyle.axisLabel, fontSize: 11, fontWeight: FontWeight.w800),
         ),
       ),
     );
+  }
+
+  static String _threeDLabel(GraphExpression expression) {
+    final focused = Graph3DViewportPolicy.focusedExpressionFor3D(expression);
+    final focusedSpan = focused.xMax - focused.xMin;
+    final originalSpan = expression.xMax - expression.xMin;
+    final prefix = (focusedSpan - originalSpan).abs() > 0.05 ? '3D odak' : '3D pencere';
+    return '$prefix  x: ${_short(focused.xMin)} … ${_short(focused.xMax)}   y: ${_short(focused.yMin)} … ${_short(focused.yMax)}';
   }
 
   static String _short(double value) {
@@ -589,7 +606,7 @@ class _GestureHint extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             child: Text(
               renderMode == GraphRenderMode.threeD
-                  ? '3D yüzey • Sürükle: pencere • Çimdikle: zoom • Çift dokun: reset'
+                  ? '3D yüzey • Sürükle: 360° döndür • Noktaya dokun: bilgi • Çift dokun: reset'
                   : (traceEnabled ? 'Sürükle: pan • Çimdikle: zoom • Çift dokun: reset' : 'Sürükle: pan • Çimdikle: zoom'),
               textAlign: TextAlign.center,
               style: const TextStyle(color: GraphStyle.textSecondary, fontSize: 11, fontWeight: FontWeight.w800),

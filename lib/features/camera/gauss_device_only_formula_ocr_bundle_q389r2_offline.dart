@@ -8,14 +8,56 @@ import 'package:http/http.dart' as http;
 import 'gauss_paddle_lite_nb_artifact_manifest_q387r1.dart';
 import 'gauss_paddle_lite_nb_download_install_binding_q387r2.dart';
 
+
+/// V172-Q389R6B — ONNX Runtime Mobile download-only integration contract.
+///
+/// Q389R6A proved that PP-FormulaNet_plus-S can be exported from the official
+/// Paddle JSON graph to ONNX and opened by ONNX Runtime. R6B keeps the same
+/// offline-only product rules: no backend, no ML Kit, no text OCR fallback, no
+/// model bytes in the APK, and no fake LaTeX. The only network action remains
+/// the explicit user-tapped "Modeli indir" bundle installation.
+class GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy {
+  const GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy._();
+
+  static const String phase = 'V172-Q389R6B-ONNX-RUNTIME-MOBILE-DOWNLOAD-ONLY-INTEGRATION';
+  static const String sourcePhase = 'V172-Q389R6A-FORMULA-OCR-MOBILE-RUNTIME-REALITY-CHECK';
+  static const String status = 'PP_FORMULANET_PLUS_S_ONNX_RUNTIME_MOBILE_DOWNLOAD_ONLY_BINDING_READY_REQUIRES_RELEASE_MANIFEST';
+  static const String manifestFormatVersion = 'q389r6b-onnx-runtime-mobile-bundle-manifest-v1';
+
+  static const String modelId = 'pp_formulanet_plus_s_onnx_mobile';
+  static const String modelDisplayName = 'PP-FormulaNet_plus-S ONNX offline formula OCR';
+  static const String primaryEngine = 'ONNX Runtime Mobile device-only FormulaRecognition / PP-FormulaNet_plus-S';
+  static const String installDirectoryName = 'ocr_models/PP-FormulaNet_plus-S-ONNX';
+  static const String primaryRuntimeArtifactKind = 'onnx-runtime-model';
+  static const String primaryRuntimeModelFileName = 'pp_formulanet_plus_s.onnx';
+  static const String nativeRuntimeManifestFileName = 'q389r6b_onnx_runtime_manifest.json';
+  static const String bundleManifestFileName = 'q389r6b_onnx_formula_ocr_bundle_manifest.json';
+  static const String installedBundleEvidenceFileName = 'q389r6b_onnx_formula_ocr_install_evidence.json';
+  static const String expectedOnnxSha256 = '575353f72a804215329b128ed1b85e8de65fdb4b06730ac8e7954bae5c44e64d';
+  static const int expectedOnnxSizeBytes = 333913240;
+  static const int minimumAcceptedOnnxSizeBytes = 100 * 1024 * 1024;
+
+  static const bool backendAllowed = false;
+  static const bool mlKitAllowed = false;
+  static const bool textOcrFallbackAllowed = false;
+  static const bool modelBundledInBaseApp = false;
+  static const bool downloadOnlyModelDelivery = true;
+  static const bool offlineAfterInstallRequired = true;
+  static const bool fakeLatexCandidateAllowed = false;
+  static const bool workspaceImportRequiresEditableReview = true;
+  static const bool directSolveGraphSolutionHistoryBlocked = true;
+  static const bool onnxRuntimeDependencyRequired = true;
+  static const bool androidRealDevicePassClaimedByPackage = false;
+}
+
 /// V172-Q389R2_OFFLINE — device-only Formula OCR runtime bundle contract.
 ///
 /// This is the offline-only successor of the discarded Q389R2 backend branch.
 /// It never sends camera images to a backend, never uses ML Kit, and never
 /// fabricates LaTeX. The only allowed network use is the user-approved
 /// "Modeli indir" action that downloads a signed/hashed device runtime bundle
-/// into app-private storage. Once installed, Q378/Q381/Q386 run the local
-/// Paddle Lite `.nb` model path and return a MathLive review candidate only if
+/// into app-private storage. Once installed, Q378/Q381 run the local ONNX
+/// Runtime Mobile model path and return a MathLive review candidate only if
 /// the native output decoder yields real LaTeX.
 class GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy {
   const GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy._();
@@ -24,13 +66,13 @@ class GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy {
   static const String sourcePhase = 'V172-Q389R1-FORMULA-OCR-PRIMARY-NO-TEXT-FALLBACK-CONTRACT';
   static const String status = 'DEVICE_ONLY_FORMULA_OCR_BUNDLE_INSTALLER_READY_PRODUCTION_BUNDLE_SOURCE_REQUIRED';
 
-  static const String modelId = 'pp_formulanet_plus_device_only';
-  static const String modelDisplayName = 'PP-FormulaNet_plus offline formula OCR';
-  static const String primaryEngine = 'Paddle Lite device-only FormulaRecognition / PP-FormulaNet_plus';
-  static const String installDirectoryName = GaussPaddleLiteNbDownloadInstallBindingQ387R2Policy.installDirectoryName;
-  static const String bundleManifestFileName = 'q389r2_offline_formula_ocr_bundle_manifest.json';
+  static const String modelId = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.modelId;
+  static const String modelDisplayName = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.modelDisplayName;
+  static const String primaryEngine = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.primaryEngine;
+  static const String installDirectoryName = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.installDirectoryName;
+  static const String bundleManifestFileName = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.bundleManifestFileName;
   // Native manifest literal required by Android bridge: q387r1_paddle_lite_nb_manifest.json
-  static const String installedBundleEvidenceFileName = 'q389r2_offline_formula_ocr_install_evidence.json';
+  static const String installedBundleEvidenceFileName = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.installedBundleEvidenceFileName;
   static const String productionBundleManifestUrlDefineName = 'MATHPRO_OFFLINE_FORMULA_OCR_BUNDLE_MANIFEST_URL';
   static const String productionBundleManifestUrl = String.fromEnvironment(productionBundleManifestUrlDefineName, defaultValue: '');
 
@@ -131,6 +173,13 @@ class GaussQ389R2OfflineBundleFile {
   final bool required;
 
   bool get isNbModel => fileName.toLowerCase().endsWith('.nb') || role == 'paddle-lite-nb-model';
+  bool get isOnnxModel {
+    final lowerName = fileName.toLowerCase();
+    final lowerRole = role.toLowerCase();
+    return lowerName.endsWith('.onnx') || lowerRole == GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.primaryRuntimeArtifactKind || lowerRole.contains('onnx');
+  }
+
+  bool get isRuntimeModel => isOnnxModel || isNbModel || role.toLowerCase().contains('runtime-model');
   bool get isDecoderSidecar {
     final lowerName = fileName.toLowerCase();
     final lowerRole = role.toLowerCase();
@@ -168,12 +217,16 @@ class GaussQ389R2OfflineBundleManifest {
   final String conversionProvenance;
   final List<GaussQ389R2OfflineBundleFile> files;
 
-  GaussQ389R2OfflineBundleFile get nbModelFile => files.firstWhere(
-        (file) => file.isNbModel,
+  GaussQ389R2OfflineBundleFile get runtimeModelFile => files.firstWhere(
+        (file) => file.isRuntimeModel,
         orElse: () => throw const GaussQ389R2OfflineFormulaOcrBundleException(
-          '${GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy.manifestInvalid}:missing-nb-model-file',
+          '${GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy.manifestInvalid}:missing-runtime-model-file',
         ),
       );
+
+  // Legacy alias preserved for older Q389/Q387 tests and manager code. In R6B it
+  // points to the primary runtime model, which is ONNX rather than `.nb`.
+  GaussQ389R2OfflineBundleFile get nbModelFile => runtimeModelFile;
 
   Map<String, Object?> toJson() => <String, Object?>{
         'phase': GaussDeviceOnlyFormulaOcrBundleQ389R4OfflinePolicy.phase,
@@ -182,6 +235,9 @@ class GaussQ389R2OfflineBundleManifest {
         'modelDisplayName': modelDisplayName,
         'sourceRevision': sourceRevision,
         'conversionProvenance': conversionProvenance,
+        'primaryRuntimeArtifactKind': GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.primaryRuntimeArtifactKind,
+        'primaryRuntimeModelFileName': GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.primaryRuntimeModelFileName,
+        'onnxRuntimeMobileRequired': true,
         'files': files.map((file) => file.toJson()).toList(growable: false),
         'backendAllowed': false,
         'mlKitAllowed': false,
@@ -268,10 +324,22 @@ class GaussQ389R2OfflineBundleManifest {
         GaussDeviceOnlyFormulaOcrBundleQ389R4OfflinePolicy.missingPreprocessMetadata,
       );
     }
-    final nb = manifest.nbModelFile;
-    if (nb.sizeBytes < GaussPaddleLiteNbArtifactManifestQ387R1Policy.minimumAcceptedNbSizeBytes) {
+    final runtimeModel = manifest.runtimeModelFile;
+    if (runtimeModel.isOnnxModel) {
+      if (runtimeModel.sizeBytes < GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.minimumAcceptedOnnxSizeBytes) {
+        throw const GaussQ389R2OfflineFormulaOcrBundleException(
+          '${GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy.manifestInvalid}:onnx-too-small',
+        );
+      }
+    } else if (runtimeModel.isNbModel) {
+      if (runtimeModel.sizeBytes < GaussPaddleLiteNbArtifactManifestQ387R1Policy.minimumAcceptedNbSizeBytes) {
+        throw const GaussQ389R2OfflineFormulaOcrBundleException(
+          '${GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy.manifestInvalid}:nb-too-small',
+        );
+      }
+    } else {
       throw const GaussQ389R2OfflineFormulaOcrBundleException(
-        '${GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy.manifestInvalid}:nb-too-small',
+        '${GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy.manifestInvalid}:unsupported-runtime-model',
       );
     }
     return manifest;
@@ -371,21 +439,42 @@ class GaussQ389R2OfflineFormulaOcrBundleInstaller {
           );
         }
       }
-      final nb = manifest.nbModelFile;
-      final nbPath = File('${installDir.path}/${nb.fileName}');
-      final actualNbSha = await _sha256OfFile(nbPath);
-      final actualNbSize = await nbPath.length();
-      await _writeAtomicText(File('${installDir.path}/${GaussPaddleLiteNbDownloadInstallBindingQ387R2Policy.nativeManifestFileName}'), const JsonEncoder.withIndent('  ').convert(<String, Object?>{
-        'phase': GaussPaddleLiteNbArtifactManifestQ387R1Policy.phase,
-        'sourcePhase': GaussDeviceOnlyFormulaOcrBundleQ389R4OfflinePolicy.phase,
-        'artifactKind': GaussPaddleLiteNbArtifactManifestQ387R1Policy.requiredArtifactKind,
-        'fileName': nb.fileName,
-        'sha256': actualNbSha,
-        'sizeBytes': actualNbSize,
+      final runtimeModel = manifest.runtimeModelFile;
+      final runtimeModelPath = File('${installDir.path}/${runtimeModel.fileName}');
+      final actualRuntimeSha = await _sha256OfFile(runtimeModelPath);
+      final actualRuntimeSize = await runtimeModelPath.length();
+      if (runtimeModel.isNbModel) {
+        await _writeAtomicText(File('${installDir.path}/${GaussPaddleLiteNbDownloadInstallBindingQ387R2Policy.nativeManifestFileName}'), const JsonEncoder.withIndent('  ').convert(<String, Object?>{
+          'phase': GaussPaddleLiteNbArtifactManifestQ387R1Policy.phase,
+          'sourcePhase': GaussDeviceOnlyFormulaOcrBundleQ389R4OfflinePolicy.phase,
+          'artifactKind': GaussPaddleLiteNbArtifactManifestQ387R1Policy.requiredArtifactKind,
+          'fileName': runtimeModel.fileName,
+          'sha256': actualRuntimeSha,
+          'sizeBytes': actualRuntimeSize,
+          'conversionProvenance': manifest.conversionProvenance,
+          'sourceRevision': manifest.sourceRevision,
+          'modelId': manifest.modelId,
+          'modelDisplayName': manifest.modelDisplayName,
+          'modelBinaryBundledInBaseApp': false,
+          'backendAllowed': false,
+          'mlKitAllowed': false,
+          'textOcrFallbackAllowed': false,
+          'productionInferenceClaimed': false,
+          'installedAtIso': DateTime.now().toUtc().toIso8601String(),
+        }));
+      }
+      await _writeAtomicText(File('${installDir.path}/${GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.nativeRuntimeManifestFileName}'), const JsonEncoder.withIndent('  ').convert(<String, Object?>{
+        'phase': GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.phase,
+        'sourcePhase': GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.sourcePhase,
+        'artifactKind': runtimeModel.isOnnxModel ? GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.primaryRuntimeArtifactKind : GaussPaddleLiteNbArtifactManifestQ387R1Policy.requiredArtifactKind,
+        'fileName': runtimeModel.fileName,
+        'sha256': actualRuntimeSha,
+        'sizeBytes': actualRuntimeSize,
         'conversionProvenance': manifest.conversionProvenance,
         'sourceRevision': manifest.sourceRevision,
         'modelId': manifest.modelId,
         'modelDisplayName': manifest.modelDisplayName,
+        'runtimeEngine': runtimeModel.isOnnxModel ? GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.primaryEngine : GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy.primaryEngine,
         'modelBinaryBundledInBaseApp': false,
         'backendAllowed': false,
         'mlKitAllowed': false,
@@ -395,11 +484,15 @@ class GaussQ389R2OfflineFormulaOcrBundleInstaller {
       }));
       await _writeAtomicText(File('${installDir.path}/${GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy.bundleManifestFileName}'), const JsonEncoder.withIndent('  ').convert(manifest.toJson()));
       await _writeAtomicText(File('${installDir.path}/${GaussDeviceOnlyFormulaOcrBundleQ389R2OfflinePolicy.installedBundleEvidenceFileName}'), const JsonEncoder.withIndent('  ').convert(<String, Object?>{
-        'phase': GaussDeviceOnlyFormulaOcrBundleQ389R4OfflinePolicy.phase,
+        'phase': GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.phase,
         'installDirectoryPath': installDir.path,
-        'nbModelPath': nbPath.path,
-        'nbSha256': actualNbSha,
-        'nbSizeBytes': actualNbSize,
+        'runtimeModelPath': runtimeModelPath.path,
+        'runtimeSha256': actualRuntimeSha,
+        'runtimeSizeBytes': actualRuntimeSize,
+        'runtimeArtifactKind': runtimeModel.isOnnxModel ? GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.primaryRuntimeArtifactKind : GaussPaddleLiteNbArtifactManifestQ387R1Policy.requiredArtifactKind,
+        'nbModelPath': runtimeModelPath.path,
+        'nbSha256': actualRuntimeSha,
+        'nbSizeBytes': actualRuntimeSize,
         'installedFiles': installed,
         'offlineAfterInstallRequired': true,
         'backendAllowed': false,
@@ -407,15 +500,16 @@ class GaussQ389R2OfflineFormulaOcrBundleInstaller {
         'textOcrFallbackAllowed': false,
         'directSolveGraphSolutionHistoryBlocked': true,
         'q389r4ProductionBundleCompletenessVerified': true,
+        'q389r6bOnnxRuntimeDownloadOnlyBinding': runtimeModel.isOnnxModel,
         'offlineFormulaOcrReadyAfterInstall': true,
         'installedAtIso': DateTime.now().toUtc().toIso8601String(),
       }));
       await Future<void>.value(onProgress?.call(1));
       return GaussQ389R2OfflineFormulaOcrInstallEvidence(
         installDirectoryPath: installDir.path,
-        nbModelPath: nbPath.path,
-        nbSha256: actualNbSha,
-        nbSizeBytes: actualNbSize,
+        nbModelPath: runtimeModelPath.path,
+        nbSha256: actualRuntimeSha,
+        nbSizeBytes: actualRuntimeSize,
         installedFiles: installed,
       );
     } finally {

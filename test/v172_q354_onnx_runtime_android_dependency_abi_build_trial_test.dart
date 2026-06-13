@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+
+import 'v172_q389r6w_onnx_runtime_successor_test_helper.dart';
 import 'package:mathpro_flutter_phase17/features/camera/gauss_onnx_runtime_android_dependency_abi_build_trial_q354.dart';
 import 'package:mathpro_flutter_phase17/features/camera/gauss_onnx_runtime_android_dependency_abi_build_trial_q354_policy.dart';
 
@@ -88,7 +90,7 @@ void main() {
     final manifest = jsonDecode(File('assets/mathlive/manifest.json').readAsStringSync()) as Map<String, dynamic>;
 
     expect(buildGradle, contains("implementation files('libs/PaddlePredictor.jar')"));
-    expect(buildGradle.toLowerCase(), isNot(contains('onnxruntime-android')));
+    expectQ389R6WOnnxRuntimeDependencySurface(buildGradle);
     expect(pubspec, isNot(contains('onnxruntime')));
     if (!q357OrLaterOnnxBridgeActivePhases.contains(manifest['cameraOcrLatestPhase'])) {
       expect(mainActivity, isNot(contains('OrtEnvironment')));

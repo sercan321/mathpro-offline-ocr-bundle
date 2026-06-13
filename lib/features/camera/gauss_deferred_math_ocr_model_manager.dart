@@ -76,17 +76,17 @@ class GaussDeferredMathOcrModelManifest {
   const GaussDeferredMathOcrModelManifest._();
 
   static const String phase = GaussDeferredMathOcrModelManagerPolicy.fullPhase;
-  static const String modelName = 'PP-FormulaNet_plus';
-  static const String modelVersion = 'hf-0572450e501be9eb1b1cdb7e00fccf4b22fab4df';
-  static const String engine = 'Paddle Lite device-only FormulaRecognition / PP-FormulaNet_plus';
+  static const String modelName = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.modelDisplayName;
+  static const String modelVersion = 'q389r6b-paddle2onnx-opset19-plus-s';
+  static const String engine = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.primaryEngine;
   static const String installMode = 'deferred-after-install';
   static const String storagePolicy = 'app-private-storage';
   // Q385R1 network policy: user-approved-internet-required-large-download
   static const String networkPolicy = GaussCameraOcrDownloadGuardRepairQ385R1Policy.networkPolicy;
-  static const String sha256 = GaussCameraOcrDeferredModelDownloadQ384R1Policy.expectedPrimarySha256;
-  static const int sizeBytes = GaussCameraOcrDeferredModelDownloadQ384R1Policy.expectedPrimarySizeApproxBytes;
-  static const String androidRuntimeRequiredArtifactKind = GaussPaddleLiteNbArtifactManifestQ387R1Policy.requiredArtifactKind;
-  static const String androidRuntimeRequiredManifestFileName = GaussPaddleLiteNbArtifactManifestQ387R1Policy.requiredManifestFileName;
+  static const String sha256 = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.expectedOnnxSha256;
+  static const int sizeBytes = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.expectedOnnxSizeBytes;
+  static const String androidRuntimeRequiredArtifactKind = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.primaryRuntimeArtifactKind;
+  static const String androidRuntimeRequiredManifestFileName = GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.nativeRuntimeManifestFileName;
   static const String androidRuntimeNbEvidenceBlockedReason = GaussPaddleLiteNbArtifactManifestQ387R1Policy.realNbArtifactEvidenceRequiredBlockedReason;
   static const String androidRuntimeNbDownloadInstallPhase = GaussPaddleLiteNbDownloadInstallBindingQ387R2Policy.phase;
   static const String androidRuntimeNbProductionSourceBlockedReason = GaussPaddleLiteNbDownloadInstallBindingQ387R2Policy.productionNbSourceMissingBlockedReason;
@@ -105,6 +105,7 @@ class GaussDeferredMathOcrModelManifest {
   static const bool productionPaddleLiteNbDownloadUrlBound = GaussPaddleLiteNbDownloadInstallBindingQ387R2Policy.productionNbDownloadUrlBound;
   static const bool productionPaddleLiteNbAcquiredForAndroidRuntime = false;
   static const bool productionPaddleLiteNbSourceBoundForAndroidRuntime = false;
+  static const bool productionOnnxRuntimeMobileModelBoundForAndroidRuntime = true;
   static const bool externalPaddleLiteNbArtifactIntakeReadyForAndroidRuntime = GaussPaddleLiteNbExternalArtifactIntakeQ387R5Policy.externalArtifactIntakeImplemented;
   static const bool paddleLiteNbConversionEvidenceGeneratorReadyForAndroidRuntime = GaussPaddleLiteNbConversionEvidenceGeneratorQ387R6Policy.conversionEvidenceGeneratorImplemented;
   static const bool paddleLiteNbUserSideConversionProtocolReadyForAndroidRuntime = GaussPaddleLiteNbUserSideConversionProtocolQ387R7Policy.protocolGeneratorImplemented;
@@ -215,15 +216,15 @@ class GaussMathOcrModelSnapshot {
   String get productCopy {
     switch (status) {
       case GaussMathOcrModelInstallStatus.notInstalled:
-        return "Offline Formula OCR paketi ana uygulamaya gömülü değil. Modeli indir butonu yalnızca doğrulanmış PP-FormulaNet_plus Paddle Lite .nb runtime bundle manifestini kabul eder; backend, ML Kit ve düz metin OCR fallback yoktur.";
+        return "Offline Formula OCR paketi ana uygulamaya gömülü değil. Modeli indir butonu yalnızca doğrulanmış PP-FormulaNet_plus-S ONNX Runtime Mobile bundle manifestini kabul eder; backend, ML Kit ve düz metin OCR fallback yoktur.";
       case GaussMathOcrModelInstallStatus.queued:
-        return "Model indirme isteği alındı. Model doğrulanmadan OCR çalıştırılmayacak; Android runtime .nb kaynak/manifest kanıtı yoksa ve Q387R4 production source binding gate gerçek kaynak üretmemişse sahte kamera sonucu üretilmeyecek. Q387R5 external artifact intake gerçek .nb dosya SHA/size ve immutable hosted URL kanıtı olmadan Q387R2 worker'a kaynak vermeyecek; Q387R6 conversion evidence generator gerçek conversion log/SHA/size/provenance olmadan üretim kaynağı üretmeyecek; Q387R7 PowerShell protokolü bu kanıt zincirini kullanıcı tarafında üretmeden Q388 açılmayacak.";
+        return "Model indirme isteği alındı. Model doğrulanmadan OCR çalıştırılmayacak; ONNX model dosyası, preprocess metadata ve decoder sidecar SHA/size kanıtı olmadan sahte kamera sonucu üretilmeyecek.";
       case GaussMathOcrModelInstallStatus.downloading:
-        return 'Model paketi indiriliyor. Hazır olmadan OCR çalıştırılmayacak; gerçek .nb download-install manifest kanıtı ayrıca aranacak.';
+        return 'Model paketi indiriliyor. Hazır olmadan OCR çalıştırılmayacak; gerçek ONNX Runtime Mobile download-install manifest kanıtı aranacak.';
       case GaussMathOcrModelInstallStatus.verifying:
-        return 'Ana model dosyası SHA256 doğrulamasından geçiyor; yan dosyalar varlık ve boyut kontrolünden geçmeden hazır sayılmayacak. Android Paddle Lite OCR için Q387R2 .nb artifact source/download/install manifest kanıtı olmadan gerçek inference açılmayacak.';
+        return 'Ana ONNX model dosyası SHA256 doğrulamasından geçiyor; preprocess ve decoder yan dosyaları varlık/boyut kontrolünden geçmeden hazır sayılmayacak.';
       case GaussMathOcrModelInstallStatus.ready:
-        return 'Offline Formula OCR runtime paketi private storage içinde doğrulandı; ana model dosyası SHA256 kontrolünden geçti; yan dosyalar varlık ve boyut açısından doğrulandı. İnternet kapalıyken kamera yalnızca cihaz içi Paddle Lite Formula OCR yolunu kullanır; sonuç varsa review içinde onayla workspace’e aktarılır.';
+        return 'Offline Formula OCR runtime paketi private storage içinde doğrulandı; ana model dosyası SHA256 kontrolünden geçti; ONNX runtime model doğrulaması aktif; yan dosyalar varlık ve boyut açısından doğrulandı. İnternet kapalıyken kamera yalnızca cihaz içi ONNX Runtime Mobile Formula OCR yolunu kullanır; sonuç varsa review içinde onayla workspace’e aktarılır.';
       case GaussMathOcrModelInstallStatus.failed:
         return failureMessage ?? 'Model hazırlığı başarısız oldu. Bozuk dosya kullanılmayacak.';
       case GaussMathOcrModelInstallStatus.updateAvailable:
@@ -654,16 +655,16 @@ class GaussDeferredMathOcrModelManager {
   static String _downloadFailureCopy(Object error) {
     final text = error.toString();
     if (text.contains('q389r2-offline-production-bundle-source-not-bound')) {
-      return 'Offline Formula OCR üretim paketi kaynağı henüz bağlı değil. Backend/ML Kit kullanılmayacak; gerçek PP-FormulaNet_plus .nb bundle URL/SHA/manifest bağlanmadan kamera OCR açılmaz.';
+      return 'Offline Formula OCR üretim paketi kaynağı henüz bağlı değil. Backend/ML Kit kullanılmayacak; gerçek PP-FormulaNet_plus-S ONNX bundle URL/SHA/manifest bağlanmadan kamera OCR açılmaz.';
     }
     if (text.contains('q389r2-offline-bundle-manifest-invalid') || text.contains('q389r2-offline-file-sha256-mismatch')) {
       return 'Offline Formula OCR paketi doğrulanamadı. Bozuk/yanlış model kullanılmayacak; manifest, SHA256 ve dosya boyutları kontrol edilmeli.';
     }
     if (text.contains('q387r2-production-paddle-lite-nb-source-not-bound')) {
-      return 'Android Paddle Lite için gerçek .nb model kaynağı henüz bağlı değil. Sahte veya eski inference.pdiparams ile OCR açılmayacak.';
+      return 'Android ONNX Runtime Mobile için gerçek .onnx model kaynağı henüz bağlı değil. Sahte veya eski inference.pdiparams ile OCR açılmayacak.';
     }
     if (text.contains('q387r2-q387r1-nb-evidence-rejected')) {
-      return 'Android Paddle Lite .nb model kanıtı reddedildi. URL, SHA256, boyut ve conversion provenance doğrulanmadan OCR açılmayacak.';
+      return 'Android ONNX Runtime Mobile model kanıtı reddedildi. URL, SHA256, boyut ve conversion provenance doğrulanmadan OCR açılmayacak.';
     }
     if (text.contains('sha256-mismatch')) {
       return 'Model doğrulanamadı. Bozuk veya yanlış dosya kullanılmayacak; tekrar indirmeyi dene.';

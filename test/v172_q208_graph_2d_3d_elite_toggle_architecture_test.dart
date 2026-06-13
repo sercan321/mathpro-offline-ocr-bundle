@@ -36,7 +36,9 @@ void main() {
     final workspace = File('lib/features/workspace/workspace_panel.dart').readAsStringSync();
     final appShell = File('lib/app/app_shell.dart').readAsStringSync();
 
-    expect(mathLiveHtml, contains('font-size: clamp(28px, 7.8vw, 38px);'));
+    expect(mathLiveHtml, contains('font-size: clamp(23px, 6.35vw, 31px);'));
+    expect(mathLiveHtml, contains('data-mathpro-workspace-compact-expression-scale="Q389R6G"'));
+    expect(mathLiveHtml, isNot(contains('font-size: clamp(28px, 7.8vw, 38px);')));
     expect(bridge, isNot(contains('runJavaScript' 'ReturningResult')));
     expect(workspace, contains('renderMode: graphRenderMode'));
     expect(appShell, contains('GraphRenderMode _graphRenderMode = GraphRenderMode.twoD;'));

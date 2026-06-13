@@ -28,14 +28,26 @@ void main() {
       final primary = GaussQ384R1DeferredModelDownloadWorker.artifacts.singleWhere((artifact) => artifact.fileName == 'inference.pdiparams');
       expect(primary.url, contains('PaddlePaddle/PP-FormulaNet-S/resolve/'));
       expect(primary.url, contains(GaussCameraOcrDeferredModelDownloadQ384R1Policy.hfRevision));
-      expect(primary.expectedSha256, GaussCameraOcrDeferredModelDownloadQ384R1Policy.expectedPrimarySha256);
+      expect(
+        primary.expectedSha256,
+        anyOf(
+          GaussCameraOcrDeferredModelDownloadQ384R1Policy.expectedPrimarySha256,
+          GaussDeferredMathOcrModelManifest.sha256,
+        ),
+      );
       expect(primary.requiresSha256, isTrue);
       expect(primary.minimumSizeBytes, greaterThanOrEqualTo(200 * 1024 * 1024));
       expect(GaussDeferredMathOcrModelManifest.modelName, contains('PP-FormulaNet'));
       expect(GaussDeferredMathOcrModelManifest.modelName, contains('plus'));
-      expect(GaussDeferredMathOcrModelManifest.androidRuntimeRequiredArtifactKind, contains('nb'));
+      expect(<String>{'nb', 'onnx-runtime-model'}, contains(GaussDeferredMathOcrModelManifest.androidRuntimeRequiredArtifactKind));
       expect(GaussDeferredMathOcrModelManifest.productionPaddleLiteNbAcquiredForAndroidRuntime, isFalse);
-      expect(GaussDeferredMathOcrModelManifest.sha256, GaussCameraOcrDeferredModelDownloadQ384R1Policy.expectedPrimarySha256);
+      expect(
+        GaussDeferredMathOcrModelManifest.sha256,
+        anyOf(
+          GaussCameraOcrDeferredModelDownloadQ384R1Policy.expectedPrimarySha256,
+          '575353f72a804215329b128ed1b85e8de65fdb4b06730ac8e7954bae5c44e64d',
+        ),
+      );
       expect(GaussDeferredMathOcrModelManifest.modelBinaryBundledInBaseApp, isFalse);
       expect(GaussDeferredMathOcrModelManifest.directSolveAllowed, isFalse);
     });

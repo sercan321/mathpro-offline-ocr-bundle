@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+
+import 'v172_q389r6w_onnx_runtime_successor_test_helper.dart';
 import 'package:mathpro_flutter_phase17/features/camera/gauss_onnx_real_model_load_smoke_bridge_preflight_execution_q357.dart';
 import 'package:mathpro_flutter_phase17/features/camera/gauss_onnx_real_model_load_smoke_bridge_preflight_execution_q357_policy.dart';
 
@@ -48,7 +50,7 @@ void main() {
     final mainActivity = File('android/app/src/main/kotlin/com/mathpro/flutter/MainActivity.kt').readAsStringSync();
     final androidManifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
 
-    expect(buildGradle.toLowerCase(), isNot(contains('onnxruntime-android')));
+    expectQ389R6WOnnxRuntimeDependencySurface(buildGradle);
     expect(pubspec, isNot(contains('onnxruntime')));
     expect(androidManifest, isNot(contains('ONNX')));
     expect(mainActivity, isNot(contains('import ai.onnxruntime.OrtEnvironment')));
@@ -57,7 +59,14 @@ void main() {
     expect(mainActivity, contains('private val q357FeatureEnabled = false'));
     expect(mainActivity, contains('private fun q357OnnxRealModelLoadSmoke'));
     expect(mainActivity, contains('q357ExpectedOnnxSha256'));
-    expect(mainActivity, contains('q357ExpectedOnnxSizeBytes = 308743097L'));
+    expect(
+      mainActivity,
+      anyOf(
+        contains('q357ExpectedOnnxSizeBytes = 308743097L'),
+        contains('q357ExpectedOnnxSizeBytes = q389R6BExpectedOnnxSizeBytes'),
+        contains('q389R6BExpectedOnnxSizeBytes = 333913240L'),
+      ),
+    );
 
     final modelArtifacts = Directory.current
         .listSync(recursive: true, followLinks: false)

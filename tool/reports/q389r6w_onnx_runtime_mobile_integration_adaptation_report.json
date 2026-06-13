@@ -1,0 +1,13 @@
+{
+  "phase": "V172-Q389R6W-ONNX-RUNTIME-MOBILE-INTEGRATION-ADAPTATION",
+  "pass": true,
+  "checks": {
+    "onnxRuntimeDependencyPresent": true,
+    "ppFormulaNetPlusSConstantsPresent": true,
+    "noModelBytesBundled": true,
+    "noRejectFiles": true,
+    "reviewFirstGuardPresent": true,
+    "noPackagePassClaimed": true
+  },
+  "note": "Static verifier only. Flutter analyze/test, Android build, and real-device OCR PASS are not claimed by this verifier."
+}

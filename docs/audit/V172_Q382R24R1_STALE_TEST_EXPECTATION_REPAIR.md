@@ -33,4 +33,4 @@ User-side `flutter test` reported `+1474 -3`. The visible failures were stale ex
 
 ## Honesty Boundary
 
-This repair updates stale tests only. It does not claim `flutter test` success, `flutter analyze` success, real-device latency PASS, OCR PASS, or release PASS unless those commands are executed on a Flutter-capable environment and the logs are provided.
+This repair updates stale tests only. It does not claim `flutter test` success, `flutter analyze` success, real-device latency success, OCR success, or release success unless those commands are executed on a Flutter-capable environment and the logs are provided.

@@ -51,6 +51,10 @@ class GraphExpression {
     this.traceEnabled = false,
     this.showGrid = true,
     this.showAxes = true,
+    this.showCriticalPoints = true,
+    this.showRootPoints = true,
+    this.showExtremaPoints = true,
+    this.showInterceptPoints = true,
     this.graphColor = GraphFunctionColorPalette.defaultColor,
     this.graphColorKey = GraphFunctionColorPalette.defaultKey,
   });
@@ -65,6 +69,10 @@ class GraphExpression {
   final bool traceEnabled;
   final bool showGrid;
   final bool showAxes;
+  final bool showCriticalPoints;
+  final bool showRootPoints;
+  final bool showExtremaPoints;
+  final bool showInterceptPoints;
   final Color graphColor;
   final String graphColorKey;
 
@@ -113,6 +121,10 @@ class GraphExpression {
     bool? traceEnabled,
     bool? showGrid,
     bool? showAxes,
+    bool? showCriticalPoints,
+    bool? showRootPoints,
+    bool? showExtremaPoints,
+    bool? showInterceptPoints,
     Color? graphColor,
     String? graphColorKey,
   }) {
@@ -128,6 +140,10 @@ class GraphExpression {
       traceEnabled: traceEnabled ?? this.traceEnabled,
       showGrid: showGrid ?? this.showGrid,
       showAxes: showAxes ?? this.showAxes,
+      showCriticalPoints: showCriticalPoints ?? this.showCriticalPoints,
+      showRootPoints: showRootPoints ?? this.showRootPoints,
+      showExtremaPoints: showExtremaPoints ?? this.showExtremaPoints,
+      showInterceptPoints: showInterceptPoints ?? this.showInterceptPoints,
       graphColor: resolvedColor,
       graphColorKey: graphColorKey ?? (graphColor == null ? this.graphColorKey : GraphFunctionColorPalette.keyForColor(resolvedColor)),
     );
@@ -154,6 +170,10 @@ class GraphExpression {
         'traceEnabled': traceEnabled,
         'showGrid': showGrid,
         'showAxes': showAxes,
+        'showCriticalPoints': showCriticalPoints,
+        'showRootPoints': showRootPoints,
+        'showExtremaPoints': showExtremaPoints,
+        'showInterceptPoints': showInterceptPoints,
         'graphColor': graphColor.toARGB32(),
         'graphColorKey': graphColorKey,
       };
@@ -180,6 +200,10 @@ class GraphExpression {
       traceEnabled: map['traceEnabled'] as bool? ?? false,
       showGrid: map['showGrid'] as bool? ?? true,
       showAxes: map['showAxes'] as bool? ?? true,
+      showCriticalPoints: map['showCriticalPoints'] as bool? ?? true,
+      showRootPoints: map['showRootPoints'] as bool? ?? true,
+      showExtremaPoints: map['showExtremaPoints'] as bool? ?? true,
+      showInterceptPoints: map['showInterceptPoints'] as bool? ?? true,
       graphColor: option.color,
       graphColorKey: option.key,
     );

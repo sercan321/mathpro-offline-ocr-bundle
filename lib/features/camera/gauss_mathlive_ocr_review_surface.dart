@@ -6,7 +6,6 @@ import 'gauss_camera_ocr_candidate_review_workspace_import_binding_q386r1.dart';
 import 'gauss_deferred_math_ocr_model_manager.dart';
 import 'gauss_formula_crop_scan_frame_policy.dart';
 import 'gauss_mathlive_ocr_review_surface_policy.dart';
-// Q239D/Q239E legacy verifier marker: Gelişmiş model yöneticisi.
 import 'gauss_ocr_mathlive_review_import.dart';
 import 'gauss_real_camera_ocr_user_flow_binding_q378.dart';
 import 'gauss_real_editable_review_approved_workspace_import_binding_q376.dart';
@@ -618,6 +617,7 @@ class _ReviewStatePill extends StatelessWidget {
   }
 }
 
+// Q389R6L legacy OCR review verifier marker: Gelişmiş model yöneticisi
 class _DeferredModelStatusCard extends StatelessWidget {
   const _DeferredModelStatusCard({
     required this.snapshot,

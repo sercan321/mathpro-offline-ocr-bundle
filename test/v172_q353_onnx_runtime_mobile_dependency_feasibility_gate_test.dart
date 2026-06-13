@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+
+import 'v172_q389r6w_onnx_runtime_successor_test_helper.dart';
 import 'package:mathpro_flutter_phase17/features/camera/gauss_onnx_runtime_mobile_dependency_feasibility_gate_q353.dart';
 import 'package:mathpro_flutter_phase17/features/camera/gauss_onnx_runtime_mobile_dependency_feasibility_gate_q353_policy.dart';
 
@@ -92,7 +94,7 @@ void main() {
     final manifest = jsonDecode(File('assets/mathlive/manifest.json').readAsStringSync()) as Map<String, dynamic>;
     final q354Active = <String>{'V172-Q354-ONNX-RUNTIME-ANDROID-DEPENDENCY-ABI-BUILD-TRIAL', 'V172-Q355-ONNX-MODEL-PRIVATE-STORAGE-SHA-VERIFICATION', 'V172-Q356-ONNX-REAL-MODEL-LOAD-SMOKE-EVIDENCE-BLOCKED', 'V172-Q356R1-ONNX-RUNTIME-ANDROID-BUILD-EVIDENCE-INTAKE-MODEL-LOAD-UNLOCK-GUARD', 'V172-Q356R2-ONNX-RUNTIME-ANDROID-MISSING-BUILD-EVIDENCE-Q357-LOCK-GUARD', 'V172-Q357-ONNX-REAL-MODEL-LOAD-SMOKE-BRIDGE-PREFLIGHT-EXECUTION', 'V172-Q358-ONNX-DUMMY-INPUT-RUNTIME-CALL-GUARD-PREFLIGHT', 'V172-Q359-FIRST-REAL-IMAGE-TO-LATEX-INFERENCE-GUARD-CANDIDATE-ENVELOPE-PREFLIGHT', 'V172-Q360-OCR-REVIEW-APPROVED-IMPORT-CONTRACT', 'V172-Q361-CAMERA-OCR-RUNTIME-EXECUTION-BRIDGE', 'V172-Q362-ACCURACY-PERFORMANCE-MULTIDEVICE-QA-GUARD', 'V172-Q363-STORE-PRIVACY-FINAL-RELEASE-GATE'}.contains(manifest['cameraOcrLatestPhase']);
     if (q354Active) {
-      expect(buildGradle.toLowerCase(), isNot(contains('onnxruntime-android')));
+      expectQ389R6WOnnxRuntimeDependencySurface(buildGradle);
     } else {
       expect(buildGradle, isNot(contains('onnxruntime')));
     }

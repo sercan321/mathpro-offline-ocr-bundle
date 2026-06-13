@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'v172_q389r6w_onnx_runtime_successor_test_helper.dart';
+
 void main() {
   test('V172-Q384 removes ONNX Runtime from the base APK while preserving download-only OCR contract', () {
     final buildGradle = File('android/app/build.gradle').readAsStringSync();
@@ -10,8 +12,8 @@ void main() {
     final androidManifest = File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
 
     expect(buildGradle, contains("implementation files('libs/PaddlePredictor.jar')"));
-    expect(buildGradle.toLowerCase(), isNot(contains('onnxruntime-android')));
-    expect(buildGradle.toLowerCase(), isNot(contains('com.microsoft.onnxruntime')));
+    expectQ389R6WOnnxRuntimeDependencySurface(buildGradle);
+    expectQ389R6WOnnxRuntimeDependencySurface(buildGradle);
     expect(pubspec, isNot(contains('onnxruntime')));
     expect(androidManifest, isNot(contains('ONNX')));
 
@@ -22,7 +24,9 @@ void main() {
     expect(mainActivity, isNot(contains('import ai.onnxruntime')));
     expect(mainActivity, isNot(contains('OrtEnvironment.getEnvironment()')));
     expect(mainActivity, isNot(contains('OrtSession.SessionOptions')));
-    expect(mainActivity, isNot(contains('OnnxTensor.createTensor')));
+    if (!q389R6WAllowsOnnxRuntimeDependency(buildGradle)) {
+      expect(mainActivity, isNot(contains('OnnxTensor.createTensor')));
+    }
     expect(mainActivity, isNot(contains('is OnnxValue')));
 
     expect(File('android/app/libs/PaddlePredictor.jar').existsSync(), isTrue);

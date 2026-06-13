@@ -59,6 +59,20 @@ class _MathLiveProductionEditorSurfaceState extends State<MathLiveProductionEdit
   int _externalExpressionSyncBlockedByNativeCaretAuthorityCount = 0;
   int _q201NativeCaretKeepVisibleRequestCount = 0;
   bool _q382r27SuppressNextExternalExpressionSync = false;
+  static const String _q389r6sFlutterExternalCursorDragPhase = 'Q389R6S';
+  static const String _q389r6uExternalCursorDragRepairPhase = 'Q389R6U';
+  static const Duration _q389r6sExternalDragHoldDelay = Duration(milliseconds: 240);
+  static const Duration _q389r6uExternalDragMoveCoalesceDelay = Duration(milliseconds: 16);
+  static const double _q389r6sVerticalScrollCancelPx = 38;
+  static const double _q389r6sVerticalDominanceRatio = 1.30;
+  Timer? _q389r6sExternalDragHoldTimer;
+  Timer? _q389r6uExternalDragMoveCoalesceTimer;
+  int? _q389r6sExternalDragPointerId;
+  Offset _q389r6sExternalDragStart = Offset.zero;
+  Offset _q389r6sExternalDragLast = Offset.zero;
+  Offset? _q389r6uExternalDragPendingMove;
+  bool _q389r6sExternalDragActive = false;
+  int _q389r6sExternalDragSequence = 0;
 
   bool get isReady => _webViewController != null && _pageLoaded && !_runtimeBlocked;
 
@@ -114,6 +128,7 @@ class _MathLiveProductionEditorSurfaceState extends State<MathLiveProductionEdit
 
   @override
   void dispose() {
+    _q389r6sCancelExternalCursorDrag(reason: 'q389r6s-dispose-cancel');
     widget.controller._detach(this);
     super.dispose();
   }
@@ -700,6 +715,141 @@ class _MathLiveProductionEditorSurfaceState extends State<MathLiveProductionEdit
     _lastProductionCommandTrace = 'q190r3-production-queued-label-flush-complete-$reason';
   }
 
+
+  void _q389r6sCancelExternalCursorDrag({required String reason}) {
+    _q389r6sExternalDragHoldTimer?.cancel();
+    _q389r6sExternalDragHoldTimer = null;
+    _q389r6uExternalDragMoveCoalesceTimer?.cancel();
+    _q389r6uExternalDragMoveCoalesceTimer = null;
+    _q389r6uExternalDragPendingMove = null;
+    _q389r6sExternalDragPointerId = null;
+    _q389r6sExternalDragActive = false;
+    _lastProductionCommandTrace = reason;
+  }
+
+  Size _q389r6uExternalCursorDragSurfaceSize() {
+    final renderObject = context.findRenderObject();
+    if (renderObject is RenderBox && renderObject.hasSize) return renderObject.size;
+    return Size.zero;
+  }
+
+  void _q389r6uScheduleExternalCursorDragMove(Offset localPosition) {
+    _q389r6uExternalDragPendingMove = localPosition;
+    if (_q389r6uExternalDragMoveCoalesceTimer?.isActive ?? false) return;
+    _q389r6uExternalDragMoveCoalesceTimer = Timer(_q389r6uExternalDragMoveCoalesceDelay, () {
+      _q389r6uExternalDragMoveCoalesceTimer = null;
+      final latest = _q389r6uExternalDragPendingMove;
+      _q389r6uExternalDragPendingMove = null;
+      if (!mounted || !isReady || !_q389r6sExternalDragActive || latest == null) return;
+      unawaited(_q389r6sDispatchExternalCursorDrag(
+        'externalCursorDragMove',
+        latest,
+        reason: 'q389r6u-flutter-drag-move-coalesced',
+      ));
+    });
+  }
+
+  void _q389r6sHandlePointerDown(PointerDownEvent event) {
+    if (!isReady) return;
+    if (event.kind == PointerDeviceKind.mouse && event.buttons != 1) return;
+    _q389r6sCancelExternalCursorDrag(reason: 'q389r6s-restart-before-pointerdown');
+    _q389r6sExternalDragPointerId = event.pointer;
+    _q389r6sExternalDragStart = event.localPosition;
+    _q389r6sExternalDragLast = event.localPosition;
+    _q389r6sExternalDragHoldTimer = Timer(_q389r6sExternalDragHoldDelay, () {
+      if (!mounted || !isReady || _q389r6sExternalDragPointerId != event.pointer) return;
+      _q389r6sExternalDragActive = true;
+      _q389r6sExternalDragSequence += 1;
+      unawaited(_q389r6sDispatchExternalCursorDrag(
+        'externalCursorDragStart',
+        _q389r6sExternalDragLast,
+        reason: 'q389r6u-flutter-hold-activated',
+      ));
+    });
+  }
+
+  void _q389r6sHandlePointerMove(PointerMoveEvent event) {
+    if (_q389r6sExternalDragPointerId != event.pointer) return;
+    _q389r6sExternalDragLast = event.localPosition;
+    final delta = _q389r6sExternalDragLast - _q389r6sExternalDragStart;
+    final mostlyVertical = delta.dy.abs() > _q389r6sVerticalScrollCancelPx &&
+        delta.dy.abs() > delta.dx.abs() * _q389r6sVerticalDominanceRatio;
+    if (!_q389r6sExternalDragActive) {
+      if (mostlyVertical) {
+        _q389r6sCancelExternalCursorDrag(reason: 'q389r6s-vertical-scroll-cancel');
+      }
+      return;
+    }
+    _q389r6uScheduleExternalCursorDragMove(_q389r6sExternalDragLast);
+  }
+
+  void _q389r6sHandlePointerUp(PointerUpEvent event) {
+    if (_q389r6sExternalDragPointerId != event.pointer) return;
+    final wasActive = _q389r6sExternalDragActive;
+    final last = event.localPosition;
+    _q389r6sExternalDragHoldTimer?.cancel();
+    _q389r6sExternalDragHoldTimer = null;
+    _q389r6uExternalDragMoveCoalesceTimer?.cancel();
+    _q389r6uExternalDragMoveCoalesceTimer = null;
+    _q389r6uExternalDragPendingMove = null;
+    if (wasActive) {
+      unawaited(_q389r6sDispatchExternalCursorDrag(
+        'externalCursorDragEnd',
+        last,
+        reason: 'q389r6u-flutter-drag-end',
+      ));
+    }
+    _q389r6sExternalDragPointerId = null;
+    _q389r6sExternalDragActive = false;
+  }
+
+  void _q389r6sHandlePointerCancel(PointerCancelEvent event) {
+    if (_q389r6sExternalDragPointerId != event.pointer) return;
+    final wasActive = _q389r6sExternalDragActive;
+    final last = _q389r6sExternalDragLast;
+    _q389r6sExternalDragHoldTimer?.cancel();
+    _q389r6sExternalDragHoldTimer = null;
+    _q389r6uExternalDragMoveCoalesceTimer?.cancel();
+    _q389r6uExternalDragMoveCoalesceTimer = null;
+    _q389r6uExternalDragPendingMove = null;
+    if (wasActive) {
+      unawaited(_q389r6sDispatchExternalCursorDrag(
+        'externalCursorDragEnd',
+        last,
+        reason: 'q389r6u-flutter-drag-cancel-end',
+      ));
+    }
+    _q389r6sExternalDragPointerId = null;
+    _q389r6sExternalDragActive = false;
+  }
+
+  Future<bool> _q389r6sDispatchExternalCursorDrag(
+    String bridgeMethod,
+    Offset localPosition, {
+    required String reason,
+  }) {
+    final surfaceSize = _q389r6uExternalCursorDragSurfaceSize();
+    final payload = jsonEncode(<String, Object?>{
+      'phase': _q389r6uExternalCursorDragRepairPhase,
+      'previousPhase': _q389r6sFlutterExternalCursorDragPhase,
+      'reason': reason,
+      'sequence': _q389r6sExternalDragSequence,
+      'x': localPosition.dx,
+      'y': localPosition.dy,
+      'surfaceWidth': surfaceSize.width,
+      'surfaceHeight': surfaceSize.height,
+      'source': 'flutter-listener-parent-of-production-webview-q389r6u-coalesced-single-authority',
+    });
+    return _runProductionJavascript(
+      'window.MathProProductionMathLiveBridge && '
+      'window.MathProProductionMathLiveBridge.$bridgeMethod && '
+      'window.MathProProductionMathLiveBridge.$bridgeMethod($payload);',
+      timeout: MathLiveRealDeviceDefectRepairPolicy.androidBridgeCommandTimeout,
+      failureDiagnostic: 'q389r6s-flutter-external-cursor-drag-$bridgeMethod-timeout-or-exception',
+      emitFailureState: false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = _webViewController;
@@ -721,12 +871,20 @@ class _MathLiveProductionEditorSurfaceState extends State<MathLiveProductionEdit
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
-        child: WebViewWidget(
-          key: const ValueKey('mathpro-q184-production-mathlive-editor-surface'),
-          controller: controller,
-          gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-            Factory<EagerGestureRecognizer>(() => EagerGestureRecognizer()),
-          },
+        child: Listener(
+          // Q389R6U: parent Listener is the single production cursor-drag authority; JS internal long-press is suppressed.
+          behavior: HitTestBehavior.opaque,
+          onPointerDown: _q389r6sHandlePointerDown,
+          onPointerMove: _q389r6sHandlePointerMove,
+          onPointerUp: _q389r6sHandlePointerUp,
+          onPointerCancel: _q389r6sHandlePointerCancel,
+          child: WebViewWidget(
+            key: const ValueKey('mathpro-q184-production-mathlive-editor-surface'),
+            controller: controller,
+            gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+              Factory<EagerGestureRecognizer>(() => EagerGestureRecognizer()),
+            },
+          ),
         ),
       ),
     );

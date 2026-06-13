@@ -1,0 +1,9 @@
+{
+  "phase": "V172-Q389R6W-R1-ONNX-RUNTIME-LEGACY-TEST-SUCCESSOR-REPAIR",
+  "onnxRuntimeDependencyPresent": true,
+  "modelArtifactsBundled": [],
+  "successorHelperPresent": true,
+  "q384RuntimeKindSuccessorAware": true,
+  "legacyReadyCopyPreserved": true,
+  "failures": []
+}

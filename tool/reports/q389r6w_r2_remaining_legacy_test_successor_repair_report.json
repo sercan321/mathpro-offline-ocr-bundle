@@ -1,0 +1,11 @@
+{
+  "phase": "V172-Q389R6W-R2-REMAINING-LEGACY-TEST-SUCCESSOR-REPAIR",
+  "passed": true,
+  "repairs": [
+    "q357 accepts legacy ONNX smoke size and Q389R6B plus-S ONNX successor size without weakening model-artifact bundling guard",
+    "q384r1 accepts legacy PP-FormulaNet-S primary SHA and Q389R6B plus-S ONNX manifest SHA while preserving download-only/no direct-solve guard"
+  ],
+  "flutterAnalyzeClaimed": false,
+  "flutterTestClaimed": false,
+  "devicePassClaimed": false
+}

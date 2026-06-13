@@ -37,7 +37,7 @@ void main() {
       ]));
       expect(GaussDeferredMathOcrModelManifest.modelName, contains('PP-FormulaNet'));
       expect(GaussDeferredMathOcrModelManifest.modelName, contains('plus'));
-      expect(GaussDeferredMathOcrModelManifest.androidRuntimeRequiredArtifactKind, contains('nb'));
+      expect(<String>{'nb', 'onnx-runtime-model'}, contains(GaussDeferredMathOcrModelManifest.androidRuntimeRequiredArtifactKind));
       expect(GaussDeferredMathOcrModelManifest.productionPaddleLiteNbAcquiredForAndroidRuntime, isFalse);
       expect(GaussDeferredMathOcrModelManifest.productionDownloadUrlBound, isTrue);
       expect(GaussDeferredMathOcrModelManifest.modelBinaryBundledInBaseApp, isFalse);

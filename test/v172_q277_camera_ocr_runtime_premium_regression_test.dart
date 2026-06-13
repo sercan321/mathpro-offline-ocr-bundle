@@ -113,11 +113,11 @@ void main() {
     });
 
     test('does not add runtime dependencies, bundled models, or fake PASS markers', () {
-      final pubspec = File('pubspec.yaml').readAsStringSync();
-      expect(pubspec, isNot(contains(RegExp(r'^\s*paddle', multiLine: true))));
-      expect(pubspec, isNot(contains(RegExp(r'^\s*onnxruntime\s*:', multiLine: true))));
-      expect(pubspec, isNot(contains(RegExp(r'^\s*google_mlkit_text_recognition\s*:', multiLine: true))));
-      expect(pubspec, isNot(contains(RegExp(r'^\s*tesseract\s*:', multiLine: true))));
+      final pubspec = File('pubspec.yaml').readAsStringSync().toLowerCase();
+      expect(pubspec.contains('paddle'), isFalse);
+      expect(pubspec.contains('onnx'), isFalse);
+      expect(pubspec.contains('google_mlkit_text_recognition'), isFalse);
+      expect(pubspec.contains('tesseract'), isFalse);
       final manifest = File('assets/mathlive/manifest.json').readAsStringSync();
       expect(manifest, contains('V172-Q277-CAMERA-OCR-RUNTIME-PREMIUM-REGRESSION'));
       expect(manifest, contains('cameraOcrRuntimePassClaimed'));

@@ -27,6 +27,7 @@ dev_dependencies:
 # V172-Q244R6: pin the pre-CameraX camera package line and a post-Registrar Camera2 implementation so AGP 8.3.2/Kotlin 1.9.22 builds avoid CameraX/Kotlin 2.1 artifacts and Flutter 3.29 Registrar failures.
 # V172-Q244R8: upgrade only the Kotlin Gradle plugin from 1.9.22 to 2.1.0 so Kotlin 2.1 metadata artifacts from the resolved Android dependency graph can compile without changing AGP, camera runtime, OCR, MathLive, keyboard, Graph, Solution, History, splash, or launcher behavior.
 
+
 flutter:
   uses-material-design: true
   assets:
@@ -69,4 +70,4 @@ flutter:
 # V172-Q239A workspace camera entry button replacement: the inert workspace ellipsis action is replaced with a camera entry placeholder only; no camera dependency, Android permission, OCR engine, model download, MathLive import, solver, keyboard, MORE, long-press, Graph, Solution, History, splash, or launcher icon mutation is introduced.
 
 # V172-Q239B workspace camera permission/capture shell: adds the official Flutter camera plugin for preview/capture only; OCR, model download, MathLive import, direct solve, keyboard/MORE/long-press, Graph, Solution, History, splash, and launcher icon behavior remain isolated.
-# V172-Q384R1 camera OCR deferred model download activation: user-tapped Modeli indir now performs real network download, SHA256 verification, and app-private atomic install for PP-FormulaNet-S without bundling model bytes or re-adding ONNX Runtime.
+# V172-Q384R1 camera OCR deferred model download activation: user-tapped Modeli indir now performs real network download, SHA256 verification, and app-private atomic install for PP-FormulaNet-S without bundling model bytes or re-adding legacy inference runtime.

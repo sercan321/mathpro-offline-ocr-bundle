@@ -8,6 +8,7 @@ import '../debug/latency/mathpro_latency_probe_q382r23.dart';
 import '../features/graph/graph_eligibility.dart';
 import '../features/graph/graph_fullscreen_page.dart';
 import '../features/graph/graph_models.dart';
+import '../features/graph/graph_expression_refresh_policy.dart';
 import '../features/graph/graph_settings_sheet.dart';
 import '../features/history/history_controller.dart';
 import '../features/history/history_models.dart';
@@ -797,6 +798,7 @@ class _MathProAppShellState extends State<MathProAppShell> {
     _calculator.handleKey('↵');
     _flushQ382R31ResultSolutionIdlePipelineForExplicitAction();
     _recordEvaluationIfNeeded();
+    _refreshOpenGraphAfterEvaluation(envelope);
   }
 
   void _recordEvaluationIfNeeded() {
@@ -815,6 +817,83 @@ class _MathProAppShellState extends State<MathProAppShell> {
       tabName: _activeTab,
       errorState: errorState,
     );
+  }
+
+
+  void _refreshOpenGraphAfterEvaluation(MathLiveProductionGraphHistorySolutionStateEnvelope envelope) {
+    // Q389R6D: Enter/evaluate must refresh an already-open graph from the
+    // current MathLive production envelope.  This is deliberately not a live
+    // per-keystroke graph sync: keyboard latency, MathLive ordering and OCR
+    // bridges remain untouched.
+    if (!GraphExpressionRefreshPolicy.evaluateEnterRefreshesVisibleGraph) return;
+    if (!_graphPreviewVisible || _activeGraph == null) return;
+
+    final graphSource = MathLiveProductionGraphHistorySolutionStateFinalizationPolicy.expressionForGraph(envelope);
+    if (graphSource.trim().isEmpty || envelope.hasOpenSlots || envelope.fakeSolutionGenerated) {
+      _clearOpenGraphAfterFailedRefresh(
+        envelope.hasOpenSlots
+            ? 'Açık slotlar doldurulmadan grafik güncellenmedi.'
+            : 'Grafik için geçerli MathLive production state bulunamadı.',
+      );
+      return;
+    }
+
+    final eligibility = GraphEligibility.classify(
+      expression: graphSource,
+      result: _calculator.state.result,
+    );
+
+    if (eligibility.kind == GraphEligibilityKind.implicitPending ||
+        eligibility.kind == GraphEligibilityKind.notGraphable ||
+        (envelope.graphImplicitPending && !envelope.asksForConstantGraph)) {
+      _clearOpenGraphAfterFailedRefresh(
+        envelope.graphEligibilityMessage.trim().isEmpty ? eligibility.message : envelope.graphEligibilityMessage,
+      );
+      return;
+    }
+
+    final previous = _activeGraph;
+    if (previous == null) return;
+
+    final rebuilt = GraphEligibility.expressionFromEligibility(
+      originalExpression: graphSource,
+      result: eligibility,
+    ).copyWith(
+      traceEnabled: previous.traceEnabled,
+      showGrid: previous.showGrid,
+      showAxes: previous.showAxes,
+      showCriticalPoints: previous.showCriticalPoints,
+      showRootPoints: previous.showRootPoints,
+      showExtremaPoints: previous.showExtremaPoints,
+      showInterceptPoints: previous.showInterceptPoints,
+      graphColor: previous.graphColor,
+      graphColorKey: previous.graphColorKey,
+    );
+
+    final sameGraphExpression = rebuilt.historyIdentityKey == previous.historyIdentityKey;
+    final next = sameGraphExpression
+        ? rebuilt.copyWith(
+            xMin: previous.xMin,
+            xMax: previous.xMax,
+            yMin: previous.yMin,
+            yMax: previous.yMax,
+          )
+        : rebuilt;
+
+    // Q389R6E audit hardening: only reset the viewport when the Enter action
+    // actually points to a new graph expression.  Pressing Enter again on the
+    // same expression must not erase the user's current zoom/window.
+    _applyGraphUpdate(GraphViewportPolicy.sanitize(next), renderMode: _graphRenderMode);
+  }
+
+  void _clearOpenGraphAfterFailedRefresh(String message) {
+    if (!_graphPreviewVisible && _activeGraph == null) return;
+    setState(() {
+      _graphPreviewVisible = false;
+      _activeGraph = null;
+      _activeGraphHistoryEntryId = null;
+    });
+    _showGraphMessage(message);
   }
 
 

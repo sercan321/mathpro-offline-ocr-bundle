@@ -1,0 +1,34 @@
+{
+  "phase": "V172-Q225",
+  "status": "GRAPH_MINI_PANEL_VISUAL_PARITY_REPAIR_Q225_STATIC_READY_WITH_Q234_SURFACE_SUCCESSOR_BUT_FLUTTER_ANALYZE_TEST_AND_ANDROID_PIXEL_QA_REQUIRED",
+  "checks": {
+    "canvasDominanceRepairAdded": true,
+    "traceDefaultCleanStateAdded": true,
+    "threeDMiniSurfaceCompactBindingAdded": true,
+    "q234SurfaceSuccessorAccepted": true,
+    "protectedHashes": {
+      "lib/features/keyboard/key_config.dart": "4ecd7270e29a27d75bdd80d36aa5b6f1064a2c3a1d3360c3edd4856432d0f1a2",
+      "lib/features/keyboard/math_keyboard.dart": "fc8e6504448bbdd64bdbb674fd000c04511ab185a8a110eecb7102dce19d116c",
+      "lib/features/keyboard/bottom_dock.dart": "0c0928e98f9ab4f6c4adf098f6f9fdc894aed4438306d17ea00030784c58e30d",
+      "lib/features/keyboard/premium_key.dart": "a570ff5b8aff0721618f8f02f1115af0f5029af1e61f9829ff9cf0a0abe770f4",
+      "lib/features/keyboard/long_press_popup.dart": "78674a544209a9975069f6f586832866cdf14e92bbad597da93d9c23937e55f5",
+      "lib/features/workspace/template_tray.dart": "5c9762c2dfb7628d7b62b0a79a3caa1d32b0ca4aa6ab35c0b8711916fd5f2804",
+      "lib/features/history/history_controller.dart": "331a6d84dbe4a940f185a69bc5623c6aaa0f2b16f4198f2149a4f4b375be3f51",
+      "lib/features/history/history_panel.dart": "fad987605894ffafc0069fa80f560908c6f529a05da81d2165e924524728537b",
+      "lib/features/solution/solution_steps_panel.dart": "558c0f232dd4bb81bbf92ffa7687ff8d77fb450daf95f5e04a98f277f1625f2b",
+      "assets/mathlive/main_editor_prod.html": "f32e884f83f94d3ac2077f2c65d0278edbba163ca30c640605edc75c337dd9cd",
+      "assets/mathlive/mathlive_prod_bridge.js": "b28efc69e01ab2cecd33c859c4d77266cf4fde63d5b64cd7cb8ad50b3a122703",
+      "lib/features/mathlive/mathlive_production_editor_surface.dart": "2c351a7e13d3a3f5e259046f25d08472777f2322c12cbb3f961ad43c59c6b450",
+      "lib/app/app_shell.dart": "48559e59fcaac6447d17b15277f13750d34eade546e407dc8150bb7a08baf1a1",
+      "lib/main.dart": "068648069a69ec196c566cc0e27feb6dcb496059f9cd606367c6cc646b602689",
+      "android/app/src/main/AndroidManifest.xml": "629dc1185b4aff7489d40f895ef7ba1a542c28e620862b47f5f1c4f53ce09995",
+      "android/app/src/main/res/values/styles.xml": "986dcbc9ee5c07bfe946ec919b6df794daddddceb752e3277af4c6e7a2caa286",
+      "android/app/src/main/res/values-v31/styles.xml": "a171cce0ccb7dd572c4a2fb12cafd127f5558aedc8eb098ff075b517d69b83fa"
+    },
+    "flutterAnalyzePassClaimed": false,
+    "flutterTestPassClaimed": false,
+    "androidRealDevicePassClaimed": false,
+    "premiumVisualPassClaimed": false,
+    "threeDGraphPassClaimed": false
+  }
+}
