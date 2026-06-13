@@ -1,30 +1,29 @@
-name: Q389R8A R3 Paddle Lite PIR/static model optimizer probe bundle
+name: Q389R8A R4 Paddle Lite multi-optimizer PIR re-export Formula OCR artifact proof bundle
 
 on:
   workflow_dispatch:
     inputs:
-      publish_release:
-        description: "Publish GitHub Release only when a verified .nb artifact is produced"
+      release_tag:
+        description: GitHub release tag for successful .nb bundle
         required: true
-        default: "true"
-        type: choice
-        options:
-          - "true"
-          - "false"
-      tag_name:
-        description: "Release tag for the Paddle Lite bundle"
+        default: q389r8a-r4-paddle-lite-multi-optimizer-formula-ocr-bundle
+      try_reexport:
+        description: Try Paddle Python PIR->legacy static re-export before opt
         required: true
-        default: "q389r8a-r3-paddle-lite-pir-static-model-probe-bundle"
+        default: 'true'
 
 permissions:
   contents: write
 
+env:
+  PHASE: V172-Q389R8A-R4
+  OUT_DIR: build/q389r8a_r4
+
 jobs:
-  build-and-publish-paddle-lite-bundle:
+  build:
     name: Build and publish Paddle Lite .nb proof bundle
     runs-on: ubuntu-latest
-    timeout-minutes: 180
-
+    timeout-minutes: 90
     steps:
       - name: Checkout MathPro source
         uses: actions/checkout@v4
@@ -32,447 +31,473 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install artifact acquisition dependencies
         run: |
-          set -euxo pipefail
           python -m pip install --upgrade pip
-          python -m pip install huggingface_hub requests
-          sudo apt-get update
-          sudo apt-get install -y git cmake g++ gcc make unzip wget tar patchelf protobuf-compiler || true
-          # Best-effort fallback: some Linux runners can expose paddle_lite_opt through the paddlelite wheel.
-          python -m pip install paddlelite || true
+          python -m pip install requests huggingface_hub
+          if [ "${{ github.event.inputs.try_reexport }}" = "true" ]; then
+            python -m pip install paddlepaddle==3.0.0 || python -m pip install paddlepaddle || true
+          fi
 
-      - name: Acquire PP-FormulaNet and require Paddle Lite .nb artifact
+      - name: Multi-optimizer Paddle Lite .nb proof sweep
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          TRY_REEXPORT: ${{ github.event.inputs.try_reexport }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag }}
         run: |
           set -euxo pipefail
-          mkdir -p build/q389r8a_r3/work build/q389r8a_r3/reports build/q389r8a_r3/bundle
+          mkdir -p "$OUT_DIR/work" "$OUT_DIR/reports" "$OUT_DIR/bundle"
           python - <<'PY'
+          import gzip
+          import hashlib
           import json
           import os
+          import re
           import shutil
           import stat
           import subprocess
-          import hashlib
+          import sys
+          import tarfile
+          import zipfile
           from pathlib import Path
-          from urllib.parse import urlparse
+
           import requests
           from huggingface_hub import snapshot_download
 
-          PHASE = "V172-Q389R8A-R3"
-          ROOT = Path("build/q389r8a_r3").resolve()
-          WORK = ROOT / "work"
-          REPORTS = ROOT / "reports"
-          BUNDLE = ROOT / "bundle"
-          WORK.mkdir(parents=True, exist_ok=True)
-          REPORTS.mkdir(parents=True, exist_ok=True)
-          BUNDLE.mkdir(parents=True, exist_ok=True)
+          phase = os.environ.get('PHASE', 'V172-Q389R8A-R4')
+          out_dir = Path(os.environ.get('OUT_DIR', 'build/q389r8a_r4'))
+          work = out_dir / 'work'
+          reports = out_dir / 'reports'
+          bundle = out_dir / 'bundle'
+          for p in (work, reports, bundle):
+              p.mkdir(parents=True, exist_ok=True)
 
-          CANDIDATE_REPOS = [
-              "PaddlePaddle/PP-FormulaNet_plus-S",
-              "PaddlePaddle/PP-FormulaNet-S",
-          ]
-          DIRECT_OPT_URLS = [
-              # Official Paddle-Lite docs use this direct Linux optimizer URL.
-              "https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.9.1/opt",
-              # Conservative adjacent-version probes. They are allowed to fail; the report records each attempt.
-              "https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.10/opt",
-              "https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.11/opt",
-              "https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.12/opt",
-              "https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.13/opt",
-              "https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.8/opt",
-          ]
+          HF_TOKEN = os.environ.get('HF_TOKEN') or None
+          GH_TOKEN = os.environ.get('GITHUB_TOKEN') or None
+          TRY_REEXPORT = (os.environ.get('TRY_REEXPORT') or 'true').lower() == 'true'
+          release_tag = os.environ.get('RELEASE_TAG') or 'q389r8a-r4-paddle-lite-multi-optimizer-formula-ocr-bundle'
 
-          def sha256_file(path: Path) -> str:
+          def run(cmd, cwd=None, timeout=240):
+              try:
+                  cp = subprocess.run(cmd, cwd=str(cwd) if cwd else None, text=True,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                      timeout=timeout)
+                  return {
+                      'cmd': [str(x) for x in cmd],
+                      'returncode': cp.returncode,
+                      'stdoutTail': cp.stdout[-5000:],
+                      'stderrTail': cp.stderr[-5000:],
+                  }
+              except subprocess.TimeoutExpired as exc:
+                  return {
+                      'cmd': [str(x) for x in cmd],
+                      'returncode': 'timeout',
+                      'stdoutTail': (exc.stdout or '')[-5000:] if isinstance(exc.stdout, str) else '',
+                      'stderrTail': (exc.stderr or '')[-5000:] if isinstance(exc.stderr, str) else '',
+                  }
+              except Exception as exc:
+                  return {'cmd': [str(x) for x in cmd], 'returncode': 'exception', 'error': repr(exc)}
+
+          def sha256(path):
               h = hashlib.sha256()
-              with path.open("rb") as f:
-                  for chunk in iter(lambda: f.read(1024 * 1024), b""):
+              with open(path, 'rb') as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b''):
                       h.update(chunk)
               return h.hexdigest()
 
-          def run(cmd, cwd=None, timeout=300):
-              p = subprocess.run(
-                  [str(c) for c in cmd],
-                  cwd=cwd,
-                  text=True,
-                  stdout=subprocess.PIPE,
-                  stderr=subprocess.PIPE,
-                  timeout=timeout,
-              )
-              return {
-                  "cmd": [str(c) for c in cmd],
-                  "returncode": p.returncode,
-                  "stdoutTail": p.stdout[-6000:],
-                  "stderrTail": p.stderr[-6000:],
-              }
+          def is_probably_executable(path):
+              if not path.is_file():
+                  return False
+              name = path.name.lower()
+              if name in {'opt', 'paddle_lite_opt', 'model_optimize_tool'}:
+                  return True
+              if 'opt' in name and path.stat().st_size > 100000:
+                  return True
+              if 'model_optimize' in name and path.stat().st_size > 100000:
+                  return True
+              return False
 
-          def download_file(url: str, dest: Path):
-              dest.parent.mkdir(parents=True, exist_ok=True)
-              with requests.get(url, stream=True, allow_redirects=True, timeout=90) as r:
-                  r.raise_for_status()
-                  with dest.open("wb") as f:
-                      for chunk in r.iter_content(chunk_size=1024 * 1024):
-                          if chunk:
-                              f.write(chunk)
-              return dest
-
-          def mark_executable(path: Path):
-              mode = path.stat().st_mode
-              path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-          def _probe_optimizer(path: Path, source: str, attempts: list, extra=None):
-              extra = extra or {}
+          def unpack_asset(src, dest):
+              dest.mkdir(parents=True, exist_ok=True)
+              src_lower = src.name.lower()
+              info = {'src': str(src), 'dest': str(dest)}
               try:
-                  if not path.exists():
-                      attempts.append({"source": source, "candidate": str(path), "stage": "missing", **extra})
-                      return None
-                  if path.is_file():
-                      mark_executable(path)
-                  probe = run([path, "--help"], timeout=90)
-                  attempts.append({"source": source, "candidate": str(path), "sizeBytes": path.stat().st_size if path.is_file() else None, "probe": probe, **extra})
-                  if probe["returncode"] in (0, 1):
-                      return path
-              except Exception as e:
-                  attempts.append({"source": source, "candidate": str(path), "stage": "probe_error", "error": repr(e), **extra})
-              return None
+                  if zipfile.is_zipfile(src):
+                      with zipfile.ZipFile(src) as zf:
+                          zf.extractall(dest)
+                      info['kind'] = 'zip'
+                  elif tarfile.is_tarfile(src):
+                      with tarfile.open(src) as tf:
+                          tf.extractall(dest)
+                      info['kind'] = 'tar'
+                  elif src_lower.endswith('.gz'):
+                      out = dest / src.name[:-3]
+                      with gzip.open(src, 'rb') as fi, open(out, 'wb') as fo:
+                          shutil.copyfileobj(fi, fo)
+                      info['kind'] = 'gz'
+                  else:
+                      out = dest / 'opt'
+                      shutil.copy2(src, out)
+                      info['kind'] = 'raw'
+                  return info
+              except Exception as exc:
+                  info['error'] = repr(exc)
+                  return info
 
-          def _candidate_optimizer_files(root: Path):
-              if not root.exists():
-                  return []
-              names = {"opt", "paddle_lite_opt", "paddle-lite-opt", "model_optimize_tool"}
-              found = []
-              for p in root.rglob("*"):
-                  if p.is_file() and p.name in names:
-                      try:
-                          if p.stat().st_size >= 64 * 1024:
-                              found.append(p)
-                      except OSError:
-                          pass
-              return sorted(set(found), key=lambda p: p.stat().st_size, reverse=True)
+          def find_nb(output_root):
+              candidates = []
+              if output_root.is_file() and output_root.stat().st_size > 0:
+                  candidates.append(output_root)
+              if (output_root.with_suffix('.nb')).is_file():
+                  candidates.append(output_root.with_suffix('.nb'))
+              if output_root.exists() and output_root.is_dir():
+                  candidates.extend([p for p in output_root.rglob('*') if p.is_file() and p.stat().st_size > 0 and (p.suffix == '.nb' or p.name.endswith('.nb'))])
+                  if not candidates:
+                      candidates.extend([p for p in output_root.rglob('*') if p.is_file() and p.stat().st_size > 100000])
+              return max(candidates, key=lambda p: p.stat().st_size) if candidates else None
 
-          def _try_release_asset_discovery(attempts):
-              api = "https://api.github.com/repos/PaddlePaddle/Paddle-Lite/releases"
-              headers = {"Accept": "application/vnd.github+json"}
-              token = os.environ.get("GITHUB_TOKEN")
-              if token:
-                  headers["Authorization"] = f"Bearer {token}"
-              try:
-                  resp = requests.get(api, params={"per_page": 100}, headers=headers, timeout=90)
-                  resp.raise_for_status()
-                  releases = resp.json()
-                  assets = []
-                  for rel in releases:
-                      tag = rel.get("tag_name") or rel.get("name") or ""
-                      for a in rel.get("assets", []) or []:
-                          name = a.get("name") or ""
-                          url = a.get("browser_download_url") or ""
-                          low = name.lower()
-                          score = 0
-                          if "opt" in low: score += 100
-                          if "linux" in low or "x86" in low: score += 20
-                          if low.endswith((".tgz", ".tar.gz", ".zip", ".tar")): score += 10
-                          if score:
-                              assets.append((score, tag, name, url))
-                  assets.sort(reverse=True)
-                  attempts.append({"source": "github_release_api", "stage": "asset_discovery", "assetCount": len(assets), "topAssets": assets[:20]})
-                  for score, tag, name, url in assets[:30]:
-                      dest = WORK / "paddle_lite_release_assets" / tag / name
-                      try:
-                          download_file(url, dest)
-                          extracted = dest.parent / (dest.name + "_extract")
-                          extracted.mkdir(parents=True, exist_ok=True)
-                          unpack = run(["bash", "-lc", f"set -e; file '{dest}'; case '{dest}' in *.zip) unzip -q '{dest}' -d '{extracted}' ;; *.tar.gz|*.tgz) tar -xzf '{dest}' -C '{extracted}' ;; *.tar) tar -xf '{dest}' -C '{extracted}' ;; *) cp '{dest}' '{extracted}/opt' ;; esac"], timeout=300)
-                          attempts.append({"source": "github_release_asset", "tag": tag, "asset": name, "url": url, "downloadedBytes": dest.stat().st_size, "unpack": unpack})
-                          for cand in _candidate_optimizer_files(extracted) + _candidate_optimizer_files(dest.parent):
-                              ok = _probe_optimizer(cand, "github_release_asset", attempts, {"tag": tag, "asset": name, "url": url})
-                              if ok:
-                                  return ok
-                      except Exception as e:
-                          attempts.append({"source": "github_release_asset", "tag": tag, "asset": name, "url": url, "stage": "download_unpack_or_probe", "error": repr(e)})
-              except Exception as e:
-                  attempts.append({"source": "github_release_api", "stage": "list_releases", "error": repr(e)})
-              return None
-
-          def _try_source_build_optimizer(attempts):
-              src_dir = WORK / "Paddle-Lite-source"
-              try:
-                  if not src_dir.exists():
-                      clone = run(["git", "clone", "--depth", "1", "--branch", "develop", "https://github.com/PaddlePaddle/Paddle-Lite.git", src_dir], timeout=900)
-                      attempts.append({"source": "source_build", "stage": "git_clone", "cmdResult": clone})
-                      if clone["returncode"] != 0:
-                          return None
-                  # Build a Linux x86 optimizer. This is heavier than release download but deterministic when assets are not published as a bare /opt file.
-                  build_script = src_dir / "lite" / "tools" / "build_linux.sh"
-                  build_cmd = ["bash", str(build_script), "--arch=x86", "--toolchain=gcc", "--with_extra=ON", "--with_cv=OFF", "--with_log=ON"]
-                  env_prefix = "export LITE_BUILD_THREADS=2; export PYTHON_BIN=$(which python); "
-                  build = run(["bash", "-lc", env_prefix + " ".join([str(x) for x in build_cmd])], cwd=src_dir, timeout=7200)
-                  attempts.append({"source": "source_build", "stage": "build_linux_x86_optimizer", "cmd": build_cmd, "cmdResult": build})
-                  # Even if build exits non-zero, scan the tree because opt may have been produced before a packaging/test failure.
-                  candidates = _candidate_optimizer_files(src_dir)
-                  attempts.append({"source": "source_build", "stage": "scan_candidates", "candidateCount": len(candidates), "candidates": [str(p) for p in candidates[:25]]})
-                  for cand in candidates:
-                      ok = _probe_optimizer(cand, "source_build", attempts)
-                      if ok:
-                          return ok
-              except Exception as e:
-                  attempts.append({"source": "source_build", "stage": "exception", "error": repr(e)})
-              return None
-
-          def find_paddle_lite_opt():
-              attempts = []
-              for exe in ["paddle_lite_opt", "opt", "model_optimize_tool"]:
-                  which = shutil.which(exe)
-                  if which:
-                      ok = _probe_optimizer(Path(which), "pip_or_path", attempts, {"exe": exe})
-                      if ok:
-                          return ok, attempts
-              for url in DIRECT_OPT_URLS:
-                  name = Path(urlparse(url).path).name or "opt"
-                  dest = WORK / "paddle_lite_opt_downloads" / urlparse(url).path.replace("/", "_")
-                  try:
-                      download_file(url, dest)
-                      if dest.stat().st_size < 64 * 1024:
-                          attempts.append({"source": "direct_github_release", "url": url, "stage": "too_small", "sizeBytes": dest.stat().st_size})
-                          continue
-                      ok = _probe_optimizer(dest, "direct_github_release", attempts, {"url": url})
-                      if ok:
-                          return ok, attempts
-                  except Exception as e:
-                      attempts.append({"source": "direct_github_release", "url": url, "stage": "download_or_probe", "error": repr(e)})
-              ok = _try_release_asset_discovery(attempts)
-              if ok:
-                  return ok, attempts
-              ok = _try_source_build_optimizer(attempts)
-              if ok:
-                  return ok, attempts
-              return None, attempts
-
-          def find_model_files(model_dir: Path):
-              # PP-FormulaNet HF repos currently expose Paddle 3/PIR-style `inference.json`
-              # plus `inference.pdiparams`, not always legacy `inference.pdmodel`.
-              # R8A-R2 proved optimizer discovery, but failed because `.pdmodel` was absent.
-              model_candidates = []
-              model_candidates.extend(model_dir.rglob("*.pdmodel"))
-              model_candidates.extend(model_dir.rglob("__model__"))
-              model_candidates.extend(model_dir.rglob("inference.json"))
-              model_candidates.extend(model_dir.rglob("model.json"))
-              # Keep generic json candidates as a last-resort probe only; tokenizer/config json should lose by score.
-              model_candidates.extend([p for p in model_dir.rglob("*.json") if p.name.lower() not in {"config.json", "tokenizer_config.json", "special_tokens_map.json"}])
-              pdparams = list(model_dir.rglob("*.pdiparams")) + list(model_dir.rglob("*.pdparams"))
-              def score_model(p: Path):
-                  name = p.name.lower()
-                  parent = p.parent.name.lower()
-                  legacy = 0 if name == "inference.pdmodel" else 1
-                  pir = 0 if name == "inference.json" else 1
-                  modelish = 0 if "model" in name or "inference" in name or name == "__model__" else 1
-                  parent_score = 0 if "inference" in parent else 1
-                  return (legacy, pir, modelish, parent_score, len(str(p)))
-              def score_param(p: Path):
-                  name = p.name.lower()
-                  parent = p.parent.name.lower()
-                  return (0 if name == "inference.pdiparams" else 1, 0 if "inference" in parent else 1, len(str(p)))
-              return (sorted(set(model_candidates), key=score_model)[0] if model_candidates else None,
-                      sorted(pdparams, key=score_param)[0] if pdparams else None)
-
-          def summarize_snapshot_files(root: Path):
-              rows = []
-              for p in sorted([x for x in root.rglob("*") if x.is_file()], key=lambda x: str(x)):
-                  try:
-                      rows.append({"path": str(p.relative_to(root)), "sizeBytes": p.stat().st_size})
-                  except Exception:
-                      rows.append({"path": str(p), "sizeBytes": None})
-              return rows[:200]
-
-          def copy_metadata_files(src_root: Path, dest_root: Path):
-              copied = []
-              patterns = ["*vocab*", "*dict*", "*token*", "*json", "*.txt", "*.yml", "*.yaml"]
-              for pattern in patterns:
-                  for p in src_root.rglob(pattern):
-                      if p.is_file() and p.stat().st_size < 20 * 1024 * 1024:
-                          out = dest_root / p.name
-                          if out.exists():
-                              continue
-                          shutil.copy2(p, out)
-                          copied.append(out.name)
-              return copied
-
-          def locate_nb(out_base: Path):
-              roots = [out_base.parent, out_base]
-              found = []
-              for root in roots:
-                  if root.exists():
-                      found.extend(root.glob("*.nb"))
-                      found.extend(root.rglob("*.nb"))
-              found = sorted(set(found), key=lambda p: p.stat().st_size if p.exists() else 0, reverse=True)
-              return found[0] if found else None
-
-          opt, opt_attempts = find_paddle_lite_opt()
           report = {
-              "phase": PHASE,
-              "status": "UNSET",
-              "paddleLiteOptimizer": str(opt) if opt else None,
-              "optimizerDiscoveryAttempts": opt_attempts,
-              "attempts": [],
-              "selectedArtifact": None,
+              'phase': phase,
+              'status': 'STARTED',
+              'paddleLiteOptimizers': [],
+              'optimizerDiscoveryAttempts': [],
+              'modelSnapshots': [],
+              'attempts': [],
+              'selectedArtifact': None,
           }
 
-          if not opt:
-              report["status"] = "NO_PADDLE_LITE_OPTIMIZER_BINARY_FOUND"
-              (REPORTS / "q389r8a_r3_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
-              print(json.dumps(report, indent=2))
-              raise SystemExit(1)
+          # Discover Paddle Lite optimizer binaries from GitHub release assets.
+          session = requests.Session()
+          if GH_TOKEN:
+              session.headers.update({'Authorization': f'Bearer {GH_TOKEN}'})
+          api_url = 'https://api.github.com/repos/PaddlePaddle/Paddle-Lite/releases?per_page=100'
+          releases = []
+          try:
+              r = session.get(api_url, timeout=30)
+              r.raise_for_status()
+              releases = r.json()
+              report['optimizerDiscoveryAttempts'].append({'source': 'github_release_api', 'url': api_url, 'releaseCount': len(releases)})
+          except Exception as exc:
+              report['optimizerDiscoveryAttempts'].append({'source': 'github_release_api', 'url': api_url, 'error': repr(exc)})
 
-          selected = None
-          for repo in CANDIDATE_REPOS:
-              repo_key = repo.lower().replace("/", "_").replace("-", "_")
-              model_root = WORK / repo_key / "snapshot"
+          def tag_rank(tag):
+              nums = [int(x) for x in re.findall(r'\d+', tag or '')]
+              while len(nums) < 3:
+                  nums.append(0)
+              # prefer newer versions and rc if only newer asset has PIR support
+              return tuple(nums[:3])
+
+          asset_rows = []
+          for rel in releases:
+              tag = rel.get('tag_name') or ''
+              for asset in rel.get('assets') or []:
+                  name = asset.get('name') or ''
+                  low = name.lower()
+                  if 'macos' in low or 'darwin' in low or 'win' in low or 'aarch64' in low or 'android' in low:
+                      continue
+                  if not (low in {'opt_linux', 'opt_linux_x86'} or 'opt_linux' in low or 'model_optimize_tool' in low or 'build_opt' in low):
+                      continue
+                  score = 0
+                  if low in {'opt_linux_x86', 'opt_linux'}:
+                      score += 200
+                  if 'opt_linux' in low:
+                      score += 120
+                  if 'model_optimize_tool' in low:
+                      score += 80
+                  if 'build_opt' in low:
+                      score += 60
+                  score_tuple = (score, tag_rank(tag), tag, name)
+                  asset_rows.append((score_tuple, tag, name, asset.get('browser_download_url')))
+          asset_rows.sort(reverse=True)
+          report['optimizerDiscoveryAttempts'].append({
+              'source': 'github_release_api',
+              'stage': 'asset_rank',
+              'assetCount': len(asset_rows),
+              'topAssets': [[s[0], tag, name, url] for s, tag, name, url in asset_rows[:30]],
+          })
+
+          optimizer_candidates = []
+          seen_urls = set()
+          for _, tag, name, url in asset_rows[:18]:
+              if not url or url in seen_urls:
+                  continue
+              seen_urls.add(url)
+              adir = work / 'paddle_lite_release_assets' / tag / re.sub(r'[^A-Za-z0-9_.-]+', '_', name)
+              adir.mkdir(parents=True, exist_ok=True)
+              raw = adir / name
+              entry = {'source': 'github_release_asset', 'tag': tag, 'asset': name, 'url': url}
               try:
-                  local = Path(snapshot_download(
-                      repo_id=repo,
-                      repo_type="model",
-                      local_dir=str(model_root),
-                      allow_patterns=["*.pdmodel", "*.pdiparams", "*.pdparams", "__model__", "*.txt", "*.json", "*.yml", "*.yaml", "*vocab*", "*dict*", "*token*"],
-                  ))
-              except Exception as e:
-                  report["attempts"].append({"repo": repo, "stage": "snapshot_download", "passed": False, "error": repr(e)})
-                  continue
+                  with session.get(url, stream=True, timeout=60) as resp:
+                      resp.raise_for_status()
+                      with open(raw, 'wb') as f:
+                          for chunk in resp.iter_content(chunk_size=1024 * 1024):
+                              if chunk:
+                                  f.write(chunk)
+                  entry['downloadedBytes'] = raw.stat().st_size
+                  extract = adir / 'extract'
+                  entry['unpack'] = unpack_asset(raw, extract)
+                  for p in extract.rglob('*'):
+                      if is_probably_executable(p):
+                          p.chmod(p.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                          probe = run([str(p), '--help'], timeout=20)
+                          entry.setdefault('candidates', []).append({'path': str(p), 'sizeBytes': p.stat().st_size, 'probeReturncode': probe.get('returncode'), 'probeStdoutTail': (probe.get('stdoutTail') or '')[-1200:], 'probeStderrTail': (probe.get('stderrTail') or '')[-1200:]})
+                          # --help returns 1 for gflags; stdout containing optimize_out is enough.
+                          joined = (probe.get('stdoutTail') or '') + (probe.get('stderrTail') or '')
+                          if 'optimize_out' in joined or 'valid_targets' in joined or p.name in {'opt', 'model_optimize_tool'}:
+                              optimizer_candidates.append({'path': p, 'tag': tag, 'asset': name, 'url': url})
+                  report['optimizerDiscoveryAttempts'].append(entry)
+              except Exception as exc:
+                  entry['error'] = repr(exc)
+                  report['optimizerDiscoveryAttempts'].append(entry)
 
-              model_file, param_file = find_model_files(local)
-              if not model_file or not param_file:
-                  report["attempts"].append({
-                      "repo": repo,
-                      "stage": "locate_model_files",
-                      "passed": False,
-                      "modelFile": str(model_file) if model_file else None,
-                      "paramFile": str(param_file) if param_file else None,
-                      "snapshotFiles": summarize_snapshot_files(local),
-                  })
-                  continue
+          # Deduplicate optimizer paths.
+          dedup = []
+          seen = set()
+          for c in optimizer_candidates:
+              key = str(c['path'].resolve())
+              if key not in seen:
+                  seen.add(key)
+                  dedup.append(c)
+          optimizer_candidates = dedup
+          report['paddleLiteOptimizers'] = [{k: (str(v) if isinstance(v, Path) else v) for k, v in c.items()} for c in optimizer_candidates]
 
-              model_dir = model_file.parent
-              command_variants = []
-              for valid_target in [None, "arm", "x86"]:
-                  for use_model_dir in [True, False]:
-                      for optimize_out_type in ["naive_buffer", None]:
-                          suffix = f"{'dir' if use_model_dir else 'files'}_{optimize_out_type or 'default'}_{valid_target or 'no_target'}"
-                          out_base = WORK / repo_key / f"lite_{suffix}" / "formula_ocr"
-                          out_base.parent.mkdir(parents=True, exist_ok=True)
-                          cmd = [opt]
-                          if use_model_dir:
-                              cmd.append(f"--model_dir={model_dir}")
-                          else:
-                              cmd.extend([f"--model_file={model_file}", f"--param_file={param_file}"])
-                          if optimize_out_type:
-                              cmd.append(f"--optimize_out_type={optimize_out_type}")
-                          cmd.append(f"--optimize_out={out_base}")
-                          if valid_target:
-                              cmd.append(f"--valid_targets={valid_target}")
-                          command_variants.append((suffix, out_base, cmd))
-
-              for suffix, out_base, cmd in command_variants:
-                  result = run(cmd, timeout=900)
-                  nb = locate_nb(out_base)
-                  passed = result["returncode"] == 0 and nb is not None and nb.exists() and nb.stat().st_size > 1024 * 1024
-                  attempt = {
-                      "repo": repo,
-                      "stage": "paddle_lite_optimize",
-                      "passed": passed,
-                      "variant": suffix,
-                      "modelFile": str(model_file),
-                      "modelFileName": model_file.name,
-                      "modelFormatGuess": "pir_json" if model_file.suffix.lower() == ".json" else "legacy_paddle_static",
-                      "paramFile": str(param_file),
-                      "modelDir": str(model_dir),
-                      "optimizerResult": result,
-                      "nbFile": str(nb) if nb else None,
-                      "nbSizeBytes": nb.stat().st_size if nb and nb.exists() else 0,
-                  }
-                  report["attempts"].append(attempt)
-                  if passed:
-                      selected = {"repo": repo, "nb": nb, "modelFile": model_file, "paramFile": param_file, "variant": suffix, "sourceRoot": local}
-                      break
-              if selected:
-                  break
-
-          if not selected:
-              report["status"] = "NO_PADDLE_LITE_NB_ARTIFACT"
-              (REPORTS / "q389r8a_r3_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+          if not optimizer_candidates:
+              report['status'] = 'NO_PADDLE_LITE_OPTIMIZER_BINARY_FOUND'
+              (reports / 'q389r8a_r4_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
               print(json.dumps(report, indent=2))
-              raise SystemExit(1)
+              sys.exit(1)
 
-          nb = selected["nb"]
-          nb_out = BUNDLE / "pp_formulanet_formula_ocr.nb"
-          shutil.copy2(nb, nb_out)
-          copied_meta = copy_metadata_files(selected["sourceRoot"], BUNDLE)
+          # Download model snapshots.
+          repos = ['PaddlePaddle/PP-FormulaNet_plus-S', 'PaddlePaddle/PP-FormulaNet-S']
+          model_infos = []
+          for repo in repos:
+              slug = repo.lower().replace('/', '_').replace('-', '_')
+              local_dir = work / slug / 'snapshot'
+              snap_info = {'repo': repo, 'localDir': str(local_dir)}
+              try:
+                  snapshot_download(repo_id=repo, repo_type='model', revision='main', local_dir=str(local_dir),
+                                    allow_patterns=['inference.json','inference.pdiparams','inference.pdmodel','*.pdmodel','*.pdiparams','*.json','__model__','model','params','*.txt'],
+                                    token=HF_TOKEN)
+                  files = sorted([str(p.relative_to(local_dir)) for p in local_dir.rglob('*') if p.is_file()])
+                  snap_info['passed'] = True
+                  snap_info['files'] = files
+                  report['modelSnapshots'].append(snap_info)
+              except Exception as exc:
+                  snap_info['passed'] = False
+                  snap_info['error'] = repr(exc)
+                  report['modelSnapshots'].append(snap_info)
+                  continue
 
-          model_sha = sha256_file(nb_out)
-          model_size = nb_out.stat().st_size
-          manifest = {
-              "phase": PHASE,
-              "bundleKind": "paddle-lite-native-formula-ocr-model",
-              "modelFamily": "PP-FormulaNet",
-              "sourceRepo": selected["repo"],
-              "runtime": "paddle-lite",
-              "format": "naive_buffer_nb",
-              "target": "android-arm64-v8a-via-paddle-lite-arm",
-              "model": {
-                  "fileName": nb_out.name,
-                  "sha256": model_sha,
-                  "sizeBytes": model_size,
-              },
-              "metadataFiles": copied_meta,
-              "installPolicy": {
-                  "apkBundled": False,
-                  "downloadOnly": True,
-                  "privateStorageRequired": True,
-                  "noBackend": True,
-                  "noOnlineOcrApi": True,
-                  "noFakeCandidates": True,
-              },
-              "proof": {
-                  "paddleLiteOptimizerFound": True,
-                  "paddleLiteOptimizerPath": str(opt),
-                  "optimizerProducedNb": True,
-                  "optimizerVariant": selected["variant"],
-              },
-          }
-          (BUNDLE / "q389r8a_r3_paddle_lite_formula_ocr_bundle_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-          (BUNDLE / "q389r8a_r3_paddle_lite_preprocess_metadata.json").write_text(json.dumps({
-              "phase": PHASE,
-              "imageLayout": "NCHW",
-              "channelOrder": "RGB",
-              "normalization": "pending_app_runtime_binding_verification",
-              "note": "Q389R8A-R1 proves native .nb acquisition only; app-side preprocessing must still be bound and verified on device.",
-          }, indent=2), encoding="utf-8")
-          report["status"] = "PADDLE_LITE_NB_ARTIFACT_READY"
-          report["selectedArtifact"] = manifest
-          (REPORTS / "q389r8a_r3_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+              model_files = []
+              for name in ['inference.pdmodel', 'model.pdmodel', '__model__', 'model', 'inference.json', 'model.json']:
+                  p = local_dir / name
+                  if p.exists() and p.is_file():
+                      model_files.append(p)
+              param_files = []
+              for name in ['inference.pdiparams', 'model.pdiparams', 'params']:
+                  p = local_dir / name
+                  if p.exists() and p.is_file():
+                      param_files.append(p)
+              for p in local_dir.rglob('*.pdmodel'):
+                  if p not in model_files:
+                      model_files.append(p)
+              for p in local_dir.rglob('*.pdiparams'):
+                  if p not in param_files:
+                      param_files.append(p)
+              for p in local_dir.rglob('*.json'):
+                  if p not in model_files and ('inference' in p.name.lower() or 'model' in p.name.lower()):
+                      model_files.append(p)
+
+              # Optional Paddle Python re-export attempts from inference.json + params to legacy-like files.
+              reexport_pairs = []
+              if TRY_REEXPORT and (local_dir / 'inference.json').exists() and (local_dir / 'inference.pdiparams').exists():
+                  rex_dir = work / slug / 'paddle_reexport'
+                  rex_dir.mkdir(parents=True, exist_ok=True)
+                  script = rex_dir / 'reexport.py'
+                  script.write_text(r'''
+import json, os, sys, traceback
+from pathlib import Path
+try:
+    import paddle
+    paddle.enable_static()
+    place = paddle.CPUPlace()
+    exe = paddle.static.Executor(place)
+    model_dir = Path(sys.argv[1])
+    out_prefix = str(Path(sys.argv[2]) / 'legacy_inference')
+    result = {'ok': False, 'paddleVersion': getattr(paddle, '__version__', None)}
+    try:
+        loaded = paddle.static.io.load_inference_model(
+            path_prefix=None,
+            executor=exe,
+            model_dir=str(model_dir),
+            model_filename='inference.json',
+            params_filename='inference.pdiparams',
+        )
+    except TypeError:
+        loaded = paddle.static.io.load_inference_model(
+            str(model_dir), exe,
+            model_filename='inference.json',
+            params_filename='inference.pdiparams',
+        )
+    program, feed_names, fetch_targets = loaded
+    result['feedNames'] = feed_names
+    result['fetchCount'] = len(fetch_targets) if fetch_targets is not None else None
+    try:
+        paddle.static.io.save_inference_model(
+            out_prefix,
+            feed_names,
+            fetch_targets,
+            exe,
+            program=program,
+        )
+    except TypeError:
+        paddle.static.save_inference_model(
+            out_prefix,
+            feed_names,
+            fetch_targets,
+            exe,
+            program=program,
+        )
+    result['ok'] = True
+    result['outPrefix'] = out_prefix
+    result['files'] = sorted([p.name for p in Path(sys.argv[2]).glob('*')])
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({'ok': False, 'error': repr(e), 'trace': traceback.format_exc()[-4000:]}))
+    sys.exit(2)
+''', encoding='utf-8')
+                  rr = run([sys.executable, str(script), str(local_dir), str(rex_dir)], timeout=180)
+                  snap_info['reexportAttempt'] = rr
+                  try:
+                      js = json.loads((rr.get('stdoutTail') or '').strip().splitlines()[-1])
+                  except Exception:
+                      js = None
+                  snap_info['reexportResult'] = js
+                  if js and js.get('ok'):
+                      # Try common generated file pairs.
+                      for mp in [rex_dir / 'legacy_inference.pdmodel', rex_dir / 'legacy_inference.json', rex_dir / 'legacy_inference']:
+                          for pp in [rex_dir / 'legacy_inference.pdiparams', rex_dir / 'legacy_inference.params']:
+                              if mp.exists() and pp.exists():
+                                  reexport_pairs.append((mp, pp, 'paddle_reexport'))
+
+              # Also add alias layouts for PIR json, in case newer opt supports names but not inference.json.
+              pairs = []
+              for mf in model_files:
+                  for pf in (param_files or [None]):
+                      pairs.append((mf, pf, 'snapshot'))
+              pairs.extend(reexport_pairs)
+
+              for mf, pf, source_kind in pairs:
+                  model_format = 'pir_json' if mf and mf.suffix == '.json' else ('legacy_or_unknown' if mf else 'dir')
+                  for opt in optimizer_candidates:
+                      for target in ['', 'arm', 'x86']:
+                          for mode in ['files_naive_buffer', 'files_default', 'dir_naive_buffer', 'dir_default', 'alias_dir_naive_buffer']:
+                              if mode.startswith('files') and (not mf or not pf):
+                                  continue
+                              attempt_name = f"{repo.replace('/','_')}_{source_kind}_{opt['tag']}_{opt['asset']}_{mode}_{target or 'no_target'}"
+                              safe = re.sub(r'[^A-Za-z0-9_.-]+', '_', attempt_name)[:160]
+                              attempt_dir = work / slug / 'lite_attempts' / safe
+                              attempt_dir.mkdir(parents=True, exist_ok=True)
+                              out_prefix = attempt_dir / 'formula_ocr'
+                              cmd = [str(opt['path'])]
+                              alias_info = None
+                              if mode.startswith('dir'):
+                                  cmd.append(f'--model_dir={local_dir}')
+                              elif mode.startswith('alias_dir'):
+                                  alias = attempt_dir / 'alias_model_dir'
+                                  alias.mkdir(parents=True, exist_ok=True)
+                                  if mf:
+                                      shutil.copy2(mf, alias / ('model.pdmodel' if mf.suffix == '.json' else mf.name))
+                                  if pf:
+                                      shutil.copy2(pf, alias / 'model.pdiparams')
+                                  alias_info = {'aliasDir': str(alias), 'aliasFiles': sorted([p.name for p in alias.iterdir()])}
+                                  cmd.append(f'--model_dir={alias}')
+                              else:
+                                  cmd += [f'--model_file={mf}', f'--param_file={pf}']
+                              if 'naive_buffer' in mode:
+                                  cmd.append('--optimize_out_type=naive_buffer')
+                              cmd.append(f'--optimize_out={out_prefix}')
+                              if target:
+                                  cmd.append(f'--valid_targets={target}')
+                              rr = run(cmd, timeout=120)
+                              nb = find_nb(out_prefix.parent)
+                              entry = {
+                                  'repo': repo,
+                                  'stage': 'paddle_lite_optimize',
+                                  'passed': bool(nb),
+                                  'sourceKind': source_kind,
+                                  'optimizerTag': opt['tag'],
+                                  'optimizerAsset': opt['asset'],
+                                  'variant': f'{mode}_{target or "no_target"}',
+                                  'modelFile': str(mf) if mf else None,
+                                  'modelFileName': mf.name if mf else None,
+                                  'modelFormatGuess': model_format,
+                                  'paramFile': str(pf) if pf else None,
+                                  'modelDir': str(local_dir),
+                                  'aliasInfo': alias_info,
+                                  'optimizerResult': rr,
+                                  'nbFile': str(nb) if nb else None,
+                                  'nbSizeBytes': nb.stat().st_size if nb else 0,
+                              }
+                              report['attempts'].append(entry)
+                              if nb:
+                                  final_nb = bundle / 'formula_ocr.nb'
+                                  shutil.copy2(nb, final_nb)
+                                  manifest = {
+                                      'phase': phase,
+                                      'modelFamily': 'PP-FormulaNet',
+                                      'runtime': 'paddle-lite',
+                                      'format': 'naive_buffer_nb',
+                                      'fileName': final_nb.name,
+                                      'sizeBytes': final_nb.stat().st_size,
+                                      'sha256': sha256(final_nb),
+                                      'sourceRepo': repo,
+                                      'sourceKind': source_kind,
+                                      'optimizerTag': opt['tag'],
+                                      'optimizerAsset': opt['asset'],
+                                      'optimizerUrl': opt.get('url'),
+                                      'target': target or 'default',
+                                      'variant': mode,
+                                      'releaseTag': release_tag,
+                                      'note': 'Artifact proves Paddle Lite opt produced a .nb file only. It does not prove Android OCR inference quality.',
+                                  }
+                                  (bundle / 'q389r8a_paddle_lite_bundle_manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+                                  report['status'] = 'PADDLE_LITE_NB_ARTIFACT_READY'
+                                  report['selectedArtifact'] = manifest
+                                  (reports / 'q389r8a_r4_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+                                  print(json.dumps(report, indent=2))
+                                  sys.exit(0)
+
+          if not report['modelSnapshots'] or not any(s.get('passed') for s in report['modelSnapshots']):
+              report['status'] = 'MODEL_SNAPSHOT_DOWNLOAD_FAILED'
+          else:
+              report['status'] = 'NO_PADDLE_LITE_NB_ARTIFACT_MULTI_OPTIMIZER_PIR_REEXPORT_SWEEP'
+          (reports / 'q389r8a_r4_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
           print(json.dumps(report, indent=2))
+          sys.exit(1)
           PY
 
       - name: Upload workflow artifact
-        uses: actions/upload-artifact@v4
         if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: q389r8a-r3-paddle-lite-pir-static-artifact-report-and-bundle
+          name: q389r8a_r4_paddle_lite_multi_optimizer_probe_report
           path: |
-            build/q389r8a_r3/reports/**
-            build/q389r8a_r3/bundle/**
+            build/q389r8a_r4/reports/**
+            build/q389r8a_r4/bundle/**
           if-no-files-found: warn
 
       - name: Publish GitHub Release assets
-        if: ${{ success() && inputs.publish_release == 'true' }}
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          name: Q389R8A R4 Paddle Lite native Formula OCR .nb proof bundle
+          files: |
+            build/q389r8a_r4/bundle/formula_ocr.nb
+            build/q389r8a_r4/bundle/q389r8a_paddle_lite_bundle_manifest.json
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_NAME: ${{ inputs.tag_name }}
-        run: |
-          set -euxo pipefail
-          gh release delete "$TAG_NAME" --yes || true
-          git tag -f "$TAG_NAME"
-          git push -f origin "$TAG_NAME"
-          gh release create "$TAG_NAME" \
-            build/q389r8a_r3/bundle/* \
-            build/q389r8a_r3/reports/q389r8a_r3_paddle_lite_artifact_report.json \
-            --title "Q389R8A-R3 Paddle Lite PIR/static model probe bundle" \
-            --notes "Q389R8A-R3 publishes only when a Paddle Lite .nb artifact is produced from PP-FormulaNet and verified by the optimizer workflow. This does not claim app-side OCR PASS."
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
