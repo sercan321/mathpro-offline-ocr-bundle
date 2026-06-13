@@ -1,0 +1,362 @@
+name: Q389R8A Paddle Lite native Formula OCR artifact proof bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Publish GitHub Release only when a verified .nb artifact is produced"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      tag_name:
+        description: "Release tag for the Paddle Lite bundle"
+        required: true
+        default: "q389r8a-paddle-lite-native-formula-ocr-bundle"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish-paddle-lite-bundle:
+    name: Build and publish Paddle Lite .nb proof bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout MathPro source
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install artifact acquisition dependencies
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install huggingface_hub requests
+
+      - name: Acquire PP-FormulaNet and require Paddle Lite .nb artifact
+        run: |
+          set -euxo pipefail
+          mkdir -p build/q389r8a/work build/q389r8a/reports build/q389r8a/bundle
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import shutil
+          import stat
+          import subprocess
+          import tarfile
+          import zipfile
+          import hashlib
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          import requests
+          from huggingface_hub import snapshot_download
+
+          PHASE = "V172-Q389R8A"
+          ROOT = Path("build/q389r8a").resolve()
+          WORK = ROOT / "work"
+          REPORTS = ROOT / "reports"
+          BUNDLE = ROOT / "bundle"
+          WORK.mkdir(parents=True, exist_ok=True)
+          REPORTS.mkdir(parents=True, exist_ok=True)
+          BUNDLE.mkdir(parents=True, exist_ok=True)
+
+          CANDIDATE_REPOS = [
+              "PaddlePaddle/PP-FormulaNet_plus-S",
+              "PaddlePaddle/PP-FormulaNet-S",
+          ]
+          RELEASE_REPOS = [
+              "PaddlePaddle/Paddle-Lite",
+              "PaddlePaddle/PaddleLite",
+          ]
+          ASSET_RE = re.compile(r"(opt|paddle[_-]?lite[_-]?opt).*(linux|ubuntu|x86|gcc|glibc).*(tar\.gz|tgz|zip)$", re.I)
+
+          def sha256_file(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open("rb") as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          def run(cmd, cwd=None, timeout=300):
+              p = subprocess.run(
+                  cmd,
+                  cwd=cwd,
+                  text=True,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  timeout=timeout,
+              )
+              return {
+                  "cmd": [str(c) for c in cmd],
+                  "returncode": p.returncode,
+                  "stdoutTail": p.stdout[-6000:],
+                  "stderrTail": p.stderr[-6000:],
+              }
+
+          def gh_get(url):
+              headers = {"Accept": "application/vnd.github+json"}
+              token = os.environ.get("GITHUB_TOKEN")
+              if token:
+                  headers["Authorization"] = f"Bearer {token}"
+              r = requests.get(url, headers=headers, timeout=45)
+              r.raise_for_status()
+              return r.json()
+
+          def safe_extract_archive(archive: Path, dest: Path):
+              dest.mkdir(parents=True, exist_ok=True)
+              if archive.suffix == ".zip":
+                  with zipfile.ZipFile(archive) as zf:
+                      zf.extractall(dest)
+              else:
+                  with tarfile.open(archive) as tf:
+                      for member in tf.getmembers():
+                          target = dest / member.name
+                          if not str(target.resolve()).startswith(str(dest.resolve())):
+                              raise RuntimeError(f"unsafe archive path: {member.name}")
+                      tf.extractall(dest)
+
+          def download_file(url: str, dest: Path):
+              dest.parent.mkdir(parents=True, exist_ok=True)
+              with requests.get(url, stream=True, timeout=60) as r:
+                  r.raise_for_status()
+                  with dest.open("wb") as f:
+                      for chunk in r.iter_content(chunk_size=1024 * 1024):
+                          if chunk:
+                              f.write(chunk)
+              return dest
+
+          def find_paddle_lite_opt():
+              attempts = []
+              for repo in RELEASE_REPOS:
+                  try:
+                      releases = gh_get(f"https://api.github.com/repos/{repo}/releases?per_page=20")
+                  except Exception as e:
+                      attempts.append({"repo": repo, "stage": "list_releases", "error": repr(e)})
+                      continue
+                  for rel in releases:
+                      assets = rel.get("assets") or []
+                      for asset in assets:
+                          name = asset.get("name") or ""
+                          url = asset.get("browser_download_url") or ""
+                          if not url:
+                              continue
+                          if not ASSET_RE.search(name):
+                              continue
+                          archive_name = Path(urlparse(url).path).name or name
+                          archive = WORK / "paddle_lite_opt_downloads" / repo.replace("/", "_") / archive_name
+                          try:
+                              download_file(url, archive)
+                              extract_dir = archive.with_suffix("")
+                              safe_extract_archive(archive, extract_dir)
+                              candidates = []
+                              for p in extract_dir.rglob("*"):
+                                  if not p.is_file():
+                                      continue
+                                  low = p.name.lower()
+                                  if low in {"opt", "paddle_lite_opt"} or "paddle_lite_opt" in low:
+                                      mode = p.stat().st_mode
+                                      p.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                                      candidates.append(p)
+                              if candidates:
+                                  best = sorted(candidates, key=lambda p: len(str(p)))[0]
+                                  probe = run([best, "--help"], timeout=60)
+                                  attempts.append({"repo": repo, "asset": name, "candidate": str(best), "probe": probe})
+                                  if probe["returncode"] in (0, 1):
+                                      return best, attempts
+                              attempts.append({"repo": repo, "asset": name, "stage": "no_executable_opt_found"})
+                          except Exception as e:
+                              attempts.append({"repo": repo, "asset": name, "stage": "download_or_extract", "error": repr(e)})
+              return None, attempts
+
+          def find_model_files(model_dir: Path):
+              pdmodels = list(model_dir.rglob("*.pdmodel")) + list(model_dir.rglob("__model__"))
+              pdparams = list(model_dir.rglob("*.pdiparams")) + list(model_dir.rglob("*.pdparams"))
+              def score_model(p: Path):
+                  name = p.name.lower()
+                  return (0 if name == "inference.pdmodel" else 1, len(str(p)))
+              def score_param(p: Path):
+                  name = p.name.lower()
+                  return (0 if name == "inference.pdiparams" else 1, len(str(p)))
+              return (sorted(pdmodels, key=score_model)[0] if pdmodels else None,
+                      sorted(pdparams, key=score_param)[0] if pdparams else None)
+
+          def copy_metadata_files(src_root: Path, dest_root: Path):
+              copied = []
+              patterns = ["*vocab*", "*dict*", "*token*", "*json", "*.txt", "*.yml", "*.yaml"]
+              for pattern in patterns:
+                  for p in src_root.rglob(pattern):
+                      if p.is_file() and p.stat().st_size < 20 * 1024 * 1024:
+                          out = dest_root / p.name
+                          if out.exists():
+                              continue
+                          shutil.copy2(p, out)
+                          copied.append(out.name)
+              return copied
+
+          opt, opt_attempts = find_paddle_lite_opt()
+          report = {
+              "phase": PHASE,
+              "status": "UNSET",
+              "paddleLiteOptimizer": str(opt) if opt else None,
+              "optimizerDiscoveryAttempts": opt_attempts,
+              "attempts": [],
+              "selectedArtifact": None,
+          }
+
+          if not opt:
+              report["status"] = "NO_PADDLE_LITE_OPTIMIZER_BINARY_FOUND"
+              (REPORTS / "q389r8a_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+              print(json.dumps(report, indent=2))
+              raise SystemExit(1)
+
+          selected = None
+          for repo in CANDIDATE_REPOS:
+              repo_key = repo.lower().replace("/", "_").replace("-", "_")
+              model_root = WORK / repo_key / "snapshot"
+              try:
+                  local = Path(snapshot_download(
+                      repo_id=repo,
+                      repo_type="model",
+                      local_dir=str(model_root),
+                      allow_patterns=["*.pdmodel", "*.pdiparams", "*.pdparams", "__model__", "*.txt", "*.json", "*.yml", "*.yaml", "*vocab*", "*dict*", "*token*"],
+                  ))
+              except Exception as e:
+                  report["attempts"].append({"repo": repo, "stage": "snapshot_download", "passed": False, "error": repr(e)})
+                  continue
+
+              model_file, param_file = find_model_files(local)
+              if not model_file or not param_file:
+                  report["attempts"].append({
+                      "repo": repo,
+                      "stage": "locate_model_files",
+                      "passed": False,
+                      "modelFile": str(model_file) if model_file else None,
+                      "paramFile": str(param_file) if param_file else None,
+                  })
+                  continue
+
+              for optimize_out_type in [None, "naive_buffer"]:
+                  suffix = "default" if optimize_out_type is None else optimize_out_type
+                  out_base = WORK / repo_key / f"lite_{suffix}" / "formula_ocr"
+                  out_base.parent.mkdir(parents=True, exist_ok=True)
+                  cmd = [
+                      opt,
+                      f"--model_file={model_file}",
+                      f"--param_file={param_file}",
+                      f"--optimize_out={out_base}",
+                      "--valid_targets=arm",
+                  ]
+                  if optimize_out_type:
+                      cmd.append(f"--optimize_out_type={optimize_out_type}")
+                  result = run(cmd, timeout=600)
+                  nb_candidates = list(out_base.parent.glob("*.nb")) + list(out_base.parent.rglob("*.nb"))
+                  nb_candidates = sorted(set(nb_candidates), key=lambda p: p.stat().st_size if p.exists() else 0, reverse=True)
+                  nb = nb_candidates[0] if nb_candidates else None
+                  passed = result["returncode"] == 0 and nb is not None and nb.exists() and nb.stat().st_size > 1024 * 1024
+                  attempt = {
+                      "repo": repo,
+                      "stage": "paddle_lite_optimize",
+                      "passed": passed,
+                      "optimizeOutType": optimize_out_type,
+                      "modelFile": str(model_file),
+                      "paramFile": str(param_file),
+                      "optimizerResult": result,
+                      "nbFile": str(nb) if nb else None,
+                      "nbSizeBytes": nb.stat().st_size if nb and nb.exists() else 0,
+                  }
+                  report["attempts"].append(attempt)
+                  if passed:
+                      selected = {"repo": repo, "nb": nb, "modelFile": model_file, "paramFile": param_file, "optimizeOutType": optimize_out_type, "sourceRoot": local}
+                      break
+              if selected:
+                  break
+
+          if not selected:
+              report["status"] = "NO_PADDLE_LITE_NB_ARTIFACT"
+              (REPORTS / "q389r8a_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+              print(json.dumps(report, indent=2))
+              raise SystemExit(1)
+
+          nb = selected["nb"]
+          nb_out = BUNDLE / "pp_formulanet_formula_ocr.nb"
+          shutil.copy2(nb, nb_out)
+          copied_meta = copy_metadata_files(selected["sourceRoot"], BUNDLE)
+
+          model_sha = sha256_file(nb_out)
+          model_size = nb_out.stat().st_size
+          manifest = {
+              "phase": PHASE,
+              "bundleKind": "paddle-lite-native-formula-ocr-model",
+              "modelFamily": "PP-FormulaNet",
+              "sourceRepo": selected["repo"],
+              "runtime": "paddle-lite",
+              "format": "naive_buffer_nb",
+              "target": "android-arm64-v8a-via-paddle-lite-arm",
+              "model": {
+                  "fileName": nb_out.name,
+                  "sha256": model_sha,
+                  "sizeBytes": model_size,
+              },
+              "metadataFiles": copied_meta,
+              "installPolicy": {
+                  "apkBundled": False,
+                  "downloadOnly": True,
+                  "privateStorageRequired": True,
+                  "noBackend": True,
+                  "noOnlineOcrApi": True,
+                  "noFakeCandidates": True,
+              },
+              "proof": {
+                  "paddleLiteOptimizerFound": True,
+                  "paddleLiteOptimizerPath": str(opt),
+                  "optimizerProducedNb": True,
+              },
+          }
+          (BUNDLE / "q389r8a_paddle_lite_formula_ocr_bundle_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+          (BUNDLE / "q389r8a_paddle_lite_preprocess_metadata.json").write_text(json.dumps({
+              "phase": PHASE,
+              "imageLayout": "NCHW",
+              "channelOrder": "RGB",
+              "normalization": "pending_app_runtime_binding_verification",
+              "note": "Q389R8A proves native .nb acquisition only; app-side preprocessing must still be bound and verified on device.",
+          }, indent=2), encoding="utf-8")
+          report["status"] = "PADDLE_LITE_NB_ARTIFACT_READY"
+          report["selectedArtifact"] = manifest
+          (REPORTS / "q389r8a_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+          print(json.dumps(report, indent=2))
+          PY
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: q389r8a-paddle-lite-native-artifact-report-and-bundle
+          path: |
+            build/q389r8a/reports/**
+            build/q389r8a/bundle/**
+          if-no-files-found: warn
+
+      - name: Publish GitHub Release assets
+        if: ${{ success() && inputs.publish_release == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ inputs.tag_name }}
+        run: |
+          set -euxo pipefail
+          gh release delete "$TAG_NAME" --yes || true
+          git tag -f "$TAG_NAME"
+          git push -f origin "$TAG_NAME"
+          gh release create "$TAG_NAME" \
+            build/q389r8a/bundle/* \
+            build/q389r8a/reports/q389r8a_paddle_lite_artifact_report.json \
+            --title "Q389R8A Paddle Lite native Formula OCR bundle" \
+            --notes "Q389R8A publishes only when a Paddle Lite .nb artifact is produced from PP-FormulaNet and verified by the optimizer workflow. This does not claim app-side OCR PASS."
