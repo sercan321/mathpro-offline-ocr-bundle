@@ -1,4 +1,4 @@
-name: Q389R9A-R2 Advanced Formula OCR Small Bundle Quantization Probe
+name: Q389R9A-R3 Advanced Formula OCR Small Bundle Quantization Probe
 
 on:
   workflow_dispatch:
@@ -43,7 +43,7 @@ jobs:
           import sympy
           import onnxruntime as ort
           from onnxruntime.quantization import QuantType, quantize_dynamic
-          print('q389r9a-r2 dependency probe ok', sympy.__version__, ort.__version__)
+          print('q389r9a-r3 dependency probe ok', sympy.__version__, ort.__version__)
           PY
 
       - name: Quantize R8C ONNX encoder/decoder bundle and probe advanced formula capability
@@ -247,7 +247,7 @@ jobs:
               return {'sampledFiles': sampled, 'hitCount': len(hits), 'hits': hits}
 
           report = {
-              'phase': 'V172-Q389R9A-R2',
+              'phase': 'V172-Q389R9A-R3',
               'goal': 'Find a product-sized offline formula OCR model that preserves advanced formula capability: integrals, derivatives, partial derivatives, limits, sums/products, roots, and differential-equation notation.',
               'manifestUrl': manifest_url,
               'maxBundleMB': max_bundle_mb,
@@ -376,23 +376,24 @@ jobs:
                   source_paths.append(out)
           else:
               report['notes'].append('Manifest did not contain direct downloadable model URLs; falling back to GitHub release assets and extracting bundle ZIPs.')
-              # Prefer runtime/bundle ZIP assets. Avoid raw manifest/report-only assets unless no other asset exists.
-              scored_assets = []
+              # Prefer complete bundle ZIP assets when present. If the release exposes raw runtime
+              # files instead (as Q389R8C does), select every model/sidecar asset, not only .onnx.
+              zip_assets = []
+              raw_runtime_assets = []
+              ignored_assets = []
               for a in release_assets:
                   name = (a.get('name') or '').lower()
-                  score = 0
-                  if name.endswith('.zip'):
-                      score += 100
-                  if 'bundle' in name or 'runtime' in name or 'onnx' in name:
-                      score += 50
-                  if 'report' in name:
-                      score += 5
-                  if 'manifest' in name and not name.endswith('.zip'):
-                      score -= 80
-                  scored_assets.append((score, a))
-              scored_assets.sort(key=lambda x: x[0], reverse=True)
-              selected_assets = [a for score, a in scored_assets if score > 0][:3]
+                  suffix = Path(name).suffix.lower()
+                  if name.endswith('.zip') and ('bundle' in name or 'runtime' in name or 'onnx' in name):
+                      zip_assets.append(a)
+                  elif suffix in keep_exts and 'manifest' not in name and 'report' not in name and 'q389r9a' not in name:
+                      raw_runtime_assets.append(a)
+                  else:
+                      ignored_assets.append(a)
+              # If a release has a complete ZIP, use it; otherwise use the raw runtime files.
+              selected_assets = zip_assets[:2] if zip_assets else raw_runtime_assets
               report['selectedReleaseAssets'] = selected_assets
+              report['ignoredReleaseAssetNames'] = [a.get('name') for a in ignored_assets]
               asset_root = ORIGINAL / '_release_assets'
               extract_root = ORIGINAL / '_extracted_release_assets'
               asset_root.mkdir(parents=True, exist_ok=True)
@@ -414,9 +415,14 @@ jobs:
                   if out.suffix.lower() in archive_exts:
                       target = extract_root / out.stem
                       extract_zip(out, target)
+                  elif out.suffix.lower() in keep_exts:
+                      # Q389R8C publishes raw release assets (encoder.onnx, decoder_model_merged.onnx,
+                      # tokenizer/config sidecars) rather than a single ZIP. Those are valid source files.
+                      source_paths.append(out)
               extracted_files = candidate_local_files(extract_root)
+              offset = len(source_paths)
               for idx, p in enumerate(extracted_files):
-                  flat = ORIGINAL / f'{idx:02d}_{safe_name(p.name, "runtime_file.bin")}'
+                  flat = ORIGINAL / f'{idx + offset:02d}_{safe_name(p.name, "runtime_file.bin")}'
                   # Avoid copying a file onto itself.
                   if p.resolve() != flat.resolve():
                       shutil.copy2(p, flat)
@@ -525,7 +531,7 @@ jobs:
                   'sha256': sha256_file(p),
               })
           quantized_manifest = {
-              'phase': 'V172-Q389R9A-R2',
+              'phase': 'V172-Q389R9A-R3',
               'sourceManifestUrl': manifest_url,
               'bundleKind': 'advanced_formula_ocr_quantized_encoder_decoder_onnx',
               'sizePolicy': {
@@ -579,7 +585,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: q389r9a-r2-reports-and-quantized-bundle
+          name: q389r9a-r3-reports-and-quantized-bundle
           path: |
             build/q389r9a/q389r9a_reports_and_quantized_bundle.zip
             build/q389r9a/q389r9a_reports_and_quantized_bundle.zip.sha256
@@ -600,5 +606,5 @@ jobs:
           gh release create "$TAG" \
             build/q389r9a/q389r9a_reports_and_quantized_bundle.zip \
             build/q389r9a/q389r9a_reports_and_quantized_bundle.zip.sha256 \
-            --title "Q389R9A-R2 Advanced Formula OCR small runtime-ready bundle" \
-            --notes "Q389R9A-R2 produced a product-size quantized ONNX encoder/decoder formula OCR bundle. Status is QUANTIZED_ONNX_FORMULA_OCR_SMALL_ARTIFACT_READY in q389r9a_report.json."
+            --title "Q389R9A-R3 Advanced Formula OCR small runtime-ready bundle" \
+            --notes "Q389R9A-R3 produced a product-size quantized ONNX encoder/decoder formula OCR bundle. Status is QUANTIZED_ONNX_FORMULA_OCR_SMALL_ARTIFACT_READY in q389r9a_report.json."
