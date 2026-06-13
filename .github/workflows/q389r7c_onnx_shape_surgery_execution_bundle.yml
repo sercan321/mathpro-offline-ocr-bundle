@@ -1,4 +1,4 @@
-name: Q389R7C ONNX shape-surgery execution-compatible Formula OCR bundle
+name: Q389R7C R1 ONNX shape-surgery execution-compatible Formula OCR bundle
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
       release_tag:
         description: GitHub Release tag for the first execution-compatible ONNX bundle
         required: true
-        default: q389r7c-onnx-shape-surgery-execution-compatible-formula-ocr-bundle
+        default: q389r7c-r1-onnx-shape-surgery-execution-compatible-formula-ocr-bundle
       opsets:
         description: Comma-separated opsets to try
         required: true
@@ -19,8 +19,8 @@ permissions:
 jobs:
   build:
     name: Build and publish shape-surgery execution-compatible ONNX bundle
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
     steps:
       - name: Checkout MathPro source
         uses: actions/checkout@v4
@@ -34,7 +34,7 @@ jobs:
         run: |
           set -euxo pipefail
           python -m pip install --upgrade pip
-          python -m pip install --upgrade huggingface_hub numpy onnx onnxruntime paddle2onnx
+          python -m pip install huggingface_hub numpy onnx onnxruntime paddle2onnx paddlepaddle==3.0.0
 
       - name: Export candidates, perform ONNX shape surgery, and require session.run
         env:
@@ -297,7 +297,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.release_tag }}
-          name: Q389R7C ONNX shape-surgery execution-compatible Formula OCR bundle
+          name: Q389R7C R1 ONNX shape-surgery execution-compatible Formula OCR bundle
           body: |
             Q389R7C publishes only if a converted ONNX model passes a real onnxruntime session.run smoke test.
             This release is still review-first and offline-only: no backend, no ML Kit, no text OCR fallback, no fake LaTeX.
