@@ -1,4 +1,4 @@
-name: Q389R9A Advanced Formula OCR Small Bundle Quantization Probe
+name: Q389R9A-R1 Advanced Formula OCR Small Bundle Quantization Probe
 
 on:
   workflow_dispatch:
@@ -38,7 +38,13 @@ jobs:
         run: |
           set -euxo pipefail
           python -m pip install --upgrade pip
-          python -m pip install requests numpy onnx onnxruntime
+          python -m pip install requests numpy onnx onnxruntime sympy
+          python - <<'PY'
+          import sympy
+          import onnxruntime as ort
+          from onnxruntime.quantization import QuantType, quantize_dynamic
+          print('q389r9a-r1 dependency probe ok', sympy.__version__, ort.__version__)
+          PY
 
       - name: Quantize R8C ONNX encoder/decoder bundle and probe advanced formula capability
         env:
