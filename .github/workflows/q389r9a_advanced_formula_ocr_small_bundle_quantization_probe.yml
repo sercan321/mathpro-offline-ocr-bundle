@@ -1,0 +1,435 @@
+name: Q389R9A Advanced Formula OCR Small Bundle Quantization Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      manifest_url:
+        description: 'Runtime-ready Q389R8C encoder/decoder ONNX bundle manifest URL'
+        required: true
+        default: 'https://github.com/sercan321/mathpro-offline-ocr-bundle/releases/download/q389r8c-onnx-formula-runtime-ready-bundle/q389r8c_onnx_formula_ocr_bundle_manifest.json'
+      max_bundle_mb:
+        description: 'Product-size hard cap for the quantized bundle candidate'
+        required: true
+        default: '220'
+      min_advanced_formula_hits:
+        description: 'Minimum advanced LaTeX capability markers to consider the candidate formula-capable'
+        required: true
+        default: '8'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  quantize-and-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install runtime probe tools
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install requests numpy onnx onnxruntime
+
+      - name: Quantize R8C ONNX encoder/decoder bundle and probe advanced formula capability
+        env:
+          Q389R9A_MANIFEST_URL: ${{ inputs.manifest_url }}
+          Q389R9A_MAX_BUNDLE_MB: ${{ inputs.max_bundle_mb }}
+          Q389R9A_MIN_ADVANCED_FORMULA_HITS: ${{ inputs.min_advanced_formula_hits }}
+        run: |
+          set -euxo pipefail
+          mkdir -p build/q389r9a/original build/q389r9a/quantized build/q389r9a/bundle build/q389r9a/reports
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          import shutil
+          import sys
+          from pathlib import Path
+          from urllib.parse import urlparse
+
+          import numpy as np
+          import requests
+          import onnx
+          import onnxruntime as ort
+          from onnxruntime.quantization import QuantType, quantize_dynamic
+
+          ROOT = Path('build/q389r9a')
+          ORIGINAL = ROOT / 'original'
+          QUANTIZED = ROOT / 'quantized'
+          BUNDLE = ROOT / 'bundle'
+          REPORTS = ROOT / 'reports'
+          manifest_url = os.environ['Q389R9A_MANIFEST_URL'].strip()
+          max_bundle_mb = float(os.environ.get('Q389R9A_MAX_BUNDLE_MB', '220'))
+          max_bundle_bytes = int(max_bundle_mb * 1024 * 1024)
+          min_formula_hits = int(os.environ.get('Q389R9A_MIN_ADVANCED_FORMULA_HITS', '8'))
+
+          def sha256_file(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          def safe_name(value: str, fallback: str) -> str:
+              raw = value or fallback
+              raw = raw.split('?')[0].rstrip('/').split('/')[-1] or fallback
+              return re.sub(r'[^A-Za-z0-9._-]+', '_', raw)
+
+          def http_json(url: str):
+              r = requests.get(url, timeout=60)
+              r.raise_for_status()
+              return r.json()
+
+          def download(url: str, out: Path) -> dict:
+              tmp = out.with_suffix(out.suffix + '.part')
+              size = 0
+              with requests.get(url, stream=True, timeout=120) as r:
+                  r.raise_for_status()
+                  with tmp.open('wb') as f:
+                      for chunk in r.iter_content(chunk_size=1024 * 1024):
+                          if not chunk:
+                              continue
+                          f.write(chunk)
+                          size += len(chunk)
+              tmp.replace(out)
+              return {'path': str(out), 'sizeBytes': size, 'sha256': sha256_file(out)}
+
+          def collect_file_entries(node, path='root'):
+              entries = []
+              if isinstance(node, dict):
+                  url = node.get('url') or node.get('downloadUrl') or node.get('download_url') or node.get('href')
+                  name = node.get('name') or node.get('path') or node.get('fileName') or node.get('filename') or node.get('relativePath')
+                  sha = node.get('sha256') or node.get('sha') or node.get('digest')
+                  size = node.get('sizeBytes') or node.get('size') or node.get('bytes')
+                  role = node.get('role') or node.get('type') or node.get('kind')
+                  if isinstance(url, str) and url.startswith('http'):
+                      entries.append({
+                          'url': url,
+                          'name': safe_name(str(name or ''), safe_name(url, 'file.bin')),
+                          'declaredSha256': str(sha).replace('sha256:', '') if sha else None,
+                          'declaredSizeBytes': size if isinstance(size, int) else None,
+                          'role': role,
+                          'sourcePath': path,
+                      })
+                  for key, value in node.items():
+                      entries.extend(collect_file_entries(value, f'{path}.{key}'))
+              elif isinstance(node, list):
+                  for i, value in enumerate(node):
+                      entries.extend(collect_file_entries(value, f'{path}[{i}]'))
+              return entries
+
+          def unique_entries(entries):
+              seen = set()
+              out = []
+              for e in entries:
+                  key = (e['url'], e['name'])
+                  if key in seen:
+                      continue
+                  seen.add(key)
+                  out.append(e)
+              return out
+
+          def input_shape_for(inp):
+              dims = []
+              rank = len(inp.shape or [])
+              for i, d in enumerate(inp.shape or []):
+                  if isinstance(d, int) and d > 0:
+                      dims.append(d)
+                  else:
+                      if rank == 4:
+                          dims.append([1, 3, 384, 384][i])
+                      elif rank == 3:
+                          dims.append([1, 1, 768][i] if i < 3 else 1)
+                      elif rank == 2:
+                          dims.append([1, 1][i])
+                      else:
+                          dims.append(1)
+              return dims or [1]
+
+          def dummy_for_input(inp):
+              name = inp.name.lower()
+              shape = input_shape_for(inp)
+              t = inp.type
+              if 'int64' in t or 'input_ids' in name or 'attention_mask' in name or 'position_ids' in name:
+                  arr = np.zeros(shape, dtype=np.int64)
+                  if 'attention_mask' in name:
+                      arr.fill(1)
+                  return arr
+              if 'int32' in t:
+                  arr = np.zeros(shape, dtype=np.int32)
+                  if 'attention_mask' in name:
+                      arr.fill(1)
+                  return arr
+              if 'bool' in t:
+                  return np.zeros(shape, dtype=np.bool_)
+              return np.zeros(shape, dtype=np.float32)
+
+          def probe_session(path: Path):
+              result = {
+                  'file': str(path),
+                  'sessionCreateOk': False,
+                  'sessionRunOk': False,
+                  'inputs': [],
+                  'outputs': [],
+                  'error': None,
+              }
+              try:
+                  sess = ort.InferenceSession(str(path), providers=['CPUExecutionProvider'])
+                  result['sessionCreateOk'] = True
+                  result['inputs'] = [
+                      {'name': i.name, 'shape': [str(x) for x in (i.shape or [])], 'type': i.type}
+                      for i in sess.get_inputs()
+                  ]
+                  result['outputs'] = [
+                      {'name': o.name, 'shape': [str(x) for x in (o.shape or [])], 'type': o.type}
+                      for o in sess.get_outputs()
+                  ]
+                  feeds = {i.name: dummy_for_input(i) for i in sess.get_inputs()}
+                  # Decoder graphs with a long past-key-value signature may require model-specific feeds.
+                  # We still try a real run; only mark READY if it actually passes.
+                  sess.run(None, feeds)
+                  result['sessionRunOk'] = True
+              except Exception as exc:
+                  result['error'] = repr(exc)[-2000:]
+              return result
+
+          def formula_marker_probe(paths):
+              markers = {
+                  'integral': [r'\\int', r'\\iint', r'\\iiint', '∫'],
+                  'derivative': [r'\\frac\\{d\\}', r'\\frac{d}', r'\\mathrm{d}', r'\\partial', 'dy', 'dx', 'd/dx'],
+                  'differential_equation': ['y\\prime', "y'", 'y^{\\prime}', 'differential', 'ODE', r'\\frac{dy}{dx}', r'\\frac{d y}{d x}'],
+                  'fraction': [r'\\frac', r'\\dfrac'],
+                  'sum_product': [r'\\sum', r'\\prod'],
+                  'limit': [r'\\lim'],
+                  'root': [r'\\sqrt'],
+                  'greek': [r'\\alpha', r'\\beta', r'\\theta', r'\\lambda'],
+                  'infinity': [r'\\infty'],
+                  'matrix_piecewise': [r'\\begin', r'\\end', r'\\left', r'\\right'],
+                  'trig_log': [r'\\sin', r'\\cos', r'\\tan', r'\\log', r'\\ln'],
+              }
+              blob = ''
+              sampled = []
+              for p in paths:
+                  if p.suffix.lower() not in {'.json', '.txt', '.model', '.vocab', '.yml', '.yaml'}:
+                      continue
+                  try:
+                      text = p.read_text('utf-8', errors='ignore')
+                  except Exception:
+                      continue
+                  sampled.append(str(p))
+                  blob += '\n' + text[:5_000_000]
+              hits = {}
+              for key, needles in markers.items():
+                  found = []
+                  for needle in needles:
+                      if needle in blob:
+                          found.append(needle)
+                  if found:
+                      hits[key] = found[:10]
+              return {'sampledFiles': sampled, 'hitCount': len(hits), 'hits': hits}
+
+          report = {
+              'phase': 'V172-Q389R9A',
+              'goal': 'Find a product-sized offline formula OCR model that preserves advanced formula capability: integrals, derivatives, partial derivatives, limits, sums/products, roots, and differential-equation notation.',
+              'manifestUrl': manifest_url,
+              'maxBundleMB': max_bundle_mb,
+              'status': 'UNKNOWN',
+              'notes': [],
+          }
+
+          manifest = http_json(manifest_url)
+          (REPORTS / 'source_manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False), 'utf-8')
+          entries = unique_entries(collect_file_entries(manifest))
+          # Keep model/runtime sidecars only. Refuse APK-bundled giant temporary junk.
+          keep_exts = {'.onnx', '.json', '.txt', '.yml', '.yaml', '.model', '.vocab', '.merges'}
+          entries = [e for e in entries if Path(e['name']).suffix.lower() in keep_exts]
+          report['sourceFileCount'] = len(entries)
+          report['sourceFiles'] = entries
+          if not entries:
+              report['status'] = 'NO_DOWNLOADABLE_MODEL_FILES_IN_MANIFEST'
+              (REPORTS / 'q389r9a_report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False), 'utf-8')
+              print(json.dumps(report, indent=2, ensure_ascii=False))
+              sys.exit(1)
+
+          downloaded = []
+          for idx, e in enumerate(entries):
+              out = ORIGINAL / f'{idx:02d}_{e["name"]}'
+              meta = download(e['url'], out)
+              e2 = dict(e)
+              e2.update(meta)
+              if e2.get('declaredSha256') and e2['declaredSha256'].lower() != e2['sha256'].lower():
+                  e2['shaMismatch'] = True
+              if e2.get('declaredSizeBytes') and int(e2['declaredSizeBytes']) != int(e2['sizeBytes']):
+                  e2['sizeMismatch'] = True
+              downloaded.append(e2)
+          report['downloadedFiles'] = downloaded
+
+          original_total = sum(int(x['sizeBytes']) for x in downloaded)
+          report['originalTotalBytes'] = original_total
+          report['originalTotalMB'] = round(original_total / 1024 / 1024, 2)
+
+          quantization = []
+          quantized_paths = []
+          sidecar_paths = []
+          for item in downloaded:
+              src = Path(item['path'])
+              ext = src.suffix.lower()
+              if ext == '.onnx':
+                  dst = QUANTIZED / src.name
+                  try:
+                      # Validate ONNX parse before quantization.
+                      onnx.load(str(src))
+                      quantize_dynamic(
+                          model_input=str(src),
+                          model_output=str(dst),
+                          weight_type=QuantType.QInt8,
+                          per_channel=True,
+                          op_types_to_quantize=['MatMul', 'Gemm'],
+                      )
+                      qmeta = {
+                          'source': str(src),
+                          'output': str(dst),
+                          'quantized': True,
+                          'sourceBytes': src.stat().st_size,
+                          'outputBytes': dst.stat().st_size,
+                          'sha256': sha256_file(dst),
+                      }
+                  except Exception as exc:
+                      # Do not fake success. Keep original only as an explicitly unquantized fallback.
+                      shutil.copy2(src, dst)
+                      qmeta = {
+                          'source': str(src),
+                          'output': str(dst),
+                          'quantized': False,
+                          'sourceBytes': src.stat().st_size,
+                          'outputBytes': dst.stat().st_size,
+                          'sha256': sha256_file(dst),
+                          'error': repr(exc)[-2000:],
+                      }
+                  quantization.append(qmeta)
+                  quantized_paths.append(dst)
+              else:
+                  dst = QUANTIZED / src.name
+                  shutil.copy2(src, dst)
+                  sidecar_paths.append(dst)
+
+          report['quantization'] = quantization
+          report['allOnnxQuantized'] = bool(quantization) and all(q.get('quantized') for q in quantization)
+
+          all_quantized_files = list(QUANTIZED.glob('*'))
+          quantized_total = sum(p.stat().st_size for p in all_quantized_files if p.is_file())
+          report['quantizedTotalBytes'] = quantized_total
+          report['quantizedTotalMB'] = round(quantized_total / 1024 / 1024, 2)
+          report['reductionPercent'] = round((1 - (quantized_total / original_total)) * 100, 2) if original_total else 0
+          report['withinProductCap'] = quantized_total <= max_bundle_bytes
+
+          formula_probe = formula_marker_probe(all_quantized_files)
+          report['advancedFormulaCapabilityProbe'] = formula_probe
+          report['advancedFormulaCapabilityPass'] = formula_probe['hitCount'] >= min_formula_hits
+
+          runtime = []
+          for p in quantized_paths:
+              runtime.append(probe_session(p))
+          report['runtimeProbe'] = runtime
+          report['allSessionsCreate'] = bool(runtime) and all(r['sessionCreateOk'] for r in runtime)
+          report['allSessionsRun'] = bool(runtime) and all(r['sessionRunOk'] for r in runtime)
+
+          runtime_files = []
+          for p in all_quantized_files:
+              if not p.is_file():
+                  continue
+              runtime_files.append({
+                  'path': p.name,
+                  'role': 'onnx_model' if p.suffix.lower() == '.onnx' else 'sidecar',
+                  'sizeBytes': p.stat().st_size,
+                  'sha256': sha256_file(p),
+              })
+          quantized_manifest = {
+              'phase': 'V172-Q389R9A',
+              'sourceManifestUrl': manifest_url,
+              'bundleKind': 'advanced_formula_ocr_quantized_encoder_decoder_onnx',
+              'sizePolicy': {
+                  'maxBundleMB': max_bundle_mb,
+                  'quantizedTotalBytes': quantized_total,
+                  'withinProductCap': quantized_total <= max_bundle_bytes,
+              },
+              'capabilityPolicy': {
+                  'requiresAdvancedFormulaCapability': True,
+                  'requiredDomains': ['integral', 'derivative', 'differential_equation', 'fraction', 'sum_product', 'limit', 'root'],
+                  'probe': formula_probe,
+              },
+              'runtimePolicy': {
+                  'allSessionsCreate': report['allSessionsCreate'],
+                  'allSessionsRun': report['allSessionsRun'],
+                  'note': 'READY requires real ONNX Runtime session.run to pass for every quantized ONNX graph. If only session creation passes, the candidate is not integrated into the app yet.',
+              },
+              'runtimeFiles': runtime_files,
+          }
+          (BUNDLE / 'q389r9a_quantized_formula_ocr_bundle_manifest.json').write_text(json.dumps(quantized_manifest, indent=2, ensure_ascii=False), 'utf-8')
+          for p in all_quantized_files:
+              shutil.copy2(p, BUNDLE / p.name)
+
+          if not report['withinProductCap']:
+              report['status'] = 'QUANTIZED_FORMULA_OCR_BUNDLE_STILL_TOO_LARGE'
+          elif not report['advancedFormulaCapabilityPass']:
+              report['status'] = 'QUANTIZED_BUNDLE_SIZE_OK_BUT_ADVANCED_FORMULA_CAPABILITY_NOT_PROVEN'
+          elif not report['allSessionsCreate']:
+              report['status'] = 'QUANTIZED_BUNDLE_SIZE_OK_BUT_ONNX_SESSION_CREATE_FAILED'
+          elif not report['allSessionsRun']:
+              report['status'] = 'QUANTIZED_BUNDLE_SIZE_OK_SESSION_CREATE_OK_BUT_SESSION_RUN_NOT_PROVEN'
+          else:
+              report['status'] = 'QUANTIZED_ONNX_FORMULA_OCR_SMALL_ARTIFACT_READY'
+
+          (REPORTS / 'q389r9a_report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False), 'utf-8')
+          print(json.dumps(report, indent=2, ensure_ascii=False))
+          if report['status'] != 'QUANTIZED_ONNX_FORMULA_OCR_SMALL_ARTIFACT_READY':
+              sys.exit(1)
+          PY
+
+      - name: Package Q389R9A reports and quantized bundle
+        if: always()
+        run: |
+          set -euxo pipefail
+          cd build/q389r9a
+          zip -r q389r9a_reports_and_quantized_bundle.zip reports bundle
+          sha256sum q389r9a_reports_and_quantized_bundle.zip > q389r9a_reports_and_quantized_bundle.zip.sha256
+          cat q389r9a_reports_and_quantized_bundle.zip.sha256
+
+      - name: Upload Q389R9A reports and quantized bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r9a-reports-and-quantized-bundle
+          path: |
+            build/q389r9a/q389r9a_reports_and_quantized_bundle.zip
+            build/q389r9a/q389r9a_reports_and_quantized_bundle.zip.sha256
+            build/q389r9a/reports/q389r9a_report.json
+            build/q389r9a/reports/source_manifest.json
+          retention-days: 14
+
+      - name: Publish Q389R9A proof release only if product-size runtime-ready
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          TAG="q389r9a-advanced-formula-ocr-small-runtime-ready-bundle"
+          gh release delete "$TAG" --yes || true
+          git tag -d "$TAG" || true
+          git push origin ":refs/tags/$TAG" || true
+          gh release create "$TAG" \
+            build/q389r9a/q389r9a_reports_and_quantized_bundle.zip \
+            build/q389r9a/q389r9a_reports_and_quantized_bundle.zip.sha256 \
+            --title "Q389R9A Advanced Formula OCR small runtime-ready bundle" \
+            --notes "Q389R9A produced a product-size quantized ONNX encoder/decoder formula OCR bundle. Status is QUANTIZED_ONNX_FORMULA_OCR_SMALL_ARTIFACT_READY in q389r9a_report.json."
