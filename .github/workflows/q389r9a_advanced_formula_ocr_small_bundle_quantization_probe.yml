@@ -1,4 +1,4 @@
-name: Q389R9A-R1 Advanced Formula OCR Small Bundle Quantization Probe
+name: Q389R9A-R2 Advanced Formula OCR Small Bundle Quantization Probe
 
 on:
   workflow_dispatch:
@@ -43,7 +43,7 @@ jobs:
           import sympy
           import onnxruntime as ort
           from onnxruntime.quantization import QuantType, quantize_dynamic
-          print('q389r9a-r1 dependency probe ok', sympy.__version__, ort.__version__)
+          print('q389r9a-r2 dependency probe ok', sympy.__version__, ort.__version__)
           PY
 
       - name: Quantize R8C ONNX encoder/decoder bundle and probe advanced formula capability
@@ -51,6 +51,7 @@ jobs:
           Q389R9A_MANIFEST_URL: ${{ inputs.manifest_url }}
           Q389R9A_MAX_BUNDLE_MB: ${{ inputs.max_bundle_mb }}
           Q389R9A_MIN_ADVANCED_FORMULA_HITS: ${{ inputs.min_advanced_formula_hits }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euxo pipefail
           mkdir -p build/q389r9a/original build/q389r9a/quantized build/q389r9a/bundle build/q389r9a/reports
@@ -246,7 +247,7 @@ jobs:
               return {'sampledFiles': sampled, 'hitCount': len(hits), 'hits': hits}
 
           report = {
-              'phase': 'V172-Q389R9A',
+              'phase': 'V172-Q389R9A-R2',
               'goal': 'Find a product-sized offline formula OCR model that preserves advanced formula capability: integrals, derivatives, partial derivatives, limits, sums/products, roots, and differential-equation notation.',
               'manifestUrl': manifest_url,
               'maxBundleMB': max_bundle_mb,
@@ -254,41 +255,203 @@ jobs:
               'notes': [],
           }
 
+          keep_exts = {'.onnx', '.json', '.txt', '.yml', '.yaml', '.model', '.vocab', '.merges'}
+          archive_exts = {'.zip'}
+
+          def github_headers():
+              token = os.environ.get('GITHUB_TOKEN', '').strip()
+              headers = {'Accept': 'application/vnd.github+json'}
+              if token:
+                  headers['Authorization'] = f'Bearer {token}'
+              return headers
+
+          def infer_github_release(url: str):
+              parsed = urlparse(url)
+              parts = parsed.path.strip('/').split('/')
+              # /OWNER/REPO/releases/download/TAG/ASSET
+              if len(parts) >= 6 and parts[2] == 'releases' and parts[3] == 'download':
+                  return {'owner': parts[0], 'repo': parts[1], 'tag': parts[4]}
+              return None
+
+          def github_release_assets(release_info):
+              if not release_info:
+                  return []
+              api = f"https://api.github.com/repos/{release_info['owner']}/{release_info['repo']}/releases/tags/{release_info['tag']}"
+              r = requests.get(api, headers=github_headers(), timeout=60)
+              r.raise_for_status()
+              payload = r.json()
+              assets = []
+              for asset in payload.get('assets', []) or []:
+                  url = asset.get('browser_download_url')
+                  name = asset.get('name') or safe_name(url or '', 'asset.bin')
+                  if not url:
+                      continue
+                  assets.append({
+                      'name': name,
+                      'url': url,
+                      'sizeBytes': asset.get('size'),
+                      'sha256': (asset.get('digest') or '').replace('sha256:', '') or None,
+                  })
+              return assets
+
+          def download_with_optional_headers(url: str, out: Path) -> dict:
+              tmp = out.with_suffix(out.suffix + '.part')
+              size = 0
+              headers = github_headers() if 'github.com/' in url or 'api.github.com/' in url else {}
+              with requests.get(url, stream=True, timeout=120, headers=headers) as r:
+                  r.raise_for_status()
+                  with tmp.open('wb') as f:
+                      for chunk in r.iter_content(chunk_size=1024 * 1024):
+                          if not chunk:
+                              continue
+                          f.write(chunk)
+                          size += len(chunk)
+              tmp.replace(out)
+              return {'path': str(out), 'sizeBytes': size, 'sha256': sha256_file(out)}
+
+          def extract_zip(zip_path: Path, target: Path):
+              import zipfile
+              target.mkdir(parents=True, exist_ok=True)
+              with zipfile.ZipFile(zip_path) as zf:
+                  zf.extractall(target)
+
+          def candidate_local_files(root: Path):
+              preferred_roots = [p for p in root.rglob('bundle') if p.is_dir()]
+              search_roots = preferred_roots or [root]
+              files = []
+              for base in search_roots:
+                  for p in base.rglob('*'):
+                      if not p.is_file():
+                          continue
+                      suffix = p.suffix.lower()
+                      if suffix not in keep_exts:
+                          continue
+                      rel = p.relative_to(root).as_posix().lower()
+                      # Reports are evidence, not runtime files. Keep actual model sidecars only.
+                      if '/reports/' in f'/{rel}' or rel.startswith('reports/'):
+                          continue
+                      if 'q389r9a_report' in p.name.lower() or 'source_manifest' in p.name.lower():
+                          continue
+                      files.append(p)
+              # If preferred bundle root yielded nothing, fall back to all supported files.
+              if not files:
+                  for p in root.rglob('*'):
+                      if p.is_file() and p.suffix.lower() in keep_exts:
+                          files.append(p)
+              # Deduplicate by absolute path.
+              seen = set()
+              out = []
+              for p in files:
+                  if p.resolve() in seen:
+                      continue
+                  seen.add(p.resolve())
+                  out.append(p)
+              return out
+
           manifest = http_json(manifest_url)
           (REPORTS / 'source_manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False), 'utf-8')
           entries = unique_entries(collect_file_entries(manifest))
-          # Keep model/runtime sidecars only. Refuse APK-bundled giant temporary junk.
-          keep_exts = {'.onnx', '.json', '.txt', '.yml', '.yaml', '.model', '.vocab', '.merges'}
           entries = [e for e in entries if Path(e['name']).suffix.lower() in keep_exts]
-          report['sourceFileCount'] = len(entries)
-          report['sourceFiles'] = entries
-          if not entries:
-              report['status'] = 'NO_DOWNLOADABLE_MODEL_FILES_IN_MANIFEST'
+          release_info = infer_github_release(manifest_url)
+          release_assets = github_release_assets(release_info)
+          report['manifestDirectFileCount'] = len(entries)
+          report['releaseInfo'] = release_info
+          report['releaseAssetCount'] = len(release_assets)
+          report['releaseAssets'] = [{k: a.get(k) for k in ('name', 'sizeBytes', 'sha256', 'url')} for a in release_assets[:50]]
+
+          downloaded = []
+          source_paths = []
+
+          if entries:
+              for idx, e in enumerate(entries):
+                  out = ORIGINAL / f'{idx:02d}_{e["name"]}'
+                  meta = download_with_optional_headers(e['url'], out)
+                  e2 = dict(e)
+                  e2.update(meta)
+                  if e2.get('declaredSha256') and e2['declaredSha256'].lower() != e2['sha256'].lower():
+                      e2['shaMismatch'] = True
+                  if e2.get('declaredSizeBytes') and int(e2['declaredSizeBytes']) != int(e2['sizeBytes']):
+                      e2['sizeMismatch'] = True
+                  downloaded.append(e2)
+                  source_paths.append(out)
+          else:
+              report['notes'].append('Manifest did not contain direct downloadable model URLs; falling back to GitHub release assets and extracting bundle ZIPs.')
+              # Prefer runtime/bundle ZIP assets. Avoid raw manifest/report-only assets unless no other asset exists.
+              scored_assets = []
+              for a in release_assets:
+                  name = (a.get('name') or '').lower()
+                  score = 0
+                  if name.endswith('.zip'):
+                      score += 100
+                  if 'bundle' in name or 'runtime' in name or 'onnx' in name:
+                      score += 50
+                  if 'report' in name:
+                      score += 5
+                  if 'manifest' in name and not name.endswith('.zip'):
+                      score -= 80
+                  scored_assets.append((score, a))
+              scored_assets.sort(key=lambda x: x[0], reverse=True)
+              selected_assets = [a for score, a in scored_assets if score > 0][:3]
+              report['selectedReleaseAssets'] = selected_assets
+              asset_root = ORIGINAL / '_release_assets'
+              extract_root = ORIGINAL / '_extracted_release_assets'
+              asset_root.mkdir(parents=True, exist_ok=True)
+              extract_root.mkdir(parents=True, exist_ok=True)
+              for idx, a in enumerate(selected_assets):
+                  name = safe_name(a['name'], f'asset_{idx}.bin')
+                  out = asset_root / f'{idx:02d}_{name}'
+                  meta = download_with_optional_headers(a['url'], out)
+                  downloaded.append({
+                      'url': a['url'],
+                      'name': name,
+                      'path': str(out),
+                      'sizeBytes': meta['sizeBytes'],
+                      'sha256': meta['sha256'],
+                      'declaredSizeBytes': a.get('sizeBytes'),
+                      'declaredSha256': a.get('sha256'),
+                      'sourcePath': 'github_release_asset_fallback',
+                  })
+                  if out.suffix.lower() in archive_exts:
+                      target = extract_root / out.stem
+                      extract_zip(out, target)
+              extracted_files = candidate_local_files(extract_root)
+              for idx, p in enumerate(extracted_files):
+                  flat = ORIGINAL / f'{idx:02d}_{safe_name(p.name, "runtime_file.bin")}'
+                  # Avoid copying a file onto itself.
+                  if p.resolve() != flat.resolve():
+                      shutil.copy2(p, flat)
+                  source_paths.append(flat)
+
+          if not source_paths:
+              report['status'] = 'NO_DOWNLOADABLE_MODEL_FILES_IN_MANIFEST_OR_RELEASE_ASSETS'
+              report['sourceFileCount'] = 0
+              report['sourceFiles'] = []
+              report['downloadedFiles'] = downloaded
               (REPORTS / 'q389r9a_report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False), 'utf-8')
               print(json.dumps(report, indent=2, ensure_ascii=False))
               sys.exit(1)
 
-          downloaded = []
-          for idx, e in enumerate(entries):
-              out = ORIGINAL / f'{idx:02d}_{e["name"]}'
-              meta = download(e['url'], out)
-              e2 = dict(e)
-              e2.update(meta)
-              if e2.get('declaredSha256') and e2['declaredSha256'].lower() != e2['sha256'].lower():
-                  e2['shaMismatch'] = True
-              if e2.get('declaredSizeBytes') and int(e2['declaredSizeBytes']) != int(e2['sizeBytes']):
-                  e2['sizeMismatch'] = True
-              downloaded.append(e2)
+          downloaded_runtime_files = []
+          for p in source_paths:
+              downloaded_runtime_files.append({
+                  'path': str(p),
+                  'name': p.name,
+                  'sizeBytes': p.stat().st_size,
+                  'sha256': sha256_file(p),
+                  'role': 'onnx_model' if p.suffix.lower() == '.onnx' else 'sidecar',
+              })
+          report['sourceFileCount'] = len(downloaded_runtime_files)
+          report['sourceFiles'] = downloaded_runtime_files
           report['downloadedFiles'] = downloaded
 
-          original_total = sum(int(x['sizeBytes']) for x in downloaded)
+          original_total = sum(int(x['sizeBytes']) for x in downloaded_runtime_files)
           report['originalTotalBytes'] = original_total
           report['originalTotalMB'] = round(original_total / 1024 / 1024, 2)
 
           quantization = []
           quantized_paths = []
           sidecar_paths = []
-          for item in downloaded:
+          for item in downloaded_runtime_files:
               src = Path(item['path'])
               ext = src.suffix.lower()
               if ext == '.onnx':
@@ -362,7 +525,7 @@ jobs:
                   'sha256': sha256_file(p),
               })
           quantized_manifest = {
-              'phase': 'V172-Q389R9A',
+              'phase': 'V172-Q389R9A-R2',
               'sourceManifestUrl': manifest_url,
               'bundleKind': 'advanced_formula_ocr_quantized_encoder_decoder_onnx',
               'sizePolicy': {
@@ -416,7 +579,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: q389r9a-reports-and-quantized-bundle
+          name: q389r9a-r2-reports-and-quantized-bundle
           path: |
             build/q389r9a/q389r9a_reports_and_quantized_bundle.zip
             build/q389r9a/q389r9a_reports_and_quantized_bundle.zip.sha256
@@ -437,5 +600,5 @@ jobs:
           gh release create "$TAG" \
             build/q389r9a/q389r9a_reports_and_quantized_bundle.zip \
             build/q389r9a/q389r9a_reports_and_quantized_bundle.zip.sha256 \
-            --title "Q389R9A Advanced Formula OCR small runtime-ready bundle" \
-            --notes "Q389R9A produced a product-size quantized ONNX encoder/decoder formula OCR bundle. Status is QUANTIZED_ONNX_FORMULA_OCR_SMALL_ARTIFACT_READY in q389r9a_report.json."
+            --title "Q389R9A-R2 Advanced Formula OCR small runtime-ready bundle" \
+            --notes "Q389R9A-R2 produced a product-size quantized ONNX encoder/decoder formula OCR bundle. Status is QUANTIZED_ONNX_FORMULA_OCR_SMALL_ARTIFACT_READY in q389r9a_report.json."
