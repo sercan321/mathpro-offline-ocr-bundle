@@ -1,4 +1,4 @@
-name: Q389R8A R2 Paddle Lite optimizer source-build Formula OCR artifact proof bundle
+name: Q389R8A R3 Paddle Lite PIR/static model optimizer probe bundle
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
       tag_name:
         description: "Release tag for the Paddle Lite bundle"
         required: true
-        default: "q389r8a-r2-paddle-lite-native-formula-ocr-bundle"
+        default: "q389r8a-r3-paddle-lite-pir-static-model-probe-bundle"
 
 permissions:
   contents: write
@@ -47,7 +47,7 @@ jobs:
       - name: Acquire PP-FormulaNet and require Paddle Lite .nb artifact
         run: |
           set -euxo pipefail
-          mkdir -p build/q389r8a_r2/work build/q389r8a_r2/reports build/q389r8a_r2/bundle
+          mkdir -p build/q389r8a_r3/work build/q389r8a_r3/reports build/q389r8a_r3/bundle
           python - <<'PY'
           import json
           import os
@@ -60,8 +60,8 @@ jobs:
           import requests
           from huggingface_hub import snapshot_download
 
-          PHASE = "V172-Q389R8A-R2"
-          ROOT = Path("build/q389r8a_r2").resolve()
+          PHASE = "V172-Q389R8A-R3"
+          ROOT = Path("build/q389r8a_r3").resolve()
           WORK = ROOT / "work"
           REPORTS = ROOT / "reports"
           BUNDLE = ROOT / "bundle"
@@ -249,18 +249,40 @@ jobs:
               return None, attempts
 
           def find_model_files(model_dir: Path):
-              pdmodels = list(model_dir.rglob("*.pdmodel")) + list(model_dir.rglob("__model__"))
+              # PP-FormulaNet HF repos currently expose Paddle 3/PIR-style `inference.json`
+              # plus `inference.pdiparams`, not always legacy `inference.pdmodel`.
+              # R8A-R2 proved optimizer discovery, but failed because `.pdmodel` was absent.
+              model_candidates = []
+              model_candidates.extend(model_dir.rglob("*.pdmodel"))
+              model_candidates.extend(model_dir.rglob("__model__"))
+              model_candidates.extend(model_dir.rglob("inference.json"))
+              model_candidates.extend(model_dir.rglob("model.json"))
+              # Keep generic json candidates as a last-resort probe only; tokenizer/config json should lose by score.
+              model_candidates.extend([p for p in model_dir.rglob("*.json") if p.name.lower() not in {"config.json", "tokenizer_config.json", "special_tokens_map.json"}])
               pdparams = list(model_dir.rglob("*.pdiparams")) + list(model_dir.rglob("*.pdparams"))
               def score_model(p: Path):
                   name = p.name.lower()
                   parent = p.parent.name.lower()
-                  return (0 if name == "inference.pdmodel" else 1, 0 if "inference" in parent else 1, len(str(p)))
+                  legacy = 0 if name == "inference.pdmodel" else 1
+                  pir = 0 if name == "inference.json" else 1
+                  modelish = 0 if "model" in name or "inference" in name or name == "__model__" else 1
+                  parent_score = 0 if "inference" in parent else 1
+                  return (legacy, pir, modelish, parent_score, len(str(p)))
               def score_param(p: Path):
                   name = p.name.lower()
                   parent = p.parent.name.lower()
                   return (0 if name == "inference.pdiparams" else 1, 0 if "inference" in parent else 1, len(str(p)))
-              return (sorted(pdmodels, key=score_model)[0] if pdmodels else None,
+              return (sorted(set(model_candidates), key=score_model)[0] if model_candidates else None,
                       sorted(pdparams, key=score_param)[0] if pdparams else None)
+
+          def summarize_snapshot_files(root: Path):
+              rows = []
+              for p in sorted([x for x in root.rglob("*") if x.is_file()], key=lambda x: str(x)):
+                  try:
+                      rows.append({"path": str(p.relative_to(root)), "sizeBytes": p.stat().st_size})
+                  except Exception:
+                      rows.append({"path": str(p), "sizeBytes": None})
+              return rows[:200]
 
           def copy_metadata_files(src_root: Path, dest_root: Path):
               copied = []
@@ -297,7 +319,7 @@ jobs:
 
           if not opt:
               report["status"] = "NO_PADDLE_LITE_OPTIMIZER_BINARY_FOUND"
-              (REPORTS / "q389r8a_r2_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+              (REPORTS / "q389r8a_r3_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
               print(json.dumps(report, indent=2))
               raise SystemExit(1)
 
@@ -324,12 +346,13 @@ jobs:
                       "passed": False,
                       "modelFile": str(model_file) if model_file else None,
                       "paramFile": str(param_file) if param_file else None,
+                      "snapshotFiles": summarize_snapshot_files(local),
                   })
                   continue
 
               model_dir = model_file.parent
               command_variants = []
-              for valid_target in [None, "arm"]:
+              for valid_target in [None, "arm", "x86"]:
                   for use_model_dir in [True, False]:
                       for optimize_out_type in ["naive_buffer", None]:
                           suffix = f"{'dir' if use_model_dir else 'files'}_{optimize_out_type or 'default'}_{valid_target or 'no_target'}"
@@ -357,6 +380,8 @@ jobs:
                       "passed": passed,
                       "variant": suffix,
                       "modelFile": str(model_file),
+                      "modelFileName": model_file.name,
+                      "modelFormatGuess": "pir_json" if model_file.suffix.lower() == ".json" else "legacy_paddle_static",
                       "paramFile": str(param_file),
                       "modelDir": str(model_dir),
                       "optimizerResult": result,
@@ -372,7 +397,7 @@ jobs:
 
           if not selected:
               report["status"] = "NO_PADDLE_LITE_NB_ARTIFACT"
-              (REPORTS / "q389r8a_r2_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+              (REPORTS / "q389r8a_r3_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
               print(json.dumps(report, indent=2))
               raise SystemExit(1)
 
@@ -412,8 +437,8 @@ jobs:
                   "optimizerVariant": selected["variant"],
               },
           }
-          (BUNDLE / "q389r8a_r1_paddle_lite_formula_ocr_bundle_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-          (BUNDLE / "q389r8a_r1_paddle_lite_preprocess_metadata.json").write_text(json.dumps({
+          (BUNDLE / "q389r8a_r3_paddle_lite_formula_ocr_bundle_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+          (BUNDLE / "q389r8a_r3_paddle_lite_preprocess_metadata.json").write_text(json.dumps({
               "phase": PHASE,
               "imageLayout": "NCHW",
               "channelOrder": "RGB",
@@ -422,7 +447,7 @@ jobs:
           }, indent=2), encoding="utf-8")
           report["status"] = "PADDLE_LITE_NB_ARTIFACT_READY"
           report["selectedArtifact"] = manifest
-          (REPORTS / "q389r8a_r2_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+          (REPORTS / "q389r8a_r3_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
           print(json.dumps(report, indent=2))
           PY
 
@@ -430,10 +455,10 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: q389r8a-r1-paddle-lite-native-artifact-report-and-bundle
+          name: q389r8a-r3-paddle-lite-pir-static-artifact-report-and-bundle
           path: |
-            build/q389r8a_r2/reports/**
-            build/q389r8a_r2/bundle/**
+            build/q389r8a_r3/reports/**
+            build/q389r8a_r3/bundle/**
           if-no-files-found: warn
 
       - name: Publish GitHub Release assets
@@ -447,7 +472,7 @@ jobs:
           git tag -f "$TAG_NAME"
           git push -f origin "$TAG_NAME"
           gh release create "$TAG_NAME" \
-            build/q389r8a_r2/bundle/* \
-            build/q389r8a_r2/reports/q389r8a_r2_paddle_lite_artifact_report.json \
-            --title "Q389R8A-R1 Paddle Lite native Formula OCR bundle" \
-            --notes "Q389R8A-R1 publishes only when a Paddle Lite .nb artifact is produced from PP-FormulaNet and verified by the optimizer workflow. This does not claim app-side OCR PASS."
+            build/q389r8a_r3/bundle/* \
+            build/q389r8a_r3/reports/q389r8a_r3_paddle_lite_artifact_report.json \
+            --title "Q389R8A-R3 Paddle Lite PIR/static model probe bundle" \
+            --notes "Q389R8A-R3 publishes only when a Paddle Lite .nb artifact is produced from PP-FormulaNet and verified by the optimizer workflow. This does not claim app-side OCR PASS."
