@@ -1,0 +1,319 @@
+name: Q389R11D RapidLaTeXOCR Downloadable Bundle Manifest
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_bundle_mb:
+        description: 'Product cap in MiB'
+        required: true
+        default: '220'
+      ideal_bundle_mb:
+        description: 'Ideal target in MiB'
+        required: true
+        default: '150'
+      strict_exit:
+        description: 'Exit non-zero when bundle contract is not acceptable'
+        required: true
+        default: 'true'
+      release_base_url:
+        description: 'RapidLaTeXOCR model release base URL'
+        required: true
+        default: 'https://github.com/RapidAI/RapidLaTeXOCR/releases/download/v0.0.0'
+
+jobs:
+  rapidlatexocr_downloadable_bundle_manifest:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout workflow repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Generate Q389R11D downloadable bundle manifest
+        env:
+          MAX_BUNDLE_MB: ${{ inputs.max_bundle_mb }}
+          IDEAL_BUNDLE_MB: ${{ inputs.ideal_bundle_mb }}
+          STRICT_EXIT: ${{ inputs.strict_exit }}
+          RELEASE_BASE_URL: ${{ inputs.release_base_url }}
+        run: |
+          cat > q389r11d_manifest_builder.py <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          import time
+          import traceback
+          import urllib.request
+          from pathlib import Path
+
+          def mb(n):
+              return round(float(n) / 1024.0 / 1024.0, 4)
+
+          def sha256_file(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open("rb") as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          def download(url: str, dst: Path):
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              with urllib.request.urlopen(url, timeout=120) as response:
+                  with dst.open("wb") as f:
+                      while True:
+                          chunk = response.read(1024 * 1024)
+                          if not chunk:
+                              break
+                          f.write(chunk)
+
+          max_bundle_mb = float(os.environ.get("MAX_BUNDLE_MB", "220"))
+          ideal_bundle_mb = float(os.environ.get("IDEAL_BUNDLE_MB", "150"))
+          strict_exit = os.environ.get("STRICT_EXIT", "true").lower() == "true"
+          release_base_url = os.environ.get("RELEASE_BASE_URL", "https://github.com/RapidAI/RapidLaTeXOCR/releases/download/v0.0.0").rstrip("/")
+
+          files = [
+              {
+                  "logical_name": "image_resizer",
+                  "file_name": "image_resizer.onnx",
+                  "role": "image preprocessing / resizing ONNX stage",
+                  "required": True,
+              },
+              {
+                  "logical_name": "encoder",
+                  "file_name": "encoder.onnx",
+                  "role": "formula image encoder ONNX stage",
+                  "required": True,
+              },
+              {
+                  "logical_name": "decoder",
+                  "file_name": "decoder.onnx",
+                  "role": "autoregressive LaTeX decoder ONNX stage",
+                  "required": True,
+              },
+              {
+                  "logical_name": "tokenizer",
+                  "file_name": "tokenizer.json",
+                  "role": "LaTeX token vocabulary / tokenizer",
+                  "required": True,
+              },
+          ]
+
+          out_dir = Path("q389r11d_bundle")
+          model_dir = out_dir / "models"
+          report_path = out_dir / "q389r11d_report.json"
+          manifest_path = out_dir / "rapidlatexocr_bundle_manifest.json"
+          contract_path = out_dir / "MATHPRO_RAPIDLATEXOCR_INTEGRATION_CONTRACT.md"
+
+          report = {
+              "phase": "Q389R11D",
+              "title": "RapidLaTeXOCR Downloadable Bundle Manifest",
+              "purpose": "Create a download-only model bundle manifest with URL, SHA256, size, role, and MathPro integration contract.",
+              "hard_rules": [
+                  "This is not Android runtime/device PASS.",
+                  "Do not embed this model bundle inside the base APK/AAB.",
+                  "The app must download files into app-private storage and verify SHA256 before enabling offline formula OCR.",
+                  "OCR output must go to review surface first, not directly into workspace.",
+                  "No fake OCR candidate is allowed; if runtime decode fails, report unavailable/error state."
+              ],
+              "inputs": {
+                  "max_bundle_mb": max_bundle_mb,
+                  "ideal_bundle_mb": ideal_bundle_mb,
+                  "strict_exit": strict_exit,
+                  "release_base_url": release_base_url,
+              },
+              "files": [],
+              "failures": [],
+              "summary_status": "UNKNOWN",
+          }
+
+          t0 = time.perf_counter()
+          total_size = 0
+
+          try:
+              for item in files:
+                  url = f"{release_base_url}/{item['file_name']}"
+                  dst = model_dir / item["file_name"]
+                  started = time.perf_counter()
+                  download(url, dst)
+                  elapsed = round(time.perf_counter() - started, 4)
+                  size = dst.stat().st_size
+                  total_size += size
+                  file_record = {
+                      **item,
+                      "source_url": url,
+                      "bundle_relative_path": f"models/{item['file_name']}",
+                      "size_bytes": size,
+                      "size_mib": mb(size),
+                      "sha256": sha256_file(dst),
+                      "download_seconds": elapsed,
+                  }
+                  report["files"].append(file_record)
+          except Exception as e:
+              report["summary_status"] = "RAPIDLATEXOCR_BUNDLE_DOWNLOAD_OR_HASH_FAILED"
+              report["failures"].append({
+                  "stage": "download_or_hash",
+                  "error": repr(e),
+                  "traceback": traceback.format_exc(),
+              })
+
+          total_mib = mb(total_size)
+          report["bundle_summary"] = {
+              "file_count": len(report["files"]),
+              "required_file_count": len([f for f in files if f["required"]]),
+              "total_size_bytes": total_size,
+              "total_size_mib": total_mib,
+              "within_product_cap": total_mib <= max_bundle_mb,
+              "within_ideal_target": total_mib <= ideal_bundle_mb,
+              "all_required_present": len(report["files"]) == len(files),
+          }
+
+          manifest = {
+              "schema": "mathpro.rapidlatexocr.bundle.v1",
+              "phase": "Q389R11D",
+              "bundle_id": "rapidlatexocr_v0_0_0_onnx_bundle",
+              "bundle_version": "0.0.0",
+              "model_family": "RapidLaTeXOCR",
+              "runtime_family": "ONNX Runtime",
+              "release_base_url": release_base_url,
+              "download_policy": {
+                  "embed_in_base_apk": False,
+                  "storage": "app_private_files_dir",
+                  "enable_only_after_sha256_verification": True,
+                  "allow_redownload": True,
+                  "delete_corrupt_partial_files": True,
+                  "network_required_for_download_only": True,
+                  "inference_after_download": "offline_on_device",
+              },
+              "recommended_preprocessing_preset_from_q389r11c_r1": {
+                  "name": "small_font_pad32",
+                  "source": "Q389R11C-R1 synthetic preprocessing grid",
+                  "app_camera_equivalent": {
+                      "crop": "formula_bbox_with_no_aggressive_autocrop",
+                      "padding_px_equivalent": 32,
+                      "contrast": 1.0,
+                      "threshold": None,
+                      "scale": 1.0,
+                      "rotation_correction": "deskew only when confident",
+                      "blur": "none",
+                      "background": "white_or_high_luminance",
+                      "notes": [
+                          "Avoid over-scaling; R11C showed large scale presets can hallucinate symbols.",
+                          "Avoid camera-like blur before model input unless a later real-device probe proves it helps.",
+                          "Use review surface because sum/log-trig/edge cases may still need user correction."
+                      ]
+                  }
+              },
+              "quality_gate_history": {
+                  "q389r11a": "runtime sample candidate ready, not MathPro quality PASS",
+                  "q389r11b_r2": "MathPro synthetic golden partial promising, preprocessing required",
+                  "q389r11c_r1": "preprocessing grid found useful/strong synthetic preset, not device PASS",
+              },
+              "files": report["files"],
+              "bundle_summary": report["bundle_summary"],
+              "license_notice": {
+                  "package_metadata_observed_in_ci": "Apache-2.0",
+                  "must_ship_notices": True,
+                  "must_review_upstream_license_before_store_release": True,
+              },
+          }
+
+          out_dir.mkdir(parents=True, exist_ok=True)
+          manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+
+          contract = f"""# Q389R11D — MathPro RapidLaTeXOCR Downloadable Bundle Integration Contract
+
+          ## Status
+
+          This artifact defines the downloadable model bundle contract only.
+
+          It is **not**:
+          - Android runtime PASS
+          - Flutter app integration PASS
+          - real camera end-to-end OCR PASS
+          - APK/AAB size PASS
+
+          ## Required files
+
+          | File | Role | Size MiB | SHA256 |
+          | --- | --- | ---: | --- |
+          """ + "\n".join(
+              f"| `{f['file_name']}` | {f['role']} | {f['size_mib']} | `{f['sha256']}` |"
+              for f in report["files"]
+          ) + f"""
+
+          ## Bundle summary
+
+          - Total size: **{total_mib} MiB**
+          - Product cap: **{max_bundle_mb} MiB**
+          - Ideal target: **{ideal_bundle_mb} MiB**
+          - Within product cap: **{report['bundle_summary']['within_product_cap']}**
+          - Within ideal target: **{report['bundle_summary']['within_ideal_target']}**
+
+          ## App integration rules
+
+          1. The base APK/AAB must not contain these ONNX files.
+          2. The app downloads the files only after the user taps the model download action.
+          3. Files are stored in app-private storage.
+          4. Every file must be SHA256 verified before enabling OCR.
+          5. A corrupt or partial file must be deleted and re-downloaded.
+          6. OCR must remain disabled until all required files are present and verified.
+          7. OCR output must go to review surface first.
+          8. No fake OCR fallback is allowed.
+          9. If model load/inference fails, the UI must show a real unavailable/error state.
+          10. Review-to-workspace import must only use actual decoded LaTeX from the model.
+
+          ## Recommended preprocessing preset from Q389R11C-R1
+
+          - name: `small_font_pad32`
+          - camera equivalent: formula crop with roughly 32 px safe padding
+          - no aggressive threshold by default
+          - no blur by default
+          - no over-scale by default
+          - deskew only when confidence is high
+
+          ## Next phase
+
+          Q389R11E should integrate this manifest into the Flutter/Android download registry without changing solver, keyboard, graph, MathLive caret, MORE tray, history, splash, or unrelated UI behavior.
+          """
+
+          contract_path.write_text("\n".join(line.strip() for line in contract.splitlines()), encoding="utf-8")
+
+          if report["summary_status"] == "UNKNOWN":
+              if not report["bundle_summary"]["all_required_present"]:
+                  report["summary_status"] = "RAPIDLATEXOCR_DOWNLOADABLE_BUNDLE_MISSING_REQUIRED_FILES"
+              elif not report["bundle_summary"]["within_product_cap"]:
+                  report["summary_status"] = "RAPIDLATEXOCR_DOWNLOADABLE_BUNDLE_OVER_PRODUCT_CAP"
+              elif report["bundle_summary"]["within_product_cap"] and not report["bundle_summary"]["within_ideal_target"]:
+                  report["summary_status"] = "RAPIDLATEXOCR_DOWNLOADABLE_BUNDLE_READY_OVER_IDEAL_UNDER_PRODUCT_CAP"
+              else:
+                  report["summary_status"] = "RAPIDLATEXOCR_DOWNLOADABLE_BUNDLE_READY_WITHIN_IDEAL_TARGET"
+
+          report["manifest_path"] = str(manifest_path)
+          report["contract_path"] = str(contract_path)
+          report["elapsed_seconds"] = round(time.perf_counter() - t0, 4)
+
+          report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+          print(json.dumps(report, indent=2, ensure_ascii=False))
+
+          acceptable = {
+              "RAPIDLATEXOCR_DOWNLOADABLE_BUNDLE_READY_OVER_IDEAL_UNDER_PRODUCT_CAP",
+              "RAPIDLATEXOCR_DOWNLOADABLE_BUNDLE_READY_WITHIN_IDEAL_TARGET",
+          }
+          if strict_exit and report["summary_status"] not in acceptable:
+              sys.exit(3)
+          PY
+
+          python q389r11d_manifest_builder.py
+
+      - name: Upload Q389R11D bundle manifest artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r11d_rapidlatexocr_downloadable_bundle_manifest
+          path: |
+            q389r11d_bundle/q389r11d_report.json
+            q389r11d_bundle/rapidlatexocr_bundle_manifest.json
+            q389r11d_bundle/MATHPRO_RAPIDLATEXOCR_INTEGRATION_CONTRACT.md
