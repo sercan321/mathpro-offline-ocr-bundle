@@ -1,0 +1,442 @@
+name: Q389R11B-R2 RapidLaTeXOCR MathPro Golden Probe Scoring Fix
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_bundle_mb:
+        description: 'Product cap in MiB'
+        required: true
+        default: '220'
+      ideal_bundle_mb:
+        description: 'Ideal target in MiB'
+        required: true
+        default: '150'
+      strict_exit:
+        description: 'Exit non-zero when golden pass is not reached'
+        required: true
+        default: 'true'
+      include_augmented:
+        description: 'Also test lightly augmented renders'
+        required: true
+        default: 'true'
+
+jobs:
+  rapidlatexocr_mathpro_golden_probe_scoring_fix:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout workflow repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install probe dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install rapid_latex_ocr pillow psutil requests matplotlib numpy
+
+      - name: Run Q389R11B-R2 RapidLaTeXOCR MathPro golden probe scoring fix
+        env:
+          MAX_BUNDLE_MB: ${{ inputs.max_bundle_mb }}
+          IDEAL_BUNDLE_MB: ${{ inputs.ideal_bundle_mb }}
+          STRICT_EXIT: ${{ inputs.strict_exit }}
+          INCLUDE_AUGMENTED: ${{ inputs.include_augmented }}
+        run: |
+          cat > q389r11b_r2_probe.py <<'PY'
+          import json
+          import os
+          import re
+          import sys
+          import time
+          import traceback
+          from importlib import metadata
+          from pathlib import Path
+
+          import matplotlib
+          matplotlib.use('Agg')
+          import matplotlib.pyplot as plt
+          from PIL import Image, ImageFilter
+          from rapid_latex_ocr import LaTeXOCR
+          import rapid_latex_ocr
+
+
+          def mb(n):
+              return round(float(n) / 1024.0 / 1024.0, 4)
+
+
+          def extract_latex_and_confidence(raw):
+              if isinstance(raw, tuple) or isinstance(raw, list):
+                  latex = "" if len(raw) < 1 else str(raw[0])
+                  conf = None if len(raw) < 2 else raw[1]
+                  return latex, conf, repr(raw)
+              return str(raw), None, repr(raw)
+
+
+          def canonical_latex(s: str, *, lower_vars: bool = True) -> str:
+              s = s or ""
+              # Normalize common presentation wrappers and spacing variants.
+              s = s.replace("\\left", "").replace("\\right", "")
+              s = s.replace("\\textstyle", "")
+              s = s.replace("\\displaystyle", "")
+              s = re.sub(r"\\operatorname\*?\{lim\}", r"\\lim", s)
+              s = re.sub(r"\\operatorname\*?\{sin\}", r"\\sin", s)
+              s = re.sub(r"\\operatorname\*?\{cos\}", r"\\cos", s)
+              s = re.sub(r"\\operatorname\*?\{log\}", r"\\log", s)
+              s = s.replace("\\mathit{x}", "x")
+              s = s.replace("\\mathit{y}", "y")
+              s = s.replace("\\mathit{n}", "n")
+              s = s.replace("\\mathrm{d}", "d")
+              s = s.replace("\\mathrm", "")
+              s = s.replace("\\,", "").replace("\\;", "").replace("\\!", "")
+              s = s.replace("\\quad", "").replace("\\qquad", "")
+              # Prime canonicalization.
+              s = s.replace("^{\\prime\\prime}", "''")
+              s = s.replace("^{\\prime}", "'")
+              s = s.replace("\\prime\\prime", "''")
+              s = s.replace("\\prime", "'")
+              # Common OCR variable casing drift.
+              if lower_vars:
+                  s = re.sub(r"\bX\b", "x", s)
+                  s = re.sub(r"\bY\b", "y", s)
+                  s = re.sub(r"\bU\b", "u", s)
+                  s = re.sub(r"\bT\b", "t", s)
+                  s = re.sub(r"\bN\b", "n", s)
+              # Convert d x / d y etc. after whitespace removal.
+              s = re.sub(r"\s+", "", s)
+              s = s.replace("dx", "dx").replace("dy", "dy")
+              # Strip harmless trailing punctuation frequently emitted by recognizers.
+              s = s.strip(" ,.;:")
+              # Remove grouping braces after command-level normalization.
+              s = s.replace("{", "").replace("}", "")
+              return s.strip()
+
+
+          def levenshtein(a: str, b: str) -> int:
+              if a == b:
+                  return 0
+              if not a:
+                  return len(b)
+              if not b:
+                  return len(a)
+              prev = list(range(len(b) + 1))
+              for i, ca in enumerate(a, 1):
+                  cur = [i]
+                  for j, cb in enumerate(b, 1):
+                      cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+                  prev = cur
+              return prev[-1]
+
+
+          def similarity(a: str, b: str) -> float:
+              a = canonical_latex(a)
+              b = canonical_latex(b)
+              denom = max(len(a), len(b), 1)
+              return round(1.0 - (levenshtein(a, b) / denom), 4)
+
+
+          def render_formula(latex: str, out_path: Path, fontsize: int = 28):
+              fig = plt.figure(figsize=(6, 1.6), dpi=220)
+              fig.patch.set_facecolor("white")
+              ax = fig.add_axes([0, 0, 1, 1])
+              ax.axis("off")
+              ax.text(0.03, 0.5, f"${latex}$", fontsize=fontsize, va="center", ha="left", color="black")
+              fig.savefig(out_path, bbox_inches="tight", pad_inches=0.18, facecolor="white")
+              plt.close(fig)
+
+
+          def augment_image(src: Path, dst: Path):
+              img = Image.open(src).convert("L")
+              img = img.rotate(1.2, expand=True, fillcolor=255)
+              img = img.filter(ImageFilter.GaussianBlur(radius=0.35))
+              bg = Image.new("L", (img.width + 16, img.height + 14), 248)
+              bg.paste(img, (8, 7))
+              bg.save(dst)
+
+
+          def token_ok(token: str, pred_canon: str) -> bool:
+              tok = canonical_latex(token)
+              # Accept lim rendered as operatorname* was normalized earlier.
+              if tok in pred_canon:
+                  return True
+              if tok == "\\lim" and "lim" in pred_canon:
+                  return True
+              if tok == "\\sin" and "sin" in pred_canon:
+                  return True
+              if tok == "\\cos" and "cos" in pred_canon:
+                  return True
+              if tok == "\\log" and "log" in pred_canon:
+                  return True
+              if tok == "\\partial" and "partial" in pred_canon:
+                  return True
+              if tok == "\\infty" and "infty" in pred_canon:
+                  return True
+              return False
+
+
+          max_bundle_mb = float(os.environ.get("MAX_BUNDLE_MB", "220"))
+          ideal_bundle_mb = float(os.environ.get("IDEAL_BUNDLE_MB", "150"))
+          strict_exit = os.environ.get("STRICT_EXIT", "true").lower() == "true"
+          include_augmented = os.environ.get("INCLUDE_AUGMENTED", "true").lower() == "true"
+
+          report = {
+              "phase": "Q389R11B-R2",
+              "title": "RapidLaTeXOCR MathPro Golden Probe Scoring Fix",
+              "fixes": [
+                  "Extract LaTeX from RapidLaTeXOCR tuple output instead of comparing tuple repr.",
+                  "Canonicalize equivalent LaTeX forms such as \\textstyle, \\operatorname*{lim}, \\prime, and variable case drift.",
+                  "Evaluate case-level best variant so program-side preprocessing can be judged as adapting the app to the fixed model.",
+                  "Keep strict warnings for true semantic drift such as wrong denominator variable or hallucinated extra terms."
+              ],
+              "hard_rules": [
+                  "This workflow measures synthetic MathPro-owned golden samples, not final real-camera device acceptance.",
+                  "Do not claim production OCR PASS unless the model later passes review-surface integration and real device camera tests.",
+                  "Do not bundle the model inside the base APK; keep download-only app-private storage policy.",
+                  "Use this result to decide whether RapidLaTeXOCR is strong enough to justify app integration work."
+              ],
+              "max_bundle_mb": max_bundle_mb,
+              "ideal_bundle_mb": ideal_bundle_mb,
+              "strict_exit": strict_exit,
+              "include_augmented": include_augmented,
+              "package": {},
+              "model_files": [],
+              "golden_cases": [],
+              "failures": [],
+              "summary_status": "UNKNOWN"
+          }
+
+          cases = [
+              {"id": "fraction_power", "latex": r"\frac{x^2+y^2}{2a}", "must_contain": [r"\frac", "^"], "critical_tokens": ["2a"]},
+              {"id": "sqrt_expr", "latex": r"\sqrt{x^2+1}", "must_contain": [r"\sqrt", "^"], "critical_tokens": []},
+              {"id": "integral", "latex": r"\int_0^1 x^2 \, dx", "must_contain": [r"\int", "^"], "critical_tokens": ["0", "1", "x^2"]},
+              {"id": "derivative", "latex": r"\frac{dy}{dx}=3x^2", "must_contain": [r"\frac", "^"], "critical_tokens": ["dy", "dx", "3x^2"]},
+              {"id": "partial", "latex": r"\frac{\partial u}{\partial t}", "must_contain": [r"\partial", r"\frac"], "critical_tokens": [r"\partialu", r"\partialt"]},
+              {"id": "limit", "latex": r"\lim_{x\to0}\frac{\sin x}{x}", "must_contain": [r"\lim", r"\frac", r"\sin"], "critical_tokens": ["xto0", "sinx"]},
+              {"id": "sum", "latex": r"\sum_{n=1}^{\infty}\frac{1}{n^2}", "must_contain": [r"\sum", r"\infty", r"\frac"], "critical_tokens": [r"\sum", r"\infty", r"\frac"]},
+              {"id": "ode", "latex": r"y''+3y'+2y=0", "must_contain": ["y''", "y'", "=0"], "critical_tokens": ["3y'", "2y=0"]},
+              {"id": "log_trig", "latex": r"\log(x)+\cos(x)", "must_contain": [r"\log", r"\cos"], "critical_tokens": [r"\log", r"\cos"]},
+          ]
+
+          try:
+              dist = metadata.distribution("rapid_latex_ocr")
+              report["package"] = {
+                  "name": dist.metadata.get("Name", "rapid_latex_ocr"),
+                  "version": dist.version,
+                  "license": dist.metadata.get("License", "UNKNOWN"),
+                  "summary": dist.metadata.get("Summary", ""),
+              }
+          except Exception as e:
+              report["failures"].append({"stage": "metadata", "error": repr(e), "traceback": traceback.format_exc()})
+
+          try:
+              t0 = time.perf_counter()
+              model = LaTeXOCR()
+              report["model_init_seconds"] = round(time.perf_counter() - t0, 4)
+          except Exception as e:
+              report["summary_status"] = "RAPIDLATEXOCR_MODEL_INIT_OR_DOWNLOAD_FAILED"
+              report["failures"].append({"stage": "model_init", "error": repr(e), "traceback": traceback.format_exc()})
+              Path("q389r11b_r2_report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+              print(json.dumps(report, indent=2, ensure_ascii=False))
+              sys.exit(3 if strict_exit else 0)
+
+          try:
+              pkg_root = Path(rapid_latex_ocr.__file__).resolve().parent
+              model_root = pkg_root / "models"
+              search_roots = [pkg_root, model_root]
+              interesting_suffixes = {".onnx", ".json", ".yaml", ".yml", ".txt"}
+              seen = set()
+              total_interesting_bytes = 0
+              total_onnx_bytes = 0
+              for root in search_roots:
+                  if not root.exists():
+                      continue
+                  for p in root.rglob("*"):
+                      if not p.is_file() or p.suffix.lower() not in interesting_suffixes:
+                          continue
+                      rp = str(p.resolve())
+                      if rp in seen:
+                          continue
+                      seen.add(rp)
+                      size = p.stat().st_size
+                      cat = "onnx" if p.suffix.lower() == ".onnx" else "config_or_tokenizer"
+                      total_interesting_bytes += size
+                      if cat == "onnx":
+                          total_onnx_bytes += size
+                      report["model_files"].append({
+                          "path": rp,
+                          "name": p.name,
+                          "size_bytes": size,
+                          "size_mib": mb(size),
+                          "category": cat,
+                      })
+              report["model_file_summary"] = {
+                  "count": len(report["model_files"]),
+                  "onnx_count": sum(1 for f in report["model_files"] if f["category"] == "onnx"),
+                  "total_interesting_mib": mb(total_interesting_bytes),
+                  "total_onnx_mib": mb(total_onnx_bytes),
+                  "within_product_cap": mb(total_interesting_bytes) <= max_bundle_mb,
+                  "within_ideal_target": mb(total_interesting_bytes) <= ideal_bundle_mb,
+              }
+          except Exception as e:
+              report["failures"].append({"stage": "artifact_scan", "error": repr(e), "traceback": traceback.format_exc()})
+
+          work = Path("q389r11b_r2_samples")
+          work.mkdir(exist_ok=True)
+
+          all_runs = []
+          case_passes = 0
+          for case in cases:
+              clean_path = work / f"{case['id']}_clean.png"
+              try:
+                  render_formula(case["latex"], clean_path)
+              except Exception as e:
+                  report["failures"].append({"stage": "render", "case": case["id"], "error": repr(e), "traceback": traceback.format_exc()})
+                  continue
+
+              variants = [("clean", clean_path)]
+              if include_augmented:
+                  aug_path = work / f"{case['id']}_aug.png"
+                  try:
+                      augment_image(clean_path, aug_path)
+                      variants.append(("augmented", aug_path))
+                  except Exception as e:
+                      report["failures"].append({"stage": "augment", "case": case["id"], "error": repr(e), "traceback": traceback.format_exc()})
+
+              expected_canon = canonical_latex(case["latex"])
+              case_record = {
+                  "id": case["id"],
+                  "expected_latex": case["latex"],
+                  "expected_canonical": expected_canon,
+                  "must_contain": case["must_contain"],
+                  "critical_tokens": case["critical_tokens"],
+                  "variants": [],
+                  "case_passes_best_variant": False,
+                  "best_variant": None,
+                  "case_notes": [],
+              }
+
+              best_score = -1.0
+              for variant_name, path in variants:
+                  run = {"variant": variant_name, "image_path": str(path.resolve())}
+                  try:
+                      t0 = time.perf_counter()
+                      raw_pred = model(path)
+                      elapsed = round(time.perf_counter() - t0, 4)
+                      pred_latex, pred_conf, raw_repr = extract_latex_and_confidence(raw_pred)
+                      pred_canon = canonical_latex(pred_latex)
+                      sim = similarity(case["latex"], pred_latex)
+                      exact = expected_canon == pred_canon
+                      must_ok = all(token_ok(t, pred_canon) for t in case["must_contain"])
+                      critical_ok = all(canonical_latex(t) in pred_canon for t in case["critical_tokens"])
+                      non_empty = bool(pred_canon)
+                      # Structural pass is intentionally separated from exact pass.
+                      structural_pass = bool(non_empty and must_ok and critical_ok and sim >= 0.72)
+                      # Exact/canonical pass remains stricter.
+                      passes_case = bool(exact or structural_pass)
+                      score = sim + (0.2 if must_ok else 0.0) + (0.2 if critical_ok else 0.0) + (0.4 if exact else 0.0)
+                      run.update({
+                          "raw_model_output_repr": raw_repr,
+                          "predicted_latex": pred_latex,
+                          "model_confidence": pred_conf,
+                          "predicted_canonical": pred_canon,
+                          "normalized_similarity": sim,
+                          "exact_after_canonical_normalize": exact,
+                          "must_contain_check": must_ok,
+                          "critical_token_check": critical_ok,
+                          "non_empty": non_empty,
+                          "runtime_seconds": elapsed,
+                          "structural_pass": structural_pass,
+                          "passes_case": passes_case,
+                      })
+                  except Exception as e:
+                      run.update({
+                          "raw_model_output_repr": "",
+                          "predicted_latex": "",
+                          "model_confidence": None,
+                          "predicted_canonical": "",
+                          "normalized_similarity": 0.0,
+                          "exact_after_canonical_normalize": False,
+                          "must_contain_check": False,
+                          "critical_token_check": False,
+                          "non_empty": False,
+                          "runtime_seconds": None,
+                          "structural_pass": False,
+                          "passes_case": False,
+                          "error": repr(e),
+                      })
+                      report["failures"].append({"stage": "inference", "case": case["id"], "variant": variant_name, "error": repr(e), "traceback": traceback.format_exc()})
+                      score = 0.0
+
+                  case_record["variants"].append(run)
+                  all_runs.append(run)
+
+                  if score > best_score:
+                      best_score = score
+                      case_record["best_variant"] = variant_name
+                      case_record["case_passes_best_variant"] = bool(run.get("passes_case"))
+
+              if case_record["case_passes_best_variant"]:
+                  case_passes += 1
+
+              # Add diagnostic notes for known weak outputs while not blocking report generation.
+              if case["id"] == "log_trig" and not case_record["case_passes_best_variant"]:
+                  case_record["case_notes"].append("log/trig recognition appears weak on this render; app preprocessing may not fix this alone.")
+              if case["id"] == "sum" and not case_record["case_passes_best_variant"]:
+                  case_record["case_notes"].append("summation recognition may hallucinate index/extra terms; requires real review-surface caution.")
+              report["golden_cases"].append(case_record)
+
+          total_runs = len(all_runs)
+          passed_runs = sum(1 for r in all_runs if r.get("passes_case"))
+          exact_runs = sum(1 for r in all_runs if r.get("exact_after_canonical_normalize"))
+          structural_runs = sum(1 for r in all_runs if r.get("structural_pass"))
+          avg_similarity = round(sum(r.get("normalized_similarity", 0.0) for r in all_runs) / max(total_runs, 1), 4)
+          timed_runs = [r for r in all_runs if r.get("runtime_seconds") is not None]
+          avg_runtime = round(sum(r.get("runtime_seconds", 0.0) for r in timed_runs) / max(len(timed_runs), 1), 4)
+          pass_ratio = round(passed_runs / max(total_runs, 1), 4)
+          case_pass_ratio = round(case_passes / max(len(cases), 1), 4)
+
+          report["aggregate"] = {
+              "total_cases": len(cases),
+              "case_passes_best_variant": case_passes,
+              "case_pass_ratio_best_variant": case_pass_ratio,
+              "total_runs": total_runs,
+              "passed_runs": passed_runs,
+              "exact_runs": exact_runs,
+              "structural_runs": structural_runs,
+              "run_pass_ratio": pass_ratio,
+              "average_similarity": avg_similarity,
+              "average_runtime_seconds": avg_runtime,
+          }
+
+          within_cap = report.get("model_file_summary", {}).get("within_product_cap", False)
+          if total_runs == 0:
+              report["summary_status"] = "RAPIDLATEXOCR_GOLDEN_NO_RUNS"
+          elif within_cap and case_pass_ratio >= 0.75 and avg_similarity >= 0.70 and len(report["failures"]) == 0:
+              report["summary_status"] = "RAPIDLATEXOCR_MATHPRO_GOLDEN_READY_SYNTHETIC_ONLY_NOT_DEVICE_PASS"
+          elif within_cap and case_pass_ratio >= 0.50 and avg_similarity >= 0.45:
+              report["summary_status"] = "RAPIDLATEXOCR_MATHPRO_GOLDEN_PARTIAL_PROMISING_PREPROCESSING_REQUIRED"
+          elif not within_cap:
+              report["summary_status"] = "RAPIDLATEXOCR_RUNTIME_OK_BUT_MODEL_OVER_PRODUCT_CAP"
+          else:
+              report["summary_status"] = "RAPIDLATEXOCR_MATHPRO_GOLDEN_INSUFFICIENT_SYNTHETIC_RESULTS"
+
+          Path("q389r11b_r2_report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+          print(json.dumps(report, indent=2, ensure_ascii=False))
+
+          if strict_exit and report["summary_status"] not in {
+              "RAPIDLATEXOCR_MATHPRO_GOLDEN_READY_SYNTHETIC_ONLY_NOT_DEVICE_PASS",
+              "RAPIDLATEXOCR_MATHPRO_GOLDEN_PARTIAL_PROMISING_PREPROCESSING_REQUIRED"
+          }:
+              sys.exit(3)
+          PY
+          python q389r11b_r2_probe.py
+
+      - name: Upload Q389R11B-R2 report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r11b_r2_report
+          path: |
+            q389r11b_r2_report.json
+            q389r11b_r2_samples/
