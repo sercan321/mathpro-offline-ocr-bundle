@@ -1,4 +1,4 @@
-name: Q389R8A R1 Paddle Lite native Formula OCR artifact proof bundle
+name: Q389R8A R2 Paddle Lite optimizer source-build Formula OCR artifact proof bundle
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
       tag_name:
         description: "Release tag for the Paddle Lite bundle"
         required: true
-        default: "q389r8a-r1-paddle-lite-native-formula-ocr-bundle"
+        default: "q389r8a-r2-paddle-lite-native-formula-ocr-bundle"
 
 permissions:
   contents: write
@@ -23,7 +23,7 @@ jobs:
   build-and-publish-paddle-lite-bundle:
     name: Build and publish Paddle Lite .nb proof bundle
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 180
 
     steps:
       - name: Checkout MathPro source
@@ -39,13 +39,15 @@ jobs:
           set -euxo pipefail
           python -m pip install --upgrade pip
           python -m pip install huggingface_hub requests
+          sudo apt-get update
+          sudo apt-get install -y git cmake g++ gcc make unzip wget tar patchelf protobuf-compiler || true
           # Best-effort fallback: some Linux runners can expose paddle_lite_opt through the paddlelite wheel.
           python -m pip install paddlelite || true
 
       - name: Acquire PP-FormulaNet and require Paddle Lite .nb artifact
         run: |
           set -euxo pipefail
-          mkdir -p build/q389r8a_r1/work build/q389r8a_r1/reports build/q389r8a_r1/bundle
+          mkdir -p build/q389r8a_r2/work build/q389r8a_r2/reports build/q389r8a_r2/bundle
           python - <<'PY'
           import json
           import os
@@ -58,8 +60,8 @@ jobs:
           import requests
           from huggingface_hub import snapshot_download
 
-          PHASE = "V172-Q389R8A-R1"
-          ROOT = Path("build/q389r8a_r1").resolve()
+          PHASE = "V172-Q389R8A-R2"
+          ROOT = Path("build/q389r8a_r2").resolve()
           WORK = ROOT / "work"
           REPORTS = ROOT / "reports"
           BUNDLE = ROOT / "bundle"
@@ -119,30 +121,131 @@ jobs:
               mode = path.stat().st_mode
               path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
+          def _probe_optimizer(path: Path, source: str, attempts: list, extra=None):
+              extra = extra or {}
+              try:
+                  if not path.exists():
+                      attempts.append({"source": source, "candidate": str(path), "stage": "missing", **extra})
+                      return None
+                  if path.is_file():
+                      mark_executable(path)
+                  probe = run([path, "--help"], timeout=90)
+                  attempts.append({"source": source, "candidate": str(path), "sizeBytes": path.stat().st_size if path.is_file() else None, "probe": probe, **extra})
+                  if probe["returncode"] in (0, 1):
+                      return path
+              except Exception as e:
+                  attempts.append({"source": source, "candidate": str(path), "stage": "probe_error", "error": repr(e), **extra})
+              return None
+
+          def _candidate_optimizer_files(root: Path):
+              if not root.exists():
+                  return []
+              names = {"opt", "paddle_lite_opt", "paddle-lite-opt", "model_optimize_tool"}
+              found = []
+              for p in root.rglob("*"):
+                  if p.is_file() and p.name in names:
+                      try:
+                          if p.stat().st_size >= 64 * 1024:
+                              found.append(p)
+                      except OSError:
+                          pass
+              return sorted(set(found), key=lambda p: p.stat().st_size, reverse=True)
+
+          def _try_release_asset_discovery(attempts):
+              api = "https://api.github.com/repos/PaddlePaddle/Paddle-Lite/releases"
+              headers = {"Accept": "application/vnd.github+json"}
+              token = os.environ.get("GITHUB_TOKEN")
+              if token:
+                  headers["Authorization"] = f"Bearer {token}"
+              try:
+                  resp = requests.get(api, params={"per_page": 100}, headers=headers, timeout=90)
+                  resp.raise_for_status()
+                  releases = resp.json()
+                  assets = []
+                  for rel in releases:
+                      tag = rel.get("tag_name") or rel.get("name") or ""
+                      for a in rel.get("assets", []) or []:
+                          name = a.get("name") or ""
+                          url = a.get("browser_download_url") or ""
+                          low = name.lower()
+                          score = 0
+                          if "opt" in low: score += 100
+                          if "linux" in low or "x86" in low: score += 20
+                          if low.endswith((".tgz", ".tar.gz", ".zip", ".tar")): score += 10
+                          if score:
+                              assets.append((score, tag, name, url))
+                  assets.sort(reverse=True)
+                  attempts.append({"source": "github_release_api", "stage": "asset_discovery", "assetCount": len(assets), "topAssets": assets[:20]})
+                  for score, tag, name, url in assets[:30]:
+                      dest = WORK / "paddle_lite_release_assets" / tag / name
+                      try:
+                          download_file(url, dest)
+                          extracted = dest.parent / (dest.name + "_extract")
+                          extracted.mkdir(parents=True, exist_ok=True)
+                          unpack = run(["bash", "-lc", f"set -e; file '{dest}'; case '{dest}' in *.zip) unzip -q '{dest}' -d '{extracted}' ;; *.tar.gz|*.tgz) tar -xzf '{dest}' -C '{extracted}' ;; *.tar) tar -xf '{dest}' -C '{extracted}' ;; *) cp '{dest}' '{extracted}/opt' ;; esac"], timeout=300)
+                          attempts.append({"source": "github_release_asset", "tag": tag, "asset": name, "url": url, "downloadedBytes": dest.stat().st_size, "unpack": unpack})
+                          for cand in _candidate_optimizer_files(extracted) + _candidate_optimizer_files(dest.parent):
+                              ok = _probe_optimizer(cand, "github_release_asset", attempts, {"tag": tag, "asset": name, "url": url})
+                              if ok:
+                                  return ok
+                      except Exception as e:
+                          attempts.append({"source": "github_release_asset", "tag": tag, "asset": name, "url": url, "stage": "download_unpack_or_probe", "error": repr(e)})
+              except Exception as e:
+                  attempts.append({"source": "github_release_api", "stage": "list_releases", "error": repr(e)})
+              return None
+
+          def _try_source_build_optimizer(attempts):
+              src_dir = WORK / "Paddle-Lite-source"
+              try:
+                  if not src_dir.exists():
+                      clone = run(["git", "clone", "--depth", "1", "--branch", "develop", "https://github.com/PaddlePaddle/Paddle-Lite.git", src_dir], timeout=900)
+                      attempts.append({"source": "source_build", "stage": "git_clone", "cmdResult": clone})
+                      if clone["returncode"] != 0:
+                          return None
+                  # Build a Linux x86 optimizer. This is heavier than release download but deterministic when assets are not published as a bare /opt file.
+                  build_script = src_dir / "lite" / "tools" / "build_linux.sh"
+                  build_cmd = ["bash", str(build_script), "--arch=x86", "--toolchain=gcc", "--with_extra=ON", "--with_cv=OFF", "--with_log=ON"]
+                  env_prefix = "export LITE_BUILD_THREADS=2; export PYTHON_BIN=$(which python); "
+                  build = run(["bash", "-lc", env_prefix + " ".join([str(x) for x in build_cmd])], cwd=src_dir, timeout=7200)
+                  attempts.append({"source": "source_build", "stage": "build_linux_x86_optimizer", "cmd": build_cmd, "cmdResult": build})
+                  # Even if build exits non-zero, scan the tree because opt may have been produced before a packaging/test failure.
+                  candidates = _candidate_optimizer_files(src_dir)
+                  attempts.append({"source": "source_build", "stage": "scan_candidates", "candidateCount": len(candidates), "candidates": [str(p) for p in candidates[:25]]})
+                  for cand in candidates:
+                      ok = _probe_optimizer(cand, "source_build", attempts)
+                      if ok:
+                          return ok
+              except Exception as e:
+                  attempts.append({"source": "source_build", "stage": "exception", "error": repr(e)})
+              return None
+
           def find_paddle_lite_opt():
               attempts = []
-              which = shutil.which("paddle_lite_opt")
-              if which:
-                  p = Path(which)
-                  probe = run([p, "--help"], timeout=60)
-                  attempts.append({"source": "pip_or_path", "candidate": str(p), "probe": probe})
-                  if probe["returncode"] in (0, 1):
-                      return p, attempts
+              for exe in ["paddle_lite_opt", "opt", "model_optimize_tool"]:
+                  which = shutil.which(exe)
+                  if which:
+                      ok = _probe_optimizer(Path(which), "pip_or_path", attempts, {"exe": exe})
+                      if ok:
+                          return ok, attempts
               for url in DIRECT_OPT_URLS:
                   name = Path(urlparse(url).path).name or "opt"
                   dest = WORK / "paddle_lite_opt_downloads" / urlparse(url).path.replace("/", "_")
                   try:
                       download_file(url, dest)
-                      if dest.stat().st_size < 1024 * 1024:
+                      if dest.stat().st_size < 64 * 1024:
                           attempts.append({"source": "direct_github_release", "url": url, "stage": "too_small", "sizeBytes": dest.stat().st_size})
                           continue
-                      mark_executable(dest)
-                      probe = run([dest, "--help"], timeout=60)
-                      attempts.append({"source": "direct_github_release", "url": url, "candidate": str(dest), "sizeBytes": dest.stat().st_size, "probe": probe})
-                      if probe["returncode"] in (0, 1):
-                          return dest, attempts
+                      ok = _probe_optimizer(dest, "direct_github_release", attempts, {"url": url})
+                      if ok:
+                          return ok, attempts
                   except Exception as e:
                       attempts.append({"source": "direct_github_release", "url": url, "stage": "download_or_probe", "error": repr(e)})
+              ok = _try_release_asset_discovery(attempts)
+              if ok:
+                  return ok, attempts
+              ok = _try_source_build_optimizer(attempts)
+              if ok:
+                  return ok, attempts
               return None, attempts
 
           def find_model_files(model_dir: Path):
@@ -194,7 +297,7 @@ jobs:
 
           if not opt:
               report["status"] = "NO_PADDLE_LITE_OPTIMIZER_BINARY_FOUND"
-              (REPORTS / "q389r8a_r1_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+              (REPORTS / "q389r8a_r2_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
               print(json.dumps(report, indent=2))
               raise SystemExit(1)
 
@@ -269,7 +372,7 @@ jobs:
 
           if not selected:
               report["status"] = "NO_PADDLE_LITE_NB_ARTIFACT"
-              (REPORTS / "q389r8a_r1_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+              (REPORTS / "q389r8a_r2_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
               print(json.dumps(report, indent=2))
               raise SystemExit(1)
 
@@ -319,7 +422,7 @@ jobs:
           }, indent=2), encoding="utf-8")
           report["status"] = "PADDLE_LITE_NB_ARTIFACT_READY"
           report["selectedArtifact"] = manifest
-          (REPORTS / "q389r8a_r1_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+          (REPORTS / "q389r8a_r2_paddle_lite_artifact_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
           print(json.dumps(report, indent=2))
           PY
 
@@ -329,8 +432,8 @@ jobs:
         with:
           name: q389r8a-r1-paddle-lite-native-artifact-report-and-bundle
           path: |
-            build/q389r8a_r1/reports/**
-            build/q389r8a_r1/bundle/**
+            build/q389r8a_r2/reports/**
+            build/q389r8a_r2/bundle/**
           if-no-files-found: warn
 
       - name: Publish GitHub Release assets
@@ -344,7 +447,7 @@ jobs:
           git tag -f "$TAG_NAME"
           git push -f origin "$TAG_NAME"
           gh release create "$TAG_NAME" \
-            build/q389r8a_r1/bundle/* \
-            build/q389r8a_r1/reports/q389r8a_r1_paddle_lite_artifact_report.json \
+            build/q389r8a_r2/bundle/* \
+            build/q389r8a_r2/reports/q389r8a_r2_paddle_lite_artifact_report.json \
             --title "Q389R8A-R1 Paddle Lite native Formula OCR bundle" \
             --notes "Q389R8A-R1 publishes only when a Paddle Lite .nb artifact is produced from PP-FormulaNet and verified by the optimizer workflow. This does not claim app-side OCR PASS."
