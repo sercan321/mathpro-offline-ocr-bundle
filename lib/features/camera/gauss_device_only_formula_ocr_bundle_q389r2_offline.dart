@@ -391,7 +391,10 @@ class GaussQ389R2OfflineFormulaOcrBundleInstaller {
         );
       }
       final manifest = GaussQ389R2OfflineBundleManifest.parse(manifestResponse.body);
-      return installVerifiedBundleManifest(
+      // Q389R6Y: keep the HTTP client alive until the complete manifest-driven
+      // model bundle download has finished. Returning the Future directly lets
+      // the finally block close the client before the large ONNX file request.
+      return await installVerifiedBundleManifest(
         appFilesDirectory: appFilesDirectory,
         manifest: manifest,
         client: client,
@@ -467,6 +470,7 @@ class GaussQ389R2OfflineFormulaOcrBundleInstaller {
         'phase': GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.phase,
         'sourcePhase': GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.sourcePhase,
         'artifactKind': runtimeModel.isOnnxModel ? GaussDeviceOnlyFormulaOcrBundleQ389R6BPolicy.primaryRuntimeArtifactKind : GaussPaddleLiteNbArtifactManifestQ387R1Policy.requiredArtifactKind,
+        'fileName': runtimeModel.fileName,
         'fileName': runtimeModel.fileName,
         'sha256': actualRuntimeSha,
         'sizeBytes': actualRuntimeSize,
