@@ -1,0 +1,263 @@
+name: Q389R11A RapidLaTeXOCR Runtime and Sample Golden Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_bundle_mb:
+        description: "Hard product cap for downloaded ONNX/tokenizer bundle"
+        required: true
+        default: "220"
+      ideal_bundle_mb:
+        description: "Ideal bundle target"
+        required: true
+        default: "150"
+      sample_limit:
+        description: "Maximum RapidLaTeXOCR repository sample images to run"
+        required: true
+        default: "12"
+      strict_exit:
+        description: "Fail workflow when no ready candidate is proven"
+        required: true
+        default: "true"
+        type: choice
+        options: ["true", "false"]
+
+jobs:
+  rapidlatexocr_probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout workflow repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install probe dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install rapid_latex_ocr pillow psutil requests
+
+      - name: Run Q389R11A RapidLaTeXOCR probe
+        env:
+          MAX_BUNDLE_MB: ${{ inputs.max_bundle_mb }}
+          IDEAL_BUNDLE_MB: ${{ inputs.ideal_bundle_mb }}
+          SAMPLE_LIMIT: ${{ inputs.sample_limit }}
+          STRICT_EXIT: ${{ inputs.strict_exit }}
+        run: |
+          cat > q389r11a_probe.py <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+          import time
+          import traceback
+          from pathlib import Path
+          from importlib import metadata
+
+          def mb(n):
+              return round(float(n) / 1024.0 / 1024.0, 4)
+
+          def norm_latex(s: str) -> str:
+              s = s or ""
+              s = re.sub(r"\\left|\\right", "", s)
+              s = re.sub(r"\s+", "", s)
+              return s.strip()
+
+          def levenshtein(a: str, b: str) -> int:
+              if a == b:
+                  return 0
+              if not a:
+                  return len(b)
+              if not b:
+                  return len(a)
+              prev = list(range(len(b) + 1))
+              for i, ca in enumerate(a, 1):
+                  cur = [i]
+                  for j, cb in enumerate(b, 1):
+                      cur.append(min(prev[j] + 1, cur[j-1] + 1, prev[j-1] + (ca != cb)))
+                  prev = cur
+              return prev[-1]
+
+          def similarity(a: str, b: str) -> float:
+              a = norm_latex(a)
+              b = norm_latex(b)
+              denom = max(len(a), len(b), 1)
+              return round(1.0 - (levenshtein(a, b) / denom), 4)
+
+          max_bundle_mb = float(os.environ.get("MAX_BUNDLE_MB", "220"))
+          ideal_bundle_mb = float(os.environ.get("IDEAL_BUNDLE_MB", "150"))
+          sample_limit = int(os.environ.get("SAMPLE_LIMIT", "12"))
+          strict_exit = os.environ.get("STRICT_EXIT", "true").lower() == "true"
+
+          report = {
+              "phase": "Q389R11A",
+              "title": "RapidLaTeXOCR Runtime and Sample Golden Probe",
+              "hard_rules": [
+                  "This workflow proves runtime and sample inference only; it is not full MathPro OCR quality PASS.",
+                  "Do not integrate into MathPro production until a separate MathPro-owned golden image set passes.",
+                  "Do not bundle model in base APK; if accepted later, use download-only app-private storage.",
+                  "Do not present RapidLaTeXOCR output as solver-confirmed math without review surface acceptance."
+              ],
+              "max_bundle_mb": max_bundle_mb,
+              "ideal_bundle_mb": ideal_bundle_mb,
+              "strict_exit": strict_exit,
+              "package": {},
+              "model_files": [],
+              "sample_runs": [],
+              "failures": [],
+              "summary_status": "UNKNOWN"
+          }
+
+          try:
+              import rapid_latex_ocr
+              from rapid_latex_ocr import LaTeXOCR
+              dist = metadata.distribution("rapid_latex_ocr")
+              report["package"] = {
+                  "name": dist.metadata.get("Name", "rapid_latex_ocr"),
+                  "version": dist.version,
+                  "license": dist.metadata.get("License", "UNKNOWN"),
+                  "summary": dist.metadata.get("Summary", ""),
+              }
+          except Exception as e:
+              report["summary_status"] = "RAPIDLATEXOCR_IMPORT_FAILED"
+              report["failures"].append({"stage": "import", "error": repr(e), "traceback": traceback.format_exc()})
+              print(json.dumps(report, indent=2, ensure_ascii=False))
+              sys.exit(3 if strict_exit else 0)
+
+          try:
+              t0 = time.perf_counter()
+              model = LaTeXOCR()
+              report["model_init_seconds"] = round(time.perf_counter() - t0, 4)
+          except Exception as e:
+              report["summary_status"] = "RAPIDLATEXOCR_MODEL_INIT_OR_DOWNLOAD_FAILED"
+              report["failures"].append({"stage": "model_init", "error": repr(e), "traceback": traceback.format_exc()})
+              print(json.dumps(report, indent=2, ensure_ascii=False))
+              sys.exit(3 if strict_exit else 0)
+
+          # Locate installed package and downloaded model artifacts.
+          try:
+              pkg_root = Path(rapid_latex_ocr.__file__).resolve().parent
+              search_roots = {pkg_root, pkg_root.parent, Path.home() / ".cache", Path.cwd()}
+              interesting_suffixes = {".onnx", ".json", ".yaml", ".yml", ".txt"}
+              seen = set()
+              total_interesting_bytes = 0
+              total_onnx_bytes = 0
+              for root in list(search_roots):
+                  if not root.exists():
+                      continue
+                  for p in root.rglob("*"):
+                      if not p.is_file():
+                          continue
+                      name = p.name.lower()
+                      if p.suffix.lower() in interesting_suffixes and ("latex" in str(p).lower() or name in {"encoder.onnx", "decoder.onnx", "image_resizer.onnx", "tokenizer.json"}):
+                          rp = str(p.resolve())
+                          if rp in seen:
+                              continue
+                          seen.add(rp)
+                          size = p.stat().st_size
+                          cat = "onnx" if p.suffix.lower() == ".onnx" else "config_or_tokenizer"
+                          total_interesting_bytes += size
+                          if cat == "onnx":
+                              total_onnx_bytes += size
+                          report["model_files"].append({
+                              "path": rp,
+                              "name": p.name,
+                              "size_bytes": size,
+                              "size_mib": mb(size),
+                              "category": cat,
+                          })
+              report["model_file_summary"] = {
+                  "count": len(report["model_files"]),
+                  "onnx_count": sum(1 for f in report["model_files"] if f["category"] == "onnx"),
+                  "total_interesting_mib": mb(total_interesting_bytes),
+                  "total_onnx_mib": mb(total_onnx_bytes),
+                  "within_product_cap": mb(total_interesting_bytes) <= max_bundle_mb,
+                  "within_ideal_target": mb(total_interesting_bytes) <= ideal_bundle_mb,
+              }
+          except Exception as e:
+              report["failures"].append({"stage": "artifact_scan", "error": repr(e), "traceback": traceback.format_exc()})
+
+          # Fetch upstream samples. This is a smoke/sample probe, not MathPro golden PASS.
+          sample_dir = Path("rapidlatexocr_samples")
+          sample_dir.mkdir(exist_ok=True)
+          sample_paths = []
+          try:
+              subprocess.run(["git", "clone", "--depth", "1", "https://github.com/RapidAI/RapidLatexOCR.git", str(sample_dir / "repo")], check=True, timeout=120)
+              test_dir = sample_dir / "repo" / "tests" / "test_files"
+              if test_dir.exists():
+                  sample_paths = sorted(list(test_dir.glob("*.png")))[:sample_limit]
+          except Exception as e:
+              report["failures"].append({"stage": "sample_clone", "error": repr(e)})
+
+          # README-known sample expectation for 6.png only; others are smoke outputs.
+          known_expected = {
+              "6.png": r"{\frac{x^{2}}{a^{2}}}-{\frac{y^{2}}{b^{2}}}=1"
+          }
+
+          if not sample_paths:
+              report["failures"].append({"stage": "sample_discovery", "error": "No RapidLaTeXOCR test sample png files found"})
+          else:
+              for img_path in sample_paths:
+                  row = {"image": str(img_path), "name": img_path.name}
+                  try:
+                      data = img_path.read_bytes()
+                      t0 = time.perf_counter()
+                      result, elapse = model(data)
+                      wall = time.perf_counter() - t0
+                      row.update({
+                          "ok": bool(result),
+                          "latex": result,
+                          "reported_elapsed_seconds": elapse,
+                          "wall_seconds": round(wall, 4),
+                          "latex_len": len(result or ""),
+                      })
+                      if img_path.name in known_expected:
+                          expected = known_expected[img_path.name]
+                          row["expected"] = expected
+                          row["normalized_similarity"] = similarity(result, expected)
+                          row["exact_after_basic_normalize"] = norm_latex(result) == norm_latex(expected)
+                  except Exception as e:
+                      row.update({"ok": False, "error": repr(e), "traceback": traceback.format_exc()})
+                  report["sample_runs"].append(row)
+
+          onnx_count = report.get("model_file_summary", {}).get("onnx_count", 0)
+          total_mib = report.get("model_file_summary", {}).get("total_interesting_mib", 999999.0)
+          sample_ok = any(r.get("ok") for r in report["sample_runs"])
+          exact_known = any(r.get("exact_after_basic_normalize") for r in report["sample_runs"] if r.get("name") == "6.png")
+
+          if onnx_count <= 0:
+              report["summary_status"] = "RAPIDLATEXOCR_NO_ONNX_MODEL_FILES_FOUND"
+          elif total_mib > max_bundle_mb:
+              report["summary_status"] = "RAPIDLATEXOCR_RUNTIME_OK_BUT_BUNDLE_OVER_PRODUCT_CAP_NO_PASS" if sample_ok else "RAPIDLATEXOCR_BUNDLE_OVER_CAP_AND_SAMPLE_FAILED_NO_PASS"
+          elif sample_ok:
+              if exact_known:
+                  report["summary_status"] = "RAPIDLATEXOCR_RUNTIME_CANDIDATE_READY_SAMPLE_ONLY_NOT_MATHPRO_QUALITY_PASS"
+              else:
+                  report["summary_status"] = "RAPIDLATEXOCR_RUNTIME_NONEMPTY_SAMPLE_OUTPUT_SIZE_OK_NOT_QUALITY_PASS"
+          else:
+              report["summary_status"] = "RAPIDLATEXOCR_RUNTIME_SAMPLE_INFERENCE_FAILED"
+
+          Path("q389r11a_rapidlatexocr_probe_report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+          print(json.dumps(report, indent=2, ensure_ascii=False))
+
+          ready_statuses = {
+              "RAPIDLATEXOCR_RUNTIME_CANDIDATE_READY_SAMPLE_ONLY_NOT_MATHPRO_QUALITY_PASS",
+              "RAPIDLATEXOCR_RUNTIME_NONEMPTY_SAMPLE_OUTPUT_SIZE_OK_NOT_QUALITY_PASS",
+          }
+          if strict_exit and report["summary_status"] not in ready_statuses:
+              sys.exit(3)
+          sys.exit(0)
+          PY
+          python q389r11a_probe.py
+
+      - name: Upload Q389R11A report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r11a_rapidlatexocr_probe_report
+          path: q389r11a_rapidlatexocr_probe_report.json
+          if-no-files-found: warn
