@@ -1,0 +1,501 @@
+name: Q389R11C-R1 RapidLaTeXOCR Preprocessing Grid Probe Fix
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_bundle_mb:
+        description: 'Product cap in MiB'
+        required: true
+        default: '220'
+      ideal_bundle_mb:
+        description: 'Ideal target in MiB'
+        required: true
+        default: '150'
+      strict_exit:
+        description: 'Exit non-zero only if grid has no useful candidate'
+        required: true
+        default: 'true'
+      max_presets:
+        description: 'Maximum preprocessing presets to test'
+        required: true
+        default: '12'
+
+jobs:
+  rapidlatexocr_preprocessing_grid_probe_fix:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout workflow repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install probe dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install rapid_latex_ocr pillow psutil requests matplotlib numpy
+
+      - name: Run Q389R11C-R1 RapidLaTeXOCR preprocessing grid probe fix
+        env:
+          MAX_BUNDLE_MB: ${{ inputs.max_bundle_mb }}
+          IDEAL_BUNDLE_MB: ${{ inputs.ideal_bundle_mb }}
+          STRICT_EXIT: ${{ inputs.strict_exit }}
+          MAX_PRESETS: ${{ inputs.max_presets }}
+        run: |
+          cat > q389r11c_r1_probe.py <<'PY'
+          import json
+          import os
+          import re
+          import sys
+          import time
+          import traceback
+          from importlib import metadata
+          from pathlib import Path
+
+          import matplotlib
+          matplotlib.use('Agg')
+          import matplotlib.pyplot as plt
+          from PIL import Image, ImageFilter, ImageOps, ImageEnhance
+          from rapid_latex_ocr import LaTeXOCR
+          import rapid_latex_ocr
+
+
+          def mb(n):
+              return round(float(n) / 1024.0 / 1024.0, 4)
+
+
+          def extract_latex_and_confidence(raw):
+              if isinstance(raw, (tuple, list)):
+                  latex = "" if len(raw) < 1 else str(raw[0])
+                  conf = None if len(raw) < 2 else raw[1]
+                  return latex, conf, repr(raw)
+              return str(raw), None, repr(raw)
+
+
+          def canonical_latex(s: str) -> str:
+              s = s or ""
+              s = s.replace("\\left", "").replace("\\right", "")
+              s = s.replace("\\textstyle", "").replace("\\displaystyle", "")
+              s = re.sub(r"\\operatorname\*?\{lim\}", r"\\lim", s)
+              s = re.sub(r"\\operatorname\*?\{sin\}", r"\\sin", s)
+              s = re.sub(r"\\operatorname\*?\{cos\}", r"\\cos", s)
+              s = re.sub(r"\\operatorname\*?\{log\}", r"\\log", s)
+              s = s.replace("\\mathrm{log}", "\\log")
+              s = s.replace("\\mathrm{cos}", "\\cos")
+              s = s.replace("\\mathrm{sin}", "\\sin")
+              s = s.replace("\\mathrm{d}", "d")
+              s = re.sub(r"\\mathrm\{([^{}]+)\}", r"\1", s)
+              s = s.replace("\\mathrm", "")
+              s = s.replace("\\mathit{x}", "x")
+              s = s.replace("\\mathit{y}", "y")
+              s = s.replace("\\mathit{n}", "n")
+              s = s.replace("\\,", "").replace("\\;", "").replace("\\!", "")
+              s = s.replace("\\quad", "").replace("\\qquad", "")
+              s = s.replace("^{\\prime\\prime}", "''")
+              s = s.replace("^{\\prime}", "'")
+              s = s.replace("\\prime\\prime", "''")
+              s = s.replace("\\prime", "'")
+              s = re.sub(r"\s+", "", s)
+              # Lowercase single-letter variable OCR drift while preserving command names.
+              out = []
+              i = 0
+              while i < len(s):
+                  if s[i] == "\\":
+                      j = i + 1
+                      while j < len(s) and s[j].isalpha():
+                          j += 1
+                      out.append(s[i:j])
+                      i = j
+                  else:
+                      ch = s[i]
+                      if ch in "XYZUVTNABCD":
+                          out.append(ch.lower())
+                      else:
+                          out.append(ch)
+                      i += 1
+              s = "".join(out)
+              s = s.strip(" ,.;:")
+              s = s.replace("{", "").replace("}", "")
+              return s.strip()
+
+
+          def levenshtein(a: str, b: str) -> int:
+              if a == b:
+                  return 0
+              if not a:
+                  return len(b)
+              if not b:
+                  return len(a)
+              prev = list(range(len(b) + 1))
+              for i, ca in enumerate(a, 1):
+                  cur = [i]
+                  for j, cb in enumerate(b, 1):
+                      cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+                  prev = cur
+              return prev[-1]
+
+
+          def similarity(a: str, b: str) -> float:
+              a = canonical_latex(a)
+              b = canonical_latex(b)
+              denom = max(len(a), len(b), 1)
+              return round(1.0 - (levenshtein(a, b) / denom), 4)
+
+
+          def token_ok(token: str, pred_canon: str) -> bool:
+              tok = canonical_latex(token)
+              if tok in pred_canon:
+                  return True
+              aliases = {
+                  "\\lim": "lim", "\\sin": "sin", "\\cos": "cos", "\\log": "log",
+                  "\\partial": "partial", "\\infty": "infty", "\\sum": "sum",
+                  "\\sqrt": "sqrt", "\\frac": "frac", "\\int": "int"
+              }
+              if tok in aliases and aliases[tok] in pred_canon:
+                  return True
+              if tok.startswith("\\") and tok[1:] in pred_canon:
+                  return True
+              return False
+
+
+          def render_formula(latex: str, out_path: Path, fontsize: int, fig_w: float = 6.0, fig_h: float = 1.6, dpi: int = 220, pad_inches: float = 0.12):
+              fig = plt.figure(figsize=(fig_w, fig_h), dpi=dpi)
+              fig.patch.set_facecolor("white")
+              ax = fig.add_axes([0, 0, 1, 1])
+              ax.axis("off")
+              ax.text(0.03, 0.5, f"${latex}$", fontsize=fontsize, va="center", ha="left", color="black")
+              fig.savefig(out_path, bbox_inches="tight", pad_inches=pad_inches, facecolor="white")
+              plt.close(fig)
+
+
+          def add_padding(img: Image.Image, pad_px: int, fill: int = 255) -> Image.Image:
+              if pad_px <= 0:
+                  return img
+              bg = Image.new("L", (img.width + pad_px * 2, img.height + pad_px * 2), fill)
+              bg.paste(img, (pad_px, pad_px))
+              return bg
+
+
+          def process_image(src: Path, dst: Path, preset: dict):
+              img = Image.open(src).convert("L")
+              if preset.get("autocrop", False):
+                  inv = ImageOps.invert(img)
+                  bbox = inv.getbbox()
+                  if bbox:
+                      img = img.crop(bbox)
+              img = add_padding(img, int(preset.get("pad_px", 0)), int(preset.get("bg", 255)))
+              if preset.get("rotate", 0.0):
+                  img = img.rotate(float(preset["rotate"]), expand=True, fillcolor=int(preset.get("bg", 255)))
+              if preset.get("blur", 0.0):
+                  img = img.filter(ImageFilter.GaussianBlur(radius=float(preset["blur"])))
+              contrast = float(preset.get("contrast", 1.0))
+              if contrast != 1.0:
+                  img = ImageEnhance.Contrast(img).enhance(contrast)
+              threshold = preset.get("threshold")
+              if threshold is not None:
+                  t = int(threshold)
+                  img = img.point(lambda p: 255 if p >= t else 0)
+              scale = float(preset.get("scale", 1.0))
+              if scale != 1.0:
+                  w = max(1, int(round(img.width * scale)))
+                  h = max(1, int(round(img.height * scale)))
+                  img = img.resize((w, h), Image.Resampling.LANCZOS)
+              img.save(dst)
+
+
+          max_bundle_mb = float(os.environ.get("MAX_BUNDLE_MB", "220"))
+          ideal_bundle_mb = float(os.environ.get("IDEAL_BUNDLE_MB", "150"))
+          strict_exit = os.environ.get("STRICT_EXIT", "true").lower() == "true"
+          max_presets = int(os.environ.get("MAX_PRESETS", "12"))
+
+          cases = [
+              {"id": "fraction_power", "latex": r"\frac{x^2+y^2}{2a}", "must_contain": [r"\frac", "^"], "critical_tokens": ["2a"]},
+              {"id": "sqrt_expr", "latex": r"\sqrt{x^2+1}", "must_contain": [r"\sqrt", "^"], "critical_tokens": []},
+              {"id": "integral", "latex": r"\int_0^1 x^2 \, dx", "must_contain": [r"\int", "^"], "critical_tokens": ["0", "1", "x^2"]},
+              {"id": "derivative", "latex": r"\frac{dy}{dx}=3x^2", "must_contain": [r"\frac", "^"], "critical_tokens": ["dy", "dx", "3x^2"]},
+              {"id": "partial", "latex": r"\frac{\partial u}{\partial t}", "must_contain": [r"\partial", r"\frac"], "critical_tokens": [r"\partialu", r"\partialt"]},
+              {"id": "limit", "latex": r"\lim_{x\to0}\frac{\sin x}{x}", "must_contain": [r"\lim", r"\frac", r"\sin"], "critical_tokens": ["xto0", "sinx"]},
+              {"id": "sum", "latex": r"\sum_{n=1}^{\infty}\frac{1}{n^2}", "must_contain": [r"\sum", r"\infty", r"\frac"], "critical_tokens": [r"\sum", r"\infty", r"\frac"]},
+              {"id": "ode", "latex": r"y''+3y'+2y=0", "must_contain": ["y''", "y'", "=0"], "critical_tokens": ["3y'", "2y=0"]},
+              {"id": "log_trig", "latex": r"\log(x)+\cos(x)", "must_contain": [r"\log", r"\cos"], "critical_tokens": [r"\log", r"\cos"]},
+          ]
+
+          presets = [
+              {"name": "baseline_balanced", "fontsize": 28, "render_pad": 0.18, "pad_px": 24, "contrast": 1.0, "threshold": None, "scale": 1.0, "rotate": 0.0, "blur": 0.0, "autocrop": False},
+              {"name": "tight_autocrop_pad16", "fontsize": 28, "render_pad": 0.08, "pad_px": 16, "contrast": 1.0, "threshold": None, "scale": 1.0, "rotate": 0.0, "blur": 0.0, "autocrop": True},
+              {"name": "wide_pad48", "fontsize": 28, "render_pad": 0.18, "pad_px": 48, "contrast": 1.0, "threshold": None, "scale": 1.0, "rotate": 0.0, "blur": 0.0, "autocrop": False},
+              {"name": "large_font_pad32", "fontsize": 34, "render_pad": 0.16, "pad_px": 32, "contrast": 1.0, "threshold": None, "scale": 1.0, "rotate": 0.0, "blur": 0.0, "autocrop": False},
+              {"name": "small_font_pad32", "fontsize": 24, "render_pad": 0.16, "pad_px": 32, "contrast": 1.0, "threshold": None, "scale": 1.0, "rotate": 0.0, "blur": 0.0, "autocrop": False},
+              {"name": "contrast_1_45_pad24", "fontsize": 28, "render_pad": 0.18, "pad_px": 24, "contrast": 1.45, "threshold": None, "scale": 1.0, "rotate": 0.0, "blur": 0.0, "autocrop": False},
+              {"name": "threshold_210_pad24", "fontsize": 28, "render_pad": 0.18, "pad_px": 24, "contrast": 1.2, "threshold": 210, "scale": 1.0, "rotate": 0.0, "blur": 0.0, "autocrop": False},
+              {"name": "scale_1_35_pad24", "fontsize": 28, "render_pad": 0.18, "pad_px": 24, "contrast": 1.0, "threshold": None, "scale": 1.35, "rotate": 0.0, "blur": 0.0, "autocrop": False},
+              {"name": "scale_1_65_pad32", "fontsize": 28, "render_pad": 0.18, "pad_px": 32, "contrast": 1.0, "threshold": None, "scale": 1.65, "rotate": 0.0, "blur": 0.0, "autocrop": False},
+              {"name": "soft_camera_like", "fontsize": 28, "render_pad": 0.18, "pad_px": 24, "contrast": 1.25, "threshold": None, "scale": 1.0, "rotate": 1.2, "blur": 0.25, "autocrop": False},
+              {"name": "camera_like_wide", "fontsize": 30, "render_pad": 0.18, "pad_px": 48, "contrast": 1.2, "threshold": None, "scale": 1.25, "rotate": 1.0, "blur": 0.2, "autocrop": False},
+              {"name": "autocrop_threshold_scaled", "fontsize": 30, "render_pad": 0.10, "pad_px": 28, "contrast": 1.35, "threshold": 205, "scale": 1.35, "rotate": 0.0, "blur": 0.0, "autocrop": True},
+          ][:max(1, max_presets)]
+
+          report = {
+              "phase": "Q389R11C-R1",
+              "title": "RapidLaTeXOCR Preprocessing Grid Probe Fix",
+              "fixes": [
+                  "Deduplicate model artifact scan so model files are not counted twice.",
+                  "Normalize OCR variable-case drift inside expressions, not only at word boundaries.",
+                  "Normalize \\mathrm{log}/\\mathrm{cos}/\\mathrm{sin} outputs before scoring.",
+                  "Recompute status using unique model artifact size and corrected case scoring."
+              ],
+              "hard_rules": [
+                  "Model is fixed; this probe changes only input preparation.",
+                  "This is not final real-camera device PASS.",
+                  "Do not bundle model into base APK; keep download-only app-private storage.",
+                  "Use best preset recommendations to guide MathPro camera preprocessing and review-surface integration."
+              ],
+              "max_bundle_mb": max_bundle_mb,
+              "ideal_bundle_mb": ideal_bundle_mb,
+              "strict_exit": strict_exit,
+              "max_presets": max_presets,
+              "package": {},
+              "model_files": [],
+              "model_file_summary": {},
+              "presets": presets,
+              "case_results": [],
+              "preset_summary": [],
+              "failures": [],
+              "summary_status": "UNKNOWN",
+          }
+
+          try:
+              dist = metadata.distribution("rapid_latex_ocr")
+              report["package"] = {
+                  "name": dist.metadata.get("Name", "rapid_latex_ocr"),
+                  "version": dist.version,
+                  "license": dist.metadata.get("License", "UNKNOWN"),
+                  "summary": dist.metadata.get("Summary", ""),
+              }
+          except Exception as e:
+              report["failures"].append({"stage": "metadata", "error": repr(e), "traceback": traceback.format_exc()})
+
+          try:
+              t0 = time.perf_counter()
+              model = LaTeXOCR()
+              report["model_init_seconds"] = round(time.perf_counter() - t0, 4)
+          except Exception as e:
+              report["summary_status"] = "RAPIDLATEXOCR_MODEL_INIT_OR_DOWNLOAD_FAILED"
+              report["failures"].append({"stage": "model_init", "error": repr(e), "traceback": traceback.format_exc()})
+              Path("q389r11c_r1_report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+              print(json.dumps(report, indent=2, ensure_ascii=False))
+              sys.exit(3 if strict_exit else 0)
+
+          try:
+              pkg_root = Path(rapid_latex_ocr.__file__).resolve().parent
+              search_roots = [pkg_root]
+              seen = set()
+              total_interesting_bytes = 0
+              total_onnx_bytes = 0
+              for root in search_roots:
+                  if not root.exists():
+                      continue
+                  for p in root.rglob("*"):
+                      if not p.is_file():
+                          continue
+                      if p.suffix.lower() not in {".onnx", ".json", ".yaml", ".yml", ".txt"}:
+                          continue
+                      rp = str(p.resolve())
+                      if rp in seen:
+                          continue
+                      seen.add(rp)
+                      size = p.stat().st_size
+                      cat = "onnx" if p.suffix.lower() == ".onnx" else "config_or_tokenizer"
+                      total_interesting_bytes += size
+                      if cat == "onnx":
+                          total_onnx_bytes += size
+                      report["model_files"].append({
+                          "path": rp,
+                          "name": p.name,
+                          "size_bytes": size,
+                          "size_mib": mb(size),
+                          "category": cat,
+                      })
+              report["model_file_summary"] = {
+                  "count": len(report["model_files"]),
+                  "onnx_count": sum(1 for f in report["model_files"] if f["category"] == "onnx"),
+                  "total_interesting_mib": mb(total_interesting_bytes),
+                  "total_onnx_mib": mb(total_onnx_bytes),
+                  "within_product_cap": mb(total_interesting_bytes) <= max_bundle_mb,
+                  "within_ideal_target": mb(total_interesting_bytes) <= ideal_bundle_mb,
+              }
+          except Exception as e:
+              report["failures"].append({"stage": "artifact_scan", "error": repr(e), "traceback": traceback.format_exc()})
+
+          work = Path("q389r11c_r1_samples")
+          base_dir = work / "base"
+          proc_dir = work / "processed"
+          base_dir.mkdir(parents=True, exist_ok=True)
+          proc_dir.mkdir(parents=True, exist_ok=True)
+
+          preset_stats = {p["name"]: {"preset": p, "runs": 0, "passes": 0, "exact": 0, "structural": 0, "similarity_sum": 0.0, "runtime_sum": 0.0, "confidence_sum": 0.0, "confidence_count": 0, "case_ids_passed": []} for p in presets}
+
+          for case in cases:
+              case_record = {
+                  "id": case["id"],
+                  "expected_latex": case["latex"],
+                  "expected_canonical": canonical_latex(case["latex"]),
+                  "must_contain": case["must_contain"],
+                  "critical_tokens": case["critical_tokens"],
+                  "runs": [],
+                  "best_run": None,
+              }
+              best_score = -1.0
+              for preset in presets:
+                  preset_name = preset["name"]
+                  base_path = base_dir / f"{case['id']}__{preset_name}__base.png"
+                  out_path = proc_dir / f"{case['id']}__{preset_name}.png"
+                  run = {"preset": preset_name, "image_path": str(out_path.resolve())}
+                  try:
+                      render_formula(case["latex"], base_path, fontsize=int(preset.get("fontsize", 28)), pad_inches=float(preset.get("render_pad", 0.12)))
+                      process_image(base_path, out_path, preset)
+                      t0 = time.perf_counter()
+                      raw = model(out_path)
+                      elapsed = round(time.perf_counter() - t0, 4)
+                      pred_latex, conf, raw_repr = extract_latex_and_confidence(raw)
+                      pred_canon = canonical_latex(pred_latex)
+                      expected_canon = canonical_latex(case["latex"])
+                      sim = similarity(case["latex"], pred_latex)
+                      exact = pred_canon == expected_canon
+                      must_ok = all(token_ok(t, pred_canon) for t in case["must_contain"])
+                      critical_ok = all(canonical_latex(t) in pred_canon for t in case["critical_tokens"])
+                      non_empty = bool(pred_canon)
+                      structural_pass = bool(non_empty and must_ok and critical_ok and sim >= 0.72)
+                      passes_case = bool(exact or structural_pass)
+                      score = sim + (0.20 if must_ok else 0.0) + (0.20 if critical_ok else 0.0) + (0.40 if exact else 0.0) + (0.15 if passes_case else 0.0)
+                      run.update({
+                          "raw_model_output_repr": raw_repr,
+                          "predicted_latex": pred_latex,
+                          "model_confidence": conf,
+                          "predicted_canonical": pred_canon,
+                          "normalized_similarity": sim,
+                          "exact_after_canonical_normalize": exact,
+                          "must_contain_check": must_ok,
+                          "critical_token_check": critical_ok,
+                          "non_empty": non_empty,
+                          "runtime_seconds": elapsed,
+                          "structural_pass": structural_pass,
+                          "passes_case": passes_case,
+                          "score": round(score, 4),
+                      })
+                      stat = preset_stats[preset_name]
+                      stat["runs"] += 1
+                      stat["similarity_sum"] += sim
+                      stat["runtime_sum"] += elapsed
+                      if conf is not None:
+                          try:
+                              stat["confidence_sum"] += float(conf)
+                              stat["confidence_count"] += 1
+                          except Exception:
+                              pass
+                      if passes_case:
+                          stat["passes"] += 1
+                          stat["case_ids_passed"].append(case["id"])
+                      if exact:
+                          stat["exact"] += 1
+                      if structural_pass:
+                          stat["structural"] += 1
+                      if score > best_score:
+                          best_score = score
+                          case_record["best_run"] = run
+                  except Exception as e:
+                      run.update({
+                          "predicted_latex": "", "predicted_canonical": "", "normalized_similarity": 0.0,
+                          "exact_after_canonical_normalize": False, "must_contain_check": False, "critical_token_check": False,
+                          "non_empty": False, "runtime_seconds": None, "structural_pass": False, "passes_case": False,
+                          "score": 0.0, "error": repr(e),
+                      })
+                      report["failures"].append({"stage": "preset_run", "case": case["id"], "preset": preset_name, "error": repr(e), "traceback": traceback.format_exc()})
+                  case_record["runs"].append(run)
+              report["case_results"].append(case_record)
+
+          for preset_name, stat in preset_stats.items():
+              runs = max(1, stat["runs"])
+              conf_count = max(1, stat["confidence_count"])
+              row = {
+                  "preset": preset_name,
+                  "runs": stat["runs"],
+                  "passes": stat["passes"],
+                  "exact": stat["exact"],
+                  "structural": stat["structural"],
+                  "pass_ratio": round(stat["passes"] / runs, 4),
+                  "average_similarity": round(stat["similarity_sum"] / runs, 4),
+                  "average_runtime_seconds": round(stat["runtime_sum"] / runs, 4),
+                  "average_confidence": round(stat["confidence_sum"] / conf_count, 6) if stat["confidence_count"] else None,
+                  "case_ids_passed": sorted(set(stat["case_ids_passed"])),
+                  "preset_config": stat["preset"],
+              }
+              row["ranking_score"] = round(row["pass_ratio"] * 2.0 + row["average_similarity"] + (0.05 if row["average_runtime_seconds"] <= 0.45 else 0.0), 4)
+              report["preset_summary"].append(row)
+
+          report["preset_summary"].sort(key=lambda x: (x["ranking_score"], x["pass_ratio"], x["average_similarity"]), reverse=True)
+          recommended = report["preset_summary"][0] if report["preset_summary"] else None
+          report["recommended_preset"] = recommended
+
+          total_cases = len(cases)
+          best_case_passes = sum(1 for c in report["case_results"] if c.get("best_run", {}).get("passes_case"))
+          best_case_ratio = round(best_case_passes / max(total_cases, 1), 4)
+          best_case_avg_similarity = round(sum(c.get("best_run", {}).get("normalized_similarity", 0.0) for c in report["case_results"]) / max(total_cases, 1), 4)
+          report["aggregate"] = {
+              "total_cases": total_cases,
+              "presets_tested": len(presets),
+              "total_runs": sum(p["runs"] for p in report["preset_summary"]),
+              "best_case_passes_any_preset": best_case_passes,
+              "best_case_pass_ratio_any_preset": best_case_ratio,
+              "best_case_average_similarity_any_preset": best_case_avg_similarity,
+              "recommended_preset_name": recommended["preset"] if recommended else None,
+              "recommended_preset_pass_ratio": recommended["pass_ratio"] if recommended else 0.0,
+              "recommended_preset_average_similarity": recommended["average_similarity"] if recommended else 0.0,
+          }
+
+          weak_cases = []
+          for c in report["case_results"]:
+              best = c.get("best_run") or {}
+              if not best.get("passes_case"):
+                  weak_cases.append({
+                      "case": c["id"],
+                      "best_preset": best.get("preset"),
+                      "best_similarity": best.get("normalized_similarity"),
+                      "best_prediction": best.get("predicted_latex"),
+                  })
+          report["weak_cases_after_grid"] = weak_cases
+
+          within_cap = report.get("model_file_summary", {}).get("within_product_cap", False)
+          rec_ratio = recommended["pass_ratio"] if recommended else 0.0
+          rec_sim = recommended["average_similarity"] if recommended else 0.0
+          if not within_cap:
+              report["summary_status"] = "RAPIDLATEXOCR_GRID_MODEL_OVER_PRODUCT_CAP"
+          elif best_case_ratio >= 0.78 and rec_ratio >= 0.67:
+              report["summary_status"] = "RAPIDLATEXOCR_PREPROCESSING_GRID_FOUND_STRONG_PRESET_SYNTHETIC_ONLY_NOT_DEVICE_PASS"
+          elif best_case_ratio >= 0.60 or rec_ratio >= 0.50 or rec_sim >= 0.65:
+              report["summary_status"] = "RAPIDLATEXOCR_PREPROCESSING_GRID_PARTIAL_USEFUL_PRESET_FOUND"
+          else:
+              report["summary_status"] = "RAPIDLATEXOCR_PREPROCESSING_GRID_NO_USEFUL_PRESET"
+
+          Path("q389r11c_r1_report.json").write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+          print(json.dumps(report, indent=2, ensure_ascii=False))
+
+          acceptable = {
+              "RAPIDLATEXOCR_PREPROCESSING_GRID_FOUND_STRONG_PRESET_SYNTHETIC_ONLY_NOT_DEVICE_PASS",
+              "RAPIDLATEXOCR_PREPROCESSING_GRID_PARTIAL_USEFUL_PRESET_FOUND",
+          }
+          if strict_exit and report["summary_status"] not in acceptable:
+              sys.exit(3)
+          PY
+          python q389r11c_r1_probe.py
+
+      - name: Upload Q389R11C-R1 report and samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r11c_r1_report_and_samples
+          path: |
+            q389r11c_r1_report.json
+            q389r11c_r1_samples/
