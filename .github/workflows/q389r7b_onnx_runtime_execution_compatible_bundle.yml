@@ -1,0 +1,370 @@
+name: Q389R7B ONNX Runtime execution-compatible Formula OCR bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_repos:
+        description: "Comma-separated Hugging Face model repos to try in order"
+        required: true
+        default: "PaddlePaddle/PP-FormulaNet_plus-S,PaddlePaddle/PP-FormulaNet-S"
+      model_revision:
+        description: "Model revision, branch, tag, or commit"
+        required: true
+        default: "main"
+      opset_versions:
+        description: "Comma-separated ONNX opset versions to try in order"
+        required: true
+        default: "19,18,17"
+      release_tag:
+        description: "GitHub Release tag for execution-compatible hosted bundle"
+        required: true
+        default: "q389r7b-onnx-runtime-execution-compatible-formula-ocr-bundle"
+      base_url_override:
+        description: "Optional asset base URL override; leave blank for this repository release"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  Q389R7B_ROOT: ${{ github.workspace }}/build/q389r7b_onnx_runtime_execution_compatible_bundle
+
+jobs:
+  build-release-bundle:
+    name: Build and publish execution-compatible ONNX bundle
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout MathPro source
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install conversion and runtime verification dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install huggingface_hub numpy onnx onnxruntime paddle2onnx paddlepaddle==3.0.0
+
+      - name: Export candidates and require real ONNX Runtime session.run
+        shell: bash
+        env:
+          CANDIDATE_REPOS: ${{ inputs.candidate_repos }}
+          MODEL_REVISION: ${{ inputs.model_revision }}
+          OPSET_VERSIONS: ${{ inputs.opset_versions }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          BASE_URL_OVERRIDE: ${{ inputs.base_url_override }}
+        run: |
+          set -euxo pipefail
+          mkdir -p "$Q389R7B_ROOT/work" "$Q389R7B_ROOT/reports" "$Q389R7B_ROOT/bundle"
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import shutil
+          import subprocess
+          import traceback
+          from pathlib import Path
+
+          import numpy as np
+          import onnx
+          import onnxruntime as ort
+          from huggingface_hub import snapshot_download
+
+          root = Path(os.environ['Q389R7B_ROOT'])
+          work = root / 'work'
+          reports = root / 'reports'
+          bundle = root / 'bundle'
+          repos = [item.strip() for item in os.environ['CANDIDATE_REPOS'].split(',') if item.strip()]
+          opsets = [item.strip() for item in os.environ['OPSET_VERSIONS'].split(',') if item.strip()]
+          revision = os.environ['MODEL_REVISION']
+          release_tag = os.environ['RELEASE_TAG']
+          base_url = os.environ.get('BASE_URL_OVERRIDE') or f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{release_tag}"
+
+          def sha256_file(path: Path) -> str:
+              h = hashlib.sha256()
+              with path.open('rb') as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b''):
+                      h.update(chunk)
+              return h.hexdigest()
+
+          def safe_name(text: str) -> str:
+              return ''.join(ch if ch.isalnum() else '_' for ch in text).strip('_').lower()
+
+          def normalize_shape(shape):
+              normalized = []
+              for index, dim in enumerate(shape):
+                  if isinstance(dim, int) and dim > 0:
+                      normalized.append(dim)
+                  elif index == 0:
+                      normalized.append(1)
+                  elif len(shape) == 4 and index == 1:
+                      normalized.append(1)
+                  elif len(shape) == 4 and index in (2, 3):
+                      normalized.append(384)
+                  else:
+                      normalized.append(1)
+              if len(normalized) == 0:
+                  normalized = [1]
+              return normalized
+
+          def make_feed(session, mode):
+              feed = {}
+              shapes = {}
+              for input_meta in session.get_inputs():
+                  shape = normalize_shape(input_meta.shape)
+                  shapes[input_meta.name] = shape
+                  dtype = np.float32
+                  if 'int64' in input_meta.type:
+                      dtype = np.int64
+                  elif 'int32' in input_meta.type:
+                      dtype = np.int32
+                  elif 'float16' in input_meta.type:
+                      dtype = np.float16
+                  size = int(np.prod(shape))
+                  if mode == 'zeros':
+                      values = np.zeros(shape, dtype=dtype)
+                  else:
+                      if np.issubdtype(dtype, np.floating):
+                          values = np.linspace(0.0, 1.0, num=size, dtype=np.float32).reshape(shape).astype(dtype)
+                      else:
+                          values = np.zeros(shape, dtype=dtype)
+                  feed[input_meta.name] = values
+              return feed, shapes
+
+          def verify_runtime_run(model_path: Path):
+              onnx_model = onnx.load(str(model_path))
+              onnx.checker.check_model(onnx_model)
+              session = ort.InferenceSession(str(model_path), providers=['CPUExecutionProvider'])
+              inputs = [{'name': i.name, 'shape': i.shape, 'type': i.type} for i in session.get_inputs()]
+              outputs = [{'name': o.name, 'shape': o.shape, 'type': o.type} for o in session.get_outputs()]
+              run_reports = []
+              for mode in ['zeros', 'ramp']:
+                  feed, shapes = make_feed(session, mode)
+                  result = session.run(None, feed)
+                  result_shapes = []
+                  for value in result:
+                      result_shapes.append({
+                          'type': str(type(value)),
+                          'shape': list(value.shape) if hasattr(value, 'shape') else [],
+                          'dtype': str(value.dtype) if hasattr(value, 'dtype') else '',
+                          'size': int(value.size) if hasattr(value, 'size') else 0,
+                      })
+                  run_reports.append({'mode': mode, 'inputShapes': shapes, 'outputShapes': result_shapes})
+              return {'onnxCheckerPassed': True, 'onnxRuntimeSessionCreated': True, 'onnxRuntimeSessionRunPassed': True, 'inputs': inputs, 'outputs': outputs, 'runs': run_reports}
+
+          attempts = []
+          selected = None
+          for repo in repos:
+              repo_work = work / safe_name(repo)
+              model_dir = repo_work / 'model'
+              model_dir.mkdir(parents=True, exist_ok=True)
+              try:
+                  snapshot_download(
+                      repo_id=repo,
+                      revision=revision,
+                      local_dir=str(model_dir),
+                      local_dir_use_symlinks=False,
+                      allow_patterns=['inference.json', 'inference.pdiparams', 'inference.yml', 'config.json', 'README.md', '*.txt', '*vocab*', '*token*', '*dict*', '*latex*'],
+                  )
+              except Exception as error:
+                  attempts.append({'repo': repo, 'revision': revision, 'stage': 'snapshot_download', 'passed': False, 'error': repr(error)})
+                  continue
+              files = sorted(str(p.relative_to(model_dir)) for p in model_dir.rglob('*') if p.is_file())
+              if 'inference.json' not in files or 'inference.pdiparams' not in files:
+                  attempts.append({'repo': repo, 'revision': revision, 'stage': 'snapshot_files', 'passed': False, 'files': files, 'error': 'missing inference.json or inference.pdiparams'})
+                  continue
+              for opset in opsets:
+                  attempt_dir = repo_work / f'opset_{opset}'
+                  attempt_dir.mkdir(parents=True, exist_ok=True)
+                  out = attempt_dir / 'candidate.onnx'
+                  stdout = attempt_dir / 'paddle2onnx_stdout.log'
+                  stderr = attempt_dir / 'paddle2onnx_stderr.log'
+                  cmd = [
+                      'paddle2onnx',
+                      '--model_dir', str(model_dir),
+                      '--model_filename', 'inference.json',
+                      '--params_filename', 'inference.pdiparams',
+                      '--save_file', str(out),
+                      '--opset_version', str(opset),
+                      '--enable_auto_update_opset', 'True',
+                      '--enable_onnx_checker', 'True',
+                      '--enable_verbose', 'True',
+                  ]
+                  with stdout.open('w', encoding='utf-8') as so, stderr.open('w', encoding='utf-8') as se:
+                      export_status = subprocess.run(cmd, stdout=so, stderr=se).returncode
+                  attempt = {
+                      'repo': repo,
+                      'revision': revision,
+                      'opset': opset,
+                      'stage': 'export',
+                      'exportStatus': export_status,
+                      'onnxExists': out.exists(),
+                      'onnxSizeBytes': out.stat().st_size if out.exists() else 0,
+                      'paddle2onnxStdout': str(stdout),
+                      'paddle2onnxStderr': str(stderr),
+                  }
+                  if export_status != 0 or not out.exists():
+                      attempt['passed'] = False
+                      attempt['error'] = 'paddle2onnx export failed'
+                      attempts.append(attempt)
+                      continue
+                  try:
+                      runtime_report = verify_runtime_run(out)
+                      attempt.update(runtime_report)
+                      attempt['stage'] = 'runtime_session_run'
+                      attempt['passed'] = True
+                      attempts.append(attempt)
+                      selected = {'repo': repo, 'revision': revision, 'opset': opset, 'modelPath': out, 'runtimeReport': runtime_report, 'sourceFilesPresent': files, 'modelDir': model_dir}
+                      break
+                  except Exception as error:
+                      attempt['stage'] = 'runtime_session_run'
+                      attempt['passed'] = False
+                      attempt['error'] = repr(error)
+                      attempt['traceback'] = traceback.format_exc(limit=8)
+                      attempts.append(attempt)
+              if selected is not None:
+                  break
+
+          (reports / 'q389r7b_attempts_report.json').write_text(json.dumps({'phase': 'V172-Q389R7B', 'attempts': attempts}, indent=2), encoding='utf-8')
+          if selected is None:
+              print(json.dumps({'phase': 'V172-Q389R7B', 'status': 'NO_EXECUTION_COMPATIBLE_ONNX_ARTIFACT', 'attempts': attempts}, indent=2))
+              raise SystemExit('No candidate ONNX export passed real onnxruntime session.run')
+
+          selected_model_name = 'pp_formulanet_plus_s.onnx'
+          shutil.copy2(selected['modelPath'], bundle / selected_model_name)
+          model_dir = selected['modelDir']
+          for candidate in ['inference.yml', 'config.json', 'README.md']:
+              src = model_dir / candidate
+              if src.exists():
+                  shutil.copy2(src, bundle / candidate)
+
+          preprocess = {
+              'phase': 'V172-Q389R7B',
+              'role': 'preprocess-metadata',
+              'selectedModelRepo': selected['repo'],
+              'modelRevision': selected['revision'],
+              'selectedOpset': selected['opset'],
+              'runtime': 'ONNX Runtime Mobile / ONNX Runtime CPUExecutionProvider preflight',
+              'sessionRunRequiredBeforeRelease': True,
+              'runtimeReport': selected['runtimeReport'],
+              'sourceFilesPresent': selected['sourceFilesPresent'],
+          }
+          decoder = {
+              'phase': 'V172-Q389R7B',
+              'role': 'decoder-metadata',
+              'selectedModelRepo': selected['repo'],
+              'modelRevision': selected['revision'],
+              'selectedOpset': selected['opset'],
+              'onnxInputs': selected['runtimeReport']['inputs'],
+              'onnxOutputs': selected['runtimeReport']['outputs'],
+              'sessionRunEvidence': selected['runtimeReport']['runs'],
+              'fakeLatexCandidateAllowed': False,
+              'reviewFirstRequired': True,
+          }
+          preprocess_path = bundle / 'q389r7b_preprocess_metadata.json'
+          decoder_path = bundle / 'q389r7b_decoder_metadata.json'
+          preprocess_path.write_text(json.dumps(preprocess, indent=2), encoding='utf-8')
+          decoder_path.write_text(json.dumps(decoder, indent=2), encoding='utf-8')
+
+          files = []
+          def add_file(role, file_name, required=True):
+              path = bundle / file_name
+              files.append({
+                  'role': role,
+                  'fileName': file_name,
+                  'downloadUrl': f'{base_url}/{file_name}',
+                  'sha256': sha256_file(path),
+                  'sizeBytes': path.stat().st_size,
+                  'required': required,
+              })
+          add_file('onnx-runtime-model', selected_model_name, True)
+          add_file('preprocess-metadata', 'q389r7b_preprocess_metadata.json', True)
+          add_file('decoder-metadata', 'q389r7b_decoder_metadata.json', True)
+          if (bundle / 'inference.yml').exists():
+              add_file('source-preprocess-config', 'inference.yml', False)
+          if (bundle / 'config.json').exists():
+              add_file('source-model-config', 'config.json', False)
+          if (bundle / 'README.md').exists():
+              add_file('source-readme', 'README.md', False)
+
+          manifest = {
+              'phase': 'V172-Q389R7B-ONNX-RUNTIME-EXECUTION-COMPATIBLE-BUNDLE',
+              'manifestFormatVersion': 'q389r6b-onnx-runtime-mobile-bundle-manifest-v1',
+              'modelId': 'pp_formulanet_onnx_runtime_execution_compatible_mobile',
+              'modelDisplayName': f"{selected['repo'].split('/')[-1]} ONNX offline formula OCR",
+              'sourceRevision': f"{selected['repo']}@{selected['revision']}",
+              'conversionProvenance': f"GitHub Actions {os.environ.get('GITHUB_SERVER_URL')}/{os.environ.get('GITHUB_REPOSITORY')}/actions/runs/{os.environ.get('GITHUB_RUN_ID')}",
+              'selectedOpset': selected['opset'],
+              'onnxRuntimeSessionRunPassed': True,
+              'primaryRuntimeArtifactKind': 'onnx-runtime-model',
+              'primaryRuntimeModelFileName': selected_model_name,
+              'onnxRuntimeMobileRequired': True,
+              'backendAllowed': False,
+              'mlKitAllowed': False,
+              'textOcrFallbackAllowed': False,
+              'modelBundledInBaseApp': False,
+              'fakeLatexCandidateAllowed': False,
+              'workspaceImportRequiresEditableReview': True,
+              'files': files,
+          }
+          manifest_path = bundle / 'q389r6b_onnx_formula_ocr_bundle_manifest.json'
+          manifest_path.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+
+          final_report = {
+              'phase': 'V172-Q389R7B',
+              'status': 'EXECUTION_COMPATIBLE_ONNX_BUNDLE_READY',
+              'selectedModelRepo': selected['repo'],
+              'selectedRevision': selected['revision'],
+              'selectedOpset': selected['opset'],
+              'modelFileName': selected_model_name,
+              'modelSha256': sha256_file(bundle / selected_model_name),
+              'modelSizeBytes': (bundle / selected_model_name).stat().st_size,
+              'onnxRuntimeSessionRunPassed': True,
+              'runtimeReport': selected['runtimeReport'],
+              'manifestPath': str(manifest_path),
+              'bundleFiles': files,
+              'note': 'The Android app must accept this release manifest SHA/size evidence before using this artifact; do not hardcode the old Q389R6X hash for this release.',
+          }
+          (reports / 'q389r7b_release_bundle_report.json').write_text(json.dumps(final_report, indent=2), encoding='utf-8')
+          print(json.dumps(final_report, indent=2))
+          PY
+
+      - name: Upload workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r7b-onnx-runtime-execution-compatible-formula-ocr-bundle
+          path: |
+            build/q389r7b_onnx_runtime_execution_compatible_bundle/reports/**
+            build/q389r7b_onnx_runtime_execution_compatible_bundle/bundle/**
+          if-no-files-found: warn
+
+      - name: Publish GitHub Release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: Q389R7B ONNX Runtime execution-compatible Formula OCR bundle
+          body: |
+            Device-only Formula OCR bundle for MathPro/Gauss Q389R7B.
+
+            This release is stricter than Q389R6X: it is published only after ONNX checker, ONNX Runtime session creation, and actual session.run on deterministic image-like tensors pass in CI.
+
+            The model remains download-only/app-private for the Android app. It is not bundled into the APK/AAB. No backend, no ML Kit, no text OCR fallback, no fake LaTeX candidate is authorized by this release.
+          files: |
+            ${{ env.Q389R7B_ROOT }}/bundle/pp_formulanet_plus_s.onnx
+            ${{ env.Q389R7B_ROOT }}/bundle/q389r6b_onnx_formula_ocr_bundle_manifest.json
+            ${{ env.Q389R7B_ROOT }}/bundle/q389r7b_preprocess_metadata.json
+            ${{ env.Q389R7B_ROOT }}/bundle/q389r7b_decoder_metadata.json
+            ${{ env.Q389R7B_ROOT }}/bundle/inference.yml
+            ${{ env.Q389R7B_ROOT }}/bundle/config.json
+            ${{ env.Q389R7B_ROOT }}/bundle/README.md
+            ${{ env.Q389R7B_ROOT }}/reports/q389r7b_attempts_report.json
+            ${{ env.Q389R7B_ROOT }}/reports/q389r7b_release_bundle_report.json
+          fail_on_unmatched_files: false
