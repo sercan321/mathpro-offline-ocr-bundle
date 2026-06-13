@@ -1,0 +1,537 @@
+name: Q389R10A PP-FormulaNet Apache Artifact and Official Export Feasibility Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      hf_repos:
+        description: 'Comma-separated HF repos to inspect'
+        required: true
+        default: 'PaddlePaddle/PP-FormulaNet-S,PaddlePaddle/PP-FormulaNet_plus-S'
+      model_names:
+        description: 'Comma-separated PaddleX/PaddleOCR model names for optional official smoke probe'
+        required: true
+        default: 'PP-FormulaNet-S,PP-FormulaNet_plus-S'
+      max_bundle_mb:
+        description: 'Product hard cap in MiB. This is not a PASS without a real artifact.'
+        required: true
+        default: '220'
+      ideal_bundle_mb:
+        description: 'Preferred product target in MiB. This is not a PASS without a real artifact.'
+        required: true
+        default: '150'
+      run_official_paddlex_smoke:
+        description: 'Try official PaddleX create_model/predict smoke probe. Heavy; may download models.'
+        required: true
+        type: boolean
+        default: false
+      strict_exit:
+        description: 'Fail workflow on blocked/over-cap/no-artifact statuses'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: '1'
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+
+jobs:
+  inspect-artifacts:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    outputs:
+      summary_status: ${{ steps.inspect.outputs.summary_status }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install lightweight inspection dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install huggingface_hub requests
+
+      - name: Inspect license, file tree, artifact types, and size risk
+        id: inspect
+        shell: bash
+        env:
+          HF_REPOS: ${{ github.event.inputs.hf_repos }}
+          MAX_BUNDLE_MB: ${{ github.event.inputs.max_bundle_mb }}
+          IDEAL_BUNDLE_MB: ${{ github.event.inputs.ideal_bundle_mb }}
+          STRICT_EXIT: ${{ github.event.inputs.strict_exit }}
+        run: |
+          cat > q389r10a_inspect.py <<'PY'
+          import json
+          import math
+          import os
+          import re
+          import sys
+          from dataclasses import dataclass
+          from pathlib import PurePosixPath
+          from typing import Dict, List, Any, Optional
+
+          from huggingface_hub import HfApi
+
+          def mib(n: Optional[int]) -> Optional[float]:
+              if n is None:
+                  return None
+              return round(float(n) / (1024.0 * 1024.0), 4)
+
+          def norm_path(p: str) -> str:
+              return p.replace('\\\\', '/').lstrip('/')
+
+          def category_for(path: str) -> str:
+              p = path.lower()
+              name = PurePosixPath(p).name
+              if p.endswith('.onnx'):
+                  return 'onnx'
+              if p.endswith('.nb'):
+                  return 'paddle_lite_nb'
+              if p.endswith('.pdmodel') or name == '__model__':
+                  return 'paddle_classic_model'
+              if p.endswith('.pdiparams') or name == '__params__':
+                  return 'paddle_params'
+              if name == 'inference.json' or p.endswith('/inference.json'):
+                  return 'paddle_pir_json'
+              if p.endswith('.json'):
+                  return 'json_config'
+              if 'tokenizer' in p or 'vocab' in p or 'merges' in p or p.endswith('.txt'):
+                  return 'tokenizer_or_vocab'
+              if p.endswith(('.safetensors', '.bin', '.pth', '.pt')):
+                  return 'training_or_transformers_weight'
+              return 'other'
+
+          def file_size(f) -> Optional[int]:
+              # huggingface_hub siblings have .size when files_metadata=True; old versions may differ.
+              for attr in ('size', 'lfs'):
+                  val = getattr(f, attr, None)
+                  if attr == 'lfs' and isinstance(val, dict) and val.get('size') is not None:
+                      return int(val['size'])
+                  if attr == 'size' and val is not None:
+                      return int(val)
+              return None
+
+          def looks_encoder(path: str) -> bool:
+              p = path.lower()
+              return p.endswith('.onnx') and 'encoder' in p
+
+          def looks_decoder(path: str) -> bool:
+              p = path.lower()
+              return p.endswith('.onnx') and 'decoder' in p
+
+          def has_pair(paths: List[str], model_suffix: str, params_suffix: str) -> bool:
+              low = {p.lower() for p in paths}
+              return any(p.endswith(model_suffix) for p in low) and any(p.endswith(params_suffix) for p in low)
+
+          def classify(repo: str, license_value: str, files: List[Dict[str, Any]], max_mb: float, ideal_mb: float) -> Dict[str, Any]:
+              paths = [f['path'] for f in files]
+              by_cat: Dict[str, Dict[str, Any]] = {}
+              for f in files:
+                  cat = category_for(f['path'])
+                  by_cat.setdefault(cat, {'count': 0, 'known_bytes': 0, 'unknown_count': 0, 'files': []})
+                  by_cat[cat]['count'] += 1
+                  if f['size_bytes'] is None:
+                      by_cat[cat]['unknown_count'] += 1
+                  else:
+                      by_cat[cat]['known_bytes'] += f['size_bytes']
+                  by_cat[cat]['files'].append(f)
+              for cat in by_cat:
+                  by_cat[cat]['known_mib'] = mib(by_cat[cat]['known_bytes'])
+                  by_cat[cat]['files'] = sorted(by_cat[cat]['files'], key=lambda x: (x['path'].lower()))[:60]
+
+              license_norm = (license_value or '').lower().strip()
+              apache_ok = license_norm in ('apache-2.0', 'apache 2.0', 'apache2.0') or 'apache-2.0' in license_norm
+              onnx_paths = [p for p in paths if p.lower().endswith('.onnx')]
+              has_onnx_encoder_decoder = any(looks_encoder(p) for p in paths) and any(looks_decoder(p) for p in paths)
+              has_any_onnx = bool(onnx_paths)
+              has_nb = any(p.lower().endswith('.nb') for p in paths)
+              has_classic_pdmodel = any(p.lower().endswith('.pdmodel') for p in paths)
+              has_classic_dunder = any(PurePosixPath(p.lower()).name == '__model__' for p in paths)
+              has_params = any(p.lower().endswith('.pdiparams') or PurePosixPath(p.lower()).name == '__params__' for p in paths)
+              has_classic_static = (has_classic_pdmodel or has_classic_dunder) and has_params
+              has_pir_json = any(PurePosixPath(p.lower()).name == 'inference.json' for p in paths)
+              has_pir_json_with_params = has_pir_json and has_params and not has_classic_static
+
+              known_total_bytes = sum((f['size_bytes'] or 0) for f in files)
+              known_total_mib = mib(known_total_bytes)
+
+              # Official PaddleOCR/PaddleX docs list storage sizes; include as explicit external reference anchors.
+              doc_storage_mib = None
+              if repo.endswith('PP-FormulaNet-S'):
+                  doc_storage_mib = 224.0
+              elif repo.endswith('PP-FormulaNet_plus-S'):
+                  doc_storage_mib = 248.0
+
+              # R9A reduction projection is only a hypothesis from an earlier large-model quantization result.
+              # It is never used as PASS/FAIL input for this workflow.
+              r9a_reduction_percent = 59.65
+              projected_int8_mib = None
+              if doc_storage_mib:
+                  projected_int8_mib = round(doc_storage_mib * (1.0 - r9a_reduction_percent / 100.0), 2)
+
+              if not apache_ok:
+                  status = 'LICENSE_NOT_APACHE_BLOCKED_FOR_CLOSED_SOURCE_PRODUCT'
+              elif has_nb:
+                  status = 'PADDLE_LITE_NB_ARTIFACT_FOUND_RUNTIME_PROBE_NEEDED_SIZE_ONLY_NOT_QUALITY_PASS'
+              elif has_classic_static:
+                  status = 'CLASSIC_STATIC_PADDLE_ARTIFACT_FOUND_PADDLE_LITE_NB_ROUTE_REOPEN_CANDIDATE_SIZE_ONLY_NOT_QUALITY_PASS'
+              elif has_onnx_encoder_decoder:
+                  status = 'READY_ONNX_ENCODER_DECODER_ARTIFACT_FOUND_RUNTIME_PROBE_NEEDED_SIZE_ONLY_NOT_QUALITY_PASS'
+              elif has_any_onnx:
+                  status = 'PARTIAL_ONNX_ARTIFACT_FOUND_NO_ENCODER_DECODER_PAIR'
+              elif has_pir_json_with_params:
+                  status = 'PIR_JSON_WITH_PARAMS_ONLY_CLASSIC_PADDLE_LITE_NB_STILL_BLOCKED_OFFICIAL_EXPORT_REQUIRED'
+              else:
+                  status = 'NO_ANDROID_READY_ARTIFACT_FOUND_OFFICIAL_EXPORT_REQUIRED'
+
+              product_size_risk = 'UNKNOWN_NEEDS_REAL_ARTIFACT'
+              basis_mb = known_total_mib or doc_storage_mib
+              if doc_storage_mib:
+                  if doc_storage_mib > max_mb:
+                      product_size_risk = 'OFFICIAL_FP32_STORAGE_OVER_PRODUCT_CAP'
+                  elif doc_storage_mib > ideal_mb:
+                      product_size_risk = 'OFFICIAL_FP32_STORAGE_BETWEEN_IDEAL_AND_CAP'
+                  else:
+                      product_size_risk = 'OFFICIAL_FP32_STORAGE_WITHIN_IDEAL_TARGET'
+
+              lite_route = 'UNKNOWN'
+              if has_nb:
+                  lite_route = 'DIRECT_NB_PRESENT_REOPEN_PADDLE_LITE_DEVICE_ROUTE'
+              elif has_classic_static:
+                  lite_route = 'CLASSIC_STATIC_PRESENT_OPT_TOOL_MAY_REOPEN_NB_ROUTE'
+              elif has_pir_json_with_params:
+                  lite_route = 'PIR_JSON_PRESENT_OLD_OPT_TOOL_BLOCK_LIKELY_STILL_APPLIES'
+              elif has_params and not has_classic_static:
+                  lite_route = 'PARAMS_PRESENT_BUT_NO_CLASSIC_MODEL_CONTAINER'
+              else:
+                  lite_route = 'NO_PADDLE_LITE_INPUT_ARTIFACT_DETECTED'
+
+              return {
+                  'repo': repo,
+                  'license': license_value,
+                  'license_closed_source_product_ok': apache_ok,
+                  'status': status,
+                  'product_size_risk': product_size_risk,
+                  'official_doc_storage_mib_reference': doc_storage_mib,
+                  'known_hf_file_total_mib': known_total_mib,
+                  'max_bundle_mib': max_mb,
+                  'ideal_bundle_mib': ideal_mb,
+                  'r9a_quantization_projection': {
+                      'label': 'PROJECTION_ONLY_NOT_A_PASS_INPUT',
+                      'source_large_model_reduction_percent': r9a_reduction_percent,
+                      'projected_mib_from_official_doc_storage': projected_int8_mib,
+                      'warning': 'Do not claim product size PASS until an actual quantized Paddle Lite .nb or ONNX artifact is produced and measured.'
+                  },
+                  'artifact_flags': {
+                      'has_ready_onnx_encoder_decoder_pair': has_onnx_encoder_decoder,
+                      'has_any_onnx': has_any_onnx,
+                      'has_paddle_lite_nb': has_nb,
+                      'has_classic_static_pdmodel_or_dunder_model_plus_params': has_classic_static,
+                      'has_pir_inference_json': has_pir_json,
+                      'has_pir_json_with_params_only': has_pir_json_with_params,
+                  },
+                  'paddle_lite_route_assessment': lite_route,
+                  'category_summary': by_cat,
+                  'selected_interesting_files': sorted([
+                      f for f in files
+                      if category_for(f['path']) in {'onnx','paddle_lite_nb','paddle_classic_model','paddle_params','paddle_pir_json','json_config','tokenizer_or_vocab'}
+                  ], key=lambda x: x['path'].lower())[:160],
+                  'notes': [
+                      'This is an artifact/license/format probe, not OCR quality PASS.',
+                      'PIR/json must be separated from classic static inference.pdmodel + inference.pdiparams because Paddle Lite opt compatibility depends on this distinction.',
+                      'Official PaddleX/PaddleOCR export/smoke should be preferred before reopening manual Paddle2ONNX or shape-surgery work.',
+                  ]
+              }
+
+          def main():
+              repos = [r.strip() for r in os.environ.get('HF_REPOS','').split(',') if r.strip()]
+              max_mb = float(os.environ.get('MAX_BUNDLE_MB','220'))
+              ideal_mb = float(os.environ.get('IDEAL_BUNDLE_MB','150'))
+              strict = os.environ.get('STRICT_EXIT','true').lower() == 'true'
+              api = HfApi()
+              results = []
+              failures = []
+              for repo in repos:
+                  try:
+                      info = api.model_info(repo, files_metadata=True)
+                      card_data = getattr(info, 'card_data', None)
+                      license_value = ''
+                      if card_data is not None:
+                          if isinstance(card_data, dict):
+                              license_value = str(card_data.get('license') or '')
+                          else:
+                              license_value = str(getattr(card_data, 'license', '') or '')
+                      if not license_value:
+                          license_value = str(getattr(info, 'license', '') or '')
+                      files = []
+                      for s in getattr(info, 'siblings', []) or []:
+                          path = norm_path(getattr(s, 'rfilename', '') or '')
+                          if not path:
+                              continue
+                          size = file_size(s)
+                          files.append({
+                              'path': path,
+                              'size_bytes': size,
+                              'size_mib': mib(size),
+                              'category': category_for(path),
+                          })
+                      results.append(classify(repo, license_value, files, max_mb, ideal_mb))
+                  except Exception as exc:
+                      failures.append({'repo': repo, 'error': repr(exc)})
+
+              status_priority = []
+              for r in results:
+                  status_priority.append(r['status'])
+                  if r['product_size_risk'].endswith('OVER_PRODUCT_CAP'):
+                      status_priority.append(r['product_size_risk'])
+              if failures:
+                  status_priority.append('HF_INSPECTION_FAILED')
+              if not results:
+                  summary_status = 'NO_REPOS_INSPECTED'
+              elif any(s.startswith('LICENSE_NOT_APACHE') for s in status_priority):
+                  summary_status = 'BLOCKED_LICENSE_FOUND'
+              elif any(s == 'PADDLE_LITE_NB_ARTIFACT_FOUND_RUNTIME_PROBE_NEEDED_SIZE_ONLY_NOT_QUALITY_PASS' for s in status_priority):
+                  summary_status = 'NB_RUNTIME_CANDIDATE_FOUND_SIZE_ONLY_NOT_QUALITY_PASS'
+              elif any(s == 'CLASSIC_STATIC_PADDLE_ARTIFACT_FOUND_PADDLE_LITE_NB_ROUTE_REOPEN_CANDIDATE_SIZE_ONLY_NOT_QUALITY_PASS' for s in status_priority):
+                  summary_status = 'CLASSIC_STATIC_PADDLE_CANDIDATE_FOUND_PADDLE_LITE_ROUTE_REOPEN_SIZE_ONLY_NOT_QUALITY_PASS'
+              elif any(s == 'READY_ONNX_ENCODER_DECODER_ARTIFACT_FOUND_RUNTIME_PROBE_NEEDED_SIZE_ONLY_NOT_QUALITY_PASS' for s in status_priority):
+                  summary_status = 'READY_ONNX_PAIR_FOUND_RUNTIME_NEEDED_SIZE_ONLY_NOT_QUALITY_PASS'
+              elif any(s == 'OFFICIAL_FP32_STORAGE_OVER_PRODUCT_CAP' for s in status_priority):
+                  summary_status = 'OFFICIAL_FP32_STORAGE_OVER_PRODUCT_CAP_OPTIMIZATION_REQUIRED_NO_PASS'
+              elif all(r['status'].startswith('PIR_JSON') for r in results):
+                  summary_status = 'PIR_JSON_ONLY_OFFICIAL_EXPORT_REQUIRED_NO_ANDROID_READY_ARTIFACT'
+              else:
+                  summary_status = 'OFFICIAL_EXPORT_REQUIRED_NO_ANDROID_READY_ARTIFACT'
+
+              report = {
+                  'phase': 'Q389R10A',
+                  'title': 'PP-FormulaNet Apache Artifact and Official Export Feasibility Probe',
+                  'summary_status': summary_status,
+                  'strict_exit': strict,
+                  'repos': results,
+                  'failures': failures,
+                  'hard_rules': [
+                      'Do not claim OCR quality PASS from this workflow.',
+                      'Do not treat R9A INT8 projection as real product size evidence.',
+                      'Do not reopen manual Paddle2ONNX/shape-surgery before official PaddleX/PaddleOCR export/smoke evidence.',
+                      'Report PIR/json vs classic static Paddle format explicitly.',
+                  ]
+              }
+              with open('q389r10a_pp_formulanet_artifact_probe_report.json', 'w', encoding='utf-8') as f:
+                  json.dump(report, f, ensure_ascii=False, indent=2)
+              with open('q389r10a_pp_formulanet_artifact_probe_summary.txt', 'w', encoding='utf-8') as f:
+                  f.write('Q389R10A summary_status: ' + summary_status + '\n')
+                  for r in results:
+                      f.write(f"\n[{r['repo']}]\n")
+                      f.write(f"license={r['license']} closed_source_ok={r['license_closed_source_product_ok']}\n")
+                      f.write(f"status={r['status']}\n")
+                      f.write(f"product_size_risk={r['product_size_risk']} official_doc_storage_mib={r['official_doc_storage_mib_reference']}\n")
+                      f.write(f"paddle_lite_route_assessment={r['paddle_lite_route_assessment']}\n")
+                      f.write(f"r9a_projection_only={r['r9a_quantization_projection']}\n")
+                      f.write('artifact_flags=' + json.dumps(r['artifact_flags'], ensure_ascii=False) + '\n')
+              print(json.dumps(report, ensure_ascii=False, indent=2))
+              with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as gh:
+                  gh.write(f"summary_status={summary_status}\n")
+              blocked_prefixes = (
+                  'BLOCKED_LICENSE_FOUND',
+                  'NO_REPOS_INSPECTED',
+              )
+              if strict and (summary_status.startswith(blocked_prefixes)):
+                  sys.exit(2)
+              # Over cap and no-artifact statuses remain nonzero only when there is no actionable official route.
+              if strict and summary_status in {
+                  'OFFICIAL_FP32_STORAGE_OVER_PRODUCT_CAP_OPTIMIZATION_REQUIRED_NO_PASS',
+                  'PIR_JSON_ONLY_OFFICIAL_EXPORT_REQUIRED_NO_ANDROID_READY_ARTIFACT',
+                  'OFFICIAL_EXPORT_REQUIRED_NO_ANDROID_READY_ARTIFACT',
+              }:
+                  # This is intentional: it forces the operator to read the artifact report instead of treating green CI as product readiness.
+                  sys.exit(3)
+          if __name__ == '__main__':
+              main()
+          PY
+          python q389r10a_inspect.py
+
+      - name: Upload Q389R10A artifact inspection report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r10a-pp-formulanet-artifact-inspection-report
+          path: |
+            q389r10a_pp_formulanet_artifact_probe_report.json
+            q389r10a_pp_formulanet_artifact_probe_summary.txt
+          if-no-files-found: warn
+
+  official-paddlex-smoke:
+    if: ${{ github.event.inputs.run_official_paddlex_smoke == 'true' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install official Paddle/PaddleX stack
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          # CPU install path. Keep this official-tooling-first; do not run manual Paddle2ONNX shape surgery here.
+          python -m pip install paddlepaddle paddlex requests pillow
+
+      - name: Run official PaddleX create_model/predict smoke and inspect cache formats
+        shell: bash
+        env:
+          MODEL_NAMES: ${{ github.event.inputs.model_names }}
+          MAX_BUNDLE_MB: ${{ github.event.inputs.max_bundle_mb }}
+          IDEAL_BUNDLE_MB: ${{ github.event.inputs.ideal_bundle_mb }}
+        run: |
+          cat > q389r10a_paddlex_smoke.py <<'PY'
+          import json
+          import os
+          import pathlib
+          import traceback
+          import urllib.request
+
+          SAMPLE_URL = 'https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/general_formula_rec_001.png'
+          SAMPLE_PATH = 'q389r10a_formula_sample.png'
+
+          def mib(n):
+              return round(float(n) / (1024.0 * 1024.0), 4)
+
+          def classify_path(p: pathlib.Path):
+              s = str(p).replace('\\\\','/').lower()
+              name = p.name.lower()
+              if s.endswith('.onnx'):
+                  return 'onnx'
+              if s.endswith('.nb'):
+                  return 'paddle_lite_nb'
+              if s.endswith('.pdmodel') or name == '__model__':
+                  return 'paddle_classic_model'
+              if s.endswith('.pdiparams') or name == '__params__':
+                  return 'paddle_params'
+              if name == 'inference.json':
+                  return 'paddle_pir_json'
+              if s.endswith('.json'):
+                  return 'json_config'
+              return 'other'
+
+          def scan_roots(roots):
+              files = []
+              seen = set()
+              for root in roots:
+                  rp = pathlib.Path(root).expanduser()
+                  if not rp.exists():
+                      continue
+                  for p in rp.rglob('*'):
+                      if not p.is_file():
+                          continue
+                      key = str(p.resolve())
+                      if key in seen:
+                          continue
+                      seen.add(key)
+                      try:
+                          st = p.stat()
+                      except OSError:
+                          continue
+                      cat = classify_path(p)
+                      if cat == 'other' and st.st_size > 8 * 1024 * 1024:
+                          cat = 'large_other'
+                      if cat != 'other':
+                          files.append({'path': str(p), 'size_bytes': st.st_size, 'size_mib': mib(st.st_size), 'category': cat})
+              by_cat = {}
+              for f in files:
+                  by_cat.setdefault(f['category'], {'count': 0, 'bytes': 0, 'files': []})
+                  by_cat[f['category']]['count'] += 1
+                  by_cat[f['category']]['bytes'] += f['size_bytes']
+                  by_cat[f['category']]['files'].append(f)
+              for c in by_cat:
+                  by_cat[c]['mib'] = mib(by_cat[c]['bytes'])
+                  by_cat[c]['files'] = sorted(by_cat[c]['files'], key=lambda x: x['path'])[:80]
+              return by_cat
+
+          def run_model(name):
+              entry = {'model_name': name, 'smoke_ok': False, 'predict_preview': None, 'error': None, 'cache_format_summary': None}
+              try:
+                  import paddlex as pdx
+                  create_model = getattr(pdx, 'create_model', None)
+                  if create_model is None:
+                      from paddlex import create_model  # type: ignore
+                  model = create_model(model_name=name)
+                  result_iter = model.predict(SAMPLE_PATH, batch_size=1)
+                  previews = []
+                  for idx, res in enumerate(result_iter):
+                      text = repr(res)
+                      previews.append(text[:1200])
+                      if idx >= 1:
+                          break
+                  entry['smoke_ok'] = True
+                  entry['predict_preview'] = previews
+              except Exception as exc:
+                  entry['error'] = repr(exc) + '\n' + traceback.format_exc(limit=20)
+              finally:
+                  roots = [
+                      '~/.paddlex', '~/.paddleocr', '~/.cache/paddle', '~/.cache/paddlex',
+                      '~/.cache/huggingface', './'
+                  ]
+                  entry['cache_format_summary'] = scan_roots(roots)
+              return entry
+
+          def main():
+              urllib.request.urlretrieve(SAMPLE_URL, SAMPLE_PATH)
+              names = [x.strip() for x in os.environ.get('MODEL_NAMES','').split(',') if x.strip()]
+              results = [run_model(n) for n in names]
+              any_ok = any(r['smoke_ok'] for r in results)
+              any_classic = False
+              any_pir = False
+              for r in results:
+                  cats = r.get('cache_format_summary') or {}
+                  any_classic = any_classic or ('paddle_classic_model' in cats and 'paddle_params' in cats)
+                  any_pir = any_pir or ('paddle_pir_json' in cats and 'paddle_params' in cats)
+              if any_ok and any_classic:
+                  status = 'OFFICIAL_PADDLEX_SMOKE_OK_CLASSIC_STATIC_FORMAT_DETECTED_PADDLE_LITE_ROUTE_REOPEN_CANDIDATE_NOT_QUALITY_PASS'
+              elif any_ok and any_pir:
+                  status = 'OFFICIAL_PADDLEX_SMOKE_OK_PIR_JSON_FORMAT_DETECTED_OLD_PADDLE_LITE_OPT_BLOCK_MAY_STILL_APPLY_NOT_QUALITY_PASS'
+              elif any_ok:
+                  status = 'OFFICIAL_PADDLEX_SMOKE_OK_BUT_ANDROID_EXPORT_FORMAT_UNRESOLVED_NOT_QUALITY_PASS'
+              else:
+                  status = 'OFFICIAL_PADDLEX_SMOKE_FAILED'
+              report = {
+                  'phase': 'Q389R10A',
+                  'summary_status': status,
+                  'sample_url': SAMPLE_URL,
+                  'results': results,
+                  'warning': 'This smoke only proves official PaddleX Python inference path if it succeeds. It is not Android, not Paddle Lite .nb, not ONNX Runtime, and not golden image quality PASS.'
+              }
+              with open('q389r10a_official_paddlex_smoke_report.json','w',encoding='utf-8') as f:
+                  json.dump(report, f, ensure_ascii=False, indent=2)
+              with open('q389r10a_official_paddlex_smoke_summary.txt','w',encoding='utf-8') as f:
+                  f.write('Q389R10A official PaddleX smoke summary_status: ' + status + '\n')
+                  for r in results:
+                      f.write(f"\n[{r['model_name']}] smoke_ok={r['smoke_ok']} error={r['error'][:500] if r['error'] else ''}\n")
+                      f.write('cache categories=' + ', '.join(sorted((r.get('cache_format_summary') or {}).keys())) + '\n')
+              print(json.dumps(report, ensure_ascii=False, indent=2))
+              if status == 'OFFICIAL_PADDLEX_SMOKE_FAILED':
+                  raise SystemExit(4)
+          if __name__ == '__main__':
+              main()
+          PY
+          python q389r10a_paddlex_smoke.py
+
+      - name: Upload Q389R10A official PaddleX smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q389r10a-official-paddlex-smoke-report
+          path: |
+            q389r10a_official_paddlex_smoke_report.json
+            q389r10a_official_paddlex_smoke_summary.txt
+          if-no-files-found: warn
