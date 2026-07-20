@@ -1,0 +1,33 @@
+name: R828C Concatenate Verified Pub Cache
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/r828c_concat_pub_cache.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  concatenate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: r828c-pub-cache-transfer-20260720
+          fetch-depth: 1
+      - name: Reassemble and commit exact archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir=transfer/r828c-pub-cache/archive
+          cat "$dir"/archive.part-* > "$dir/r828c-pub-cache.tar.zst"
+          echo '87bdf136fb89b451a78a50a370ecdaf0be9df4c379015e36bec3b396f14b6148  transfer/r828c-pub-cache/archive/r828c-pub-cache.tar.zst' | sha256sum --check --strict
+          test "$(stat -c '%s' "$dir/r828c-pub-cache.tar.zst")" -eq 37747036
+          git config user.name r828c-ci
+          git config user.email r828c-ci@users.noreply.github.com
+          git add "$dir/r828c-pub-cache.tar.zst"
+          git commit -m 'ci: expose verified exact Pub cache archive'
+          git push origin HEAD:r828c-pub-cache-transfer-20260720
