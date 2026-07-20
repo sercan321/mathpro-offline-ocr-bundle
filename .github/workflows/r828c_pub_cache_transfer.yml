@@ -1,0 +1,62 @@
+name: R828C Exact Pub Cache Transfer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/r828c_pub_cache_transfer.yml"
+      - "transfer/r828c-pub-cache/packages.tsv"
+
+permissions:
+  contents: write
+
+jobs:
+  transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: r828c-pub-cache-transfer-20260720
+          fetch-depth: 1
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: "3.12.2"
+      - name: Resolve exact hosted packages and commit verified transfer parts
+        shell: bash
+        run: |
+          set -euo pipefail
+          inventory="$GITHUB_WORKSPACE/transfer/r828c-pub-cache/packages.tsv"
+          work="$GITHUB_WORKSPACE/work-r828c-pub"
+          out="$GITHUB_WORKSPACE/transfer/r828c-pub-cache/archive"
+          rm -rf "$work" "$out"
+          mkdir -p "$work/home" "$out"
+          export HOME="$work/home"
+          export PUB_CACHE="$work/pub-cache"
+          dart --version 2>&1 | tee "$out/dart-version.txt"
+          count=0
+          while IFS=$'\t' read -r package version; do
+            test -n "$package" || continue
+            dart pub cache add "$package" --version "$version"
+            test -d "$PUB_CACHE/hosted/pub.dev/${package}-${version}"
+            count=$((count + 1))
+          done < "$inventory"
+          test "$count" -eq 74
+          find "$PUB_CACHE/hosted/pub.dev" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort > "$out/cache-directories.txt"
+          while IFS=$'\t' read -r package version; do
+            grep -Fxq "${package}-${version}" "$out/cache-directories.txt"
+          done < "$inventory"
+          tar --zstd -cf "$work/r828c-pub-cache.tar.zst" -C "$work" pub-cache
+          sha256sum "$work/r828c-pub-cache.tar.zst" | tee "$out/archive.sha256"
+          stat -c '%s' "$work/r828c-pub-cache.tar.zst" | tee "$out/archive.size"
+          split -b 10000000 -d -a 3 "$work/r828c-pub-cache.tar.zst" "$out/archive.part-"
+          sha256sum "$out"/archive.part-* | sort > "$out/parts.sha256"
+          stat -c '%n\t%s' "$out"/archive.part-* | sort > "$out/parts.size"
+          printf 'required_packages=%s\n' "$count" > "$out/identity.txt"
+          printf 'dart_version=%s\n' "$(dart --version 2>&1)" >> "$out/identity.txt"
+          git config user.name r828c-ci
+          git config user.email r828c-ci@users.noreply.github.com
+          git config http.postBuffer 524288000
+          git add transfer/r828c-pub-cache/archive
+          git commit -m "ci: transfer exact R828C Pub cache"
+          git push origin HEAD:r828c-pub-cache-transfer-20260720
