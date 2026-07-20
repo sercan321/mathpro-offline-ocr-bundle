@@ -1,0 +1,31 @@
+name: R828C Patch Android Workflow
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/r828c_patch_android_workflow.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Apply deterministic seed pub correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          file=.github/workflows/r828c_android_gradle_release.yml
+          grep -q 'flutter pub get --offline --enforce-lockfile' "$file"
+          sed -i 's/flutter pub get --offline --enforce-lockfile/flutter pub get --offline/' "$file"
+          git config user.name r828c-ci
+          git config user.email r828c-ci@users.noreply.github.com
+          git add "$file"
+          git commit -m 'ci: allow exact seed lock regeneration'
+          git push origin HEAD:main
