@@ -16,7 +16,7 @@ jobs:
     env:
       TAG: r828c-flutter-pub-20260720-v1
       GH_TOKEN: ${{ github.token }}
-      OUT: transfer/r828c-flutter-slim-probe-v4
+      OUT: transfer/r828c-flutter-slim-probe-v5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,13 +45,14 @@ jobs:
           git -C "$full" config uploadpack.allowFilter true
           git clone --depth 1 --filter=blob:none --sparse --branch stable "file://$full" work/slim/flutter
           sdk="$GITHUB_WORKSPACE/work/slim/flutter"
-          git -C "$sdk" sparse-checkout set bin packages
+          git -C "$sdk" sparse-checkout set bin packages dev
           slim_head=$(git -C "$sdk" rev-parse HEAD)
           test "$slim_head" = "$full_head"
 
-          rm -rf "$sdk/bin" "$sdk/packages"
+          rm -rf "$sdk/bin" "$sdk/packages" "$sdk/dev"
           cp -a "$full/bin" "$sdk/bin"
           cp -a "$full/packages" "$sdk/packages"
+          cp -a "$full/dev" "$sdk/dev"
           if test -d "$full/.dart_tool"; then cp -a "$full/.dart_tool" "$sdk/.dart_tool"; fi
 
           rm -rf "$sdk/bin/cache/flutter_web_sdk"
@@ -130,5 +131,5 @@ jobs:
           git config user.name r828c-ci
           git config user.email r828c-ci@users.noreply.github.com
           git add "$OUT"
-          git commit -m 'ci: record exact sparse Flutter SDK validation v4' || true
+          git commit -m 'ci: record exact sparse Flutter SDK validation v5' || true
           git push origin HEAD:r828c-pub-cache-transfer-20260720
