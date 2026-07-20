@@ -1,0 +1,4 @@
+sdk=/home/runner/work/mathpro-offline-ocr-bundle/mathpro-offline-ocr-bundle/work/sdk/flutter
+total_bytes=2529529651
+file_count=17873
+dir_count=4038

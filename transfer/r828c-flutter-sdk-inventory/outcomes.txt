@@ -1,0 +1,3 @@
+download_outcome=success
+extract_outcome=success
+inventory_outcome=failure
