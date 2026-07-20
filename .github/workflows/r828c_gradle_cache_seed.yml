@@ -1,0 +1,196 @@
+name: R828C Exact Gradle Cache Seed
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/r828c_gradle_cache_seed.yml"
+      - "transfer/triggers/r828c_gradle_cache_seed.trigger"
+
+permissions:
+  contents: write
+
+jobs:
+  seed:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      SOURCE_TAG: r828c-flutter-pub-20260720-v1
+      OUTPUT_TAG: r828c-gradle-cache-20260720-v1
+      GH_TOKEN: ${{ github.token }}
+      PUB_CACHE: ${{ github.workspace }}/work/pub-cache
+      GRADLE_USER_HOME: ${{ github.workspace }}/work/gradle-home
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: r828c-pub-cache-transfer-20260720
+          fetch-depth: 1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17.0.19+10"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10.18"
+      - name: Restore exact Flutter and Pub cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/downloads work/flutter-root work/reports work/wheelhouse
+          gh release download "$SOURCE_TAG" --repo "$GITHUB_REPOSITORY" --dir work/downloads --pattern 'r828c-flutter-sdk.part-*'
+          gh release download "$SOURCE_TAG" --repo "$GITHUB_REPOSITORY" --dir work/downloads --pattern 'r828c-pub-cache.tar.zst'
+          cat work/downloads/r828c-flutter-sdk.part-* | tar --zstd -xf - -C work/flutter-root
+          tar --zstd -xf work/downloads/r828c-pub-cache.tar.zst -C work
+          export FLUTTER_ROOT="$GITHUB_WORKSPACE/work/flutter-root/flutter"
+          export PATH="$FLUTTER_ROOT/bin:$PATH"
+          git config --global --add safe.directory "$FLUTTER_ROOT"
+          flutter --version | tee work/reports/flutter_version.txt
+          dart --version 2>&1 | tee work/reports/dart_version.txt
+          grep -q 'Flutter 3.44.6' work/reports/flutter_version.txt
+          grep -q 'Dart 3.12.2' work/reports/flutter_version.txt
+      - name: Install exact Gradle and Python wheels
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 5 -o work/downloads/gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          echo '544c35d6bd849ae8a5ed0bcea39ba677dc40f49df7d1835561582da2009b961d  work/downloads/gradle.zip' | sha256sum --check --strict
+          unzip -q work/downloads/gradle.zip -d work
+          work/gradle-8.7/bin/gradle --version | tee work/reports/gradle_version.txt
+          python -m pip download --no-deps --only-binary=:all: --dest work/wheelhouse 'mpmath==1.3.0' 'sympy==1.14.0'
+          echo 'a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c  work/wheelhouse/mpmath-1.3.0-py3-none-any.whl' | sha256sum --check --strict
+          echo 'e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5  work/wheelhouse/sympy-1.14.0-py3-none-any.whl' | sha256sum --check --strict
+      - name: Seed AGP, Kotlin, Chaquopy, Flutter engine and ONNX caches
+        shell: bash
+        run: |
+          set -euo pipefail
+          export FLUTTER_ROOT="$GITHUB_WORKSPACE/work/flutter-root/flutter"
+          export PATH="$FLUTTER_ROOT/bin:$PATH"
+          export ANDROID_HOME="${ANDROID_SDK_ROOT}"
+          rm -rf seed
+          flutter create --no-pub --platforms=android --project-name=r828c_cache_seed --android-language=kotlin seed
+          rm -f seed/android/settings.gradle.kts seed/android/build.gradle.kts seed/android/app/build.gradle.kts
+          cat > seed/pubspec.yaml <<'YAML'
+          name: r828c_cache_seed
+          publish_to: none
+          version: 1.0.0+1
+          environment:
+            sdk: '>=3.3.0 <4.0.0'
+          dependencies:
+            flutter:
+              sdk: flutter
+            camera: '0.10.6'
+            camera_android: '0.10.9+3'
+            flutter_math_fork: '0.7.4'
+            http: '1.6.0'
+            crypto: '3.0.7'
+            path_provider: '2.1.5'
+            shared_preferences: '2.5.5'
+            webview_flutter: '4.7.0'
+          dev_dependencies:
+            flutter_test:
+              sdk: flutter
+            integration_test:
+              sdk: flutter
+            flutter_lints: '4.0.0'
+          flutter:
+            uses-material-design: true
+          YAML
+          cat > seed/lib/main.dart <<'DART'
+          import 'package:flutter/material.dart';
+          void main() => runApp(const MaterialApp(home: SizedBox.shrink()));
+          DART
+          cat > seed/android/settings.gradle <<'GRADLE'
+          pluginManagement {
+              def flutterSdkPath = {
+                  def properties = new Properties()
+                  file('local.properties').withInputStream { properties.load(it) }
+                  def value = properties.getProperty('flutter.sdk')
+                  assert value != null
+                  return value
+              }()
+              includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          plugins {
+              id 'dev.flutter.flutter-plugin-loader' version '1.0.0'
+              id 'com.android.application' version '8.6.1' apply false
+              id 'org.jetbrains.kotlin.android' version '2.1.0' apply false
+              id 'com.chaquo.python' version '17.0.0' apply false
+          }
+          include ':app'
+          GRADLE
+          cat > seed/android/build.gradle <<'GRADLE'
+          allprojects { repositories { google(); mavenCentral() } }
+          rootProject.buildDir = '../build'
+          subprojects { project.buildDir = "${rootProject.buildDir}/${project.name}" }
+          subprojects { project.evaluationDependsOn(':app') }
+          tasks.register('clean', Delete) { delete rootProject.buildDir }
+          GRADLE
+          cat > seed/android/app/build.gradle <<GRADLE
+          plugins {
+              id 'com.android.application'
+              id 'kotlin-android'
+              id 'dev.flutter.flutter-gradle-plugin'
+              id 'com.chaquo.python'
+          }
+          android {
+              namespace 'com.mathpro.r828cseed'
+              compileSdk 36
+              ndkVersion flutter.ndkVersion
+              compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+              kotlinOptions { jvmTarget = '17' }
+              defaultConfig {
+                  applicationId 'com.mathpro.r828cseed'
+                  minSdk 24
+                  targetSdk 36
+                  versionCode 1
+                  versionName '1.0'
+                  ndk { abiFilters 'arm64-v8a' }
+              }
+          }
+          chaquopy {
+              defaultConfig {
+                  buildPython "${pythonLocation}/bin/python"
+                  pip {
+                      options "--no-index"
+                      options "--find-links", "$GITHUB_WORKSPACE/work/wheelhouse"
+                      install "mpmath==1.3.0"
+                      install "sympy==1.14.0"
+                  }
+                  pyc { src = false }
+              }
+          }
+          dependencies { implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.20.0' }
+          flutter { source '../..' }
+          GRADLE
+          mkdir -p seed/android/app/src/main/python
+          echo 'def smoke(): return "ok"' > seed/android/app/src/main/python/smoke.py
+          cat > seed/android/local.properties <<EOF
+          sdk.dir=$ANDROID_SDK_ROOT
+          flutter.sdk=$FLUTTER_ROOT
+          EOF
+          (cd seed && flutter pub get --offline) 2>&1 | tee work/reports/seed_pub_get.log
+          (cd seed/android && "$GITHUB_WORKSPACE/work/gradle-8.7/bin/gradle" --no-daemon --max-workers=2 :app:assembleDebug :app:assembleProfile :app:assembleRelease --stacktrace) 2>&1 | tee work/reports/seed_gradle_build.log
+          test -f seed/build/app/outputs/flutter-apk/app-release.apk
+          sha256sum seed/build/app/outputs/flutter-apk/app-release.apk > work/reports/seed_apk.sha256
+          stat -c '%s' seed/build/app/outputs/flutter-apk/app-release.apk > work/reports/seed_apk.size
+      - name: Publish cache release
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$GRADLE_USER_HOME/daemon" "$GRADLE_USER_HOME/workers" "$GRADLE_USER_HOME/.tmp"
+          mkdir -p work/chunks
+          tar --zstd -cf - -C work gradle-home | split -b 750000000 -d -a 3 - work/chunks/r828c-gradle-home.part-
+          sha256sum work/chunks/* | sort > work/reports/release_assets.sha256
+          stat -c '%n\t%s' work/chunks/* | sort > work/reports/release_assets.size
+          gh release delete "$OUTPUT_TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+          gh release create "$OUTPUT_TAG" --repo "$GITHUB_REPOSITORY" --target r828c-pub-cache-transfer-20260720 --title 'R828C exact Gradle dependency cache' --notes 'Temporary open-source build dependency cache only. No MathPro source, signing material, secrets, or user data.' --prerelease
+          gh release upload "$OUTPUT_TAG" work/chunks/* work/reports/flutter_version.txt work/reports/dart_version.txt work/reports/gradle_version.txt work/reports/seed_apk.sha256 work/reports/seed_apk.size work/reports/release_assets.sha256 work/reports/release_assets.size --repo "$GITHUB_REPOSITORY" --clobber
+          mkdir -p transfer/r828c-gradle-cache-release
+          cp work/reports/*.txt work/reports/*.sha256 work/reports/*.size transfer/r828c-gradle-cache-release/ 2>/dev/null || true
+          printf 'tag=%s\nstatus=PASS\n' "$OUTPUT_TAG" > transfer/r828c-gradle-cache-release/status.txt
+          git config user.name r828c-ci
+          git config user.email r828c-ci@users.noreply.github.com
+          git add transfer/r828c-gradle-cache-release
+          git commit -m 'ci: record exact Gradle cache release evidence'
+          git push origin HEAD:r828c-pub-cache-transfer-20260720
