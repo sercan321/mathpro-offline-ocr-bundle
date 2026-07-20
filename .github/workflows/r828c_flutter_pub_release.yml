@@ -1,0 +1,128 @@
+name: R828C Exact Flutter And Pub Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/r828c_flutter_pub_release.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      TAG: r828c-flutter-pub-20260720-v1
+      FLUTTER_VERSION: 3.44.6
+      PUB_CACHE: ${{ github.workspace }}/work/pub-cache
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: r828c-pub-cache-transfer-20260720
+          fetch-depth: 1
+      - name: Resolve and verify exact Flutter SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p work/downloads work/flutter-root work/reports work/chunks
+          python3 - <<'PY'
+          import hashlib, json, pathlib, urllib.request
+          version = '3.44.6'
+          index_url = 'https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json'
+          with urllib.request.urlopen(index_url, timeout=90) as response:
+              data = json.load(response)
+          rows = [r for r in data['releases'] if r.get('version') == version and r.get('channel') == 'stable' and 'linux' in r.get('archive','') and 'arm64' not in r.get('archive','')]
+          if len(rows) != 1:
+              raise SystemExit(f'Expected one exact release, got {len(rows)}')
+          row = rows[0]
+          url = data['base_url'].rstrip('/') + '/' + row['archive']
+          target = pathlib.Path('work/downloads/flutter.tar.xz')
+          digest = hashlib.sha256()
+          request = urllib.request.Request(url, headers={'User-Agent':'MathPro-R828C-Toolchain/1.0'})
+          with urllib.request.urlopen(request, timeout=600) as response, target.open('wb') as output:
+              while True:
+                  block = response.read(1024 * 1024)
+                  if not block:
+                      break
+                  output.write(block)
+                  digest.update(block)
+          actual = digest.hexdigest()
+          if actual != row['sha256']:
+              raise SystemExit(f'Flutter archive SHA mismatch: {actual} != {row["sha256"]}')
+          pathlib.Path('work/reports/flutter_release.json').write_text(json.dumps({
+              'version': version,
+              'channel': row['channel'],
+              'frameworkHash': row['hash'],
+              'dartVersion': row.get('dart_sdk_version'),
+              'archive': row['archive'],
+              'archiveUrl': url,
+              'archiveSha256': row['sha256'],
+              'archiveSize': target.stat().st_size,
+          }, indent=2, sort_keys=True) + '\n')
+          PY
+          tar -xJf work/downloads/flutter.tar.xz -C work/flutter-root
+          work/flutter-root/flutter/bin/flutter config --no-analytics
+          work/flutter-root/flutter/bin/dart --disable-analytics
+          work/flutter-root/flutter/bin/flutter --version | tee work/reports/flutter_version.txt
+          work/flutter-root/flutter/bin/dart --version 2>&1 | tee work/reports/dart_version.txt
+          grep -q 'Flutter 3.44.6' work/reports/flutter_version.txt
+          grep -q 'Dart 3.12.2' work/reports/flutter_version.txt
+      - name: Precache exact Android Flutter artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          work/flutter-root/flutter/bin/flutter precache --android 2>&1 | tee work/reports/flutter_precache_android.log
+          work/flutter-root/flutter/bin/flutter doctor -v 2>&1 | tee work/reports/flutter_doctor.txt || true
+      - name: Populate exact 74-package Pub cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          inventory=transfer/r828c-pub-cache/packages.tsv
+          test "$(awk 'NF {n++} END {print n+0}' "$inventory")" -eq 74
+          mkdir -p "$PUB_CACHE"
+          while IFS=$'\t' read -r package version; do
+            test -n "$package" || continue
+            work/flutter-root/flutter/bin/dart pub cache add "$package" --version "$version"
+            test -d "$PUB_CACHE/hosted/pub.dev/${package}-${version}"
+          done < "$inventory"
+          find "$PUB_CACHE/hosted/pub.dev" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort > work/reports/pub_cache_directories.txt
+          while IFS=$'\t' read -r package version; do
+            grep -Fxq "${package}-${version}" work/reports/pub_cache_directories.txt
+          done < "$inventory"
+          printf 'required=74\nactual=%s\nmissing=0\n' "$(wc -l < work/reports/pub_cache_directories.txt)" > work/reports/pub_cache_identity.txt
+      - name: Package verified Flutter SDK and Pub cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f work/downloads/flutter.tar.xz
+          tar --zstd -cf - -C work/flutter-root flutter | split -b 800000000 -d -a 3 - work/chunks/r828c-flutter-sdk.part-
+          tar --zstd -cf work/chunks/r828c-pub-cache.tar.zst -C work pub-cache
+          sha256sum work/chunks/* | sort > work/reports/release_assets.sha256
+          stat -c '%n\t%s' work/chunks/* | sort > work/reports/release_assets.size
+          cat work/reports/flutter_release.json
+          cat work/reports/release_assets.sha256
+          cat work/reports/release_assets.size
+      - name: Publish temporary verified toolchain release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target main --title 'R828C exact Flutter 3.44.6 and Pub cache' --notes 'Temporary public transfer of open-source Flutter SDK and exact Pub cache only. No MathPro production source, signing material, secrets, or user data.' --prerelease
+          gh release upload "$TAG" work/chunks/* work/reports/flutter_release.json work/reports/flutter_version.txt work/reports/dart_version.txt work/reports/pub_cache_identity.txt work/reports/pub_cache_directories.txt work/reports/release_assets.sha256 work/reports/release_assets.size --repo "$GITHUB_REPOSITORY" --clobber
+      - name: Commit completion marker
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p transfer/r828c-toolchain-release
+          cp work/reports/flutter_release.json transfer/r828c-toolchain-release/flutter_release.json
+          cp work/reports/release_assets.sha256 transfer/r828c-toolchain-release/release_assets.sha256
+          cp work/reports/release_assets.size transfer/r828c-toolchain-release/release_assets.size
+          printf 'tag=%s\nstatus=PASS\nflutter=3.44.6\ndart=3.12.2\npub_required=74\npub_missing=0\n' "$TAG" > transfer/r828c-toolchain-release/status.txt
+          git config user.name r828c-ci
+          git config user.email r828c-ci@users.noreply.github.com
+          git add transfer/r828c-toolchain-release
+          git commit -m 'ci: record exact Flutter and Pub release identity'
+          git push origin HEAD:r828c-pub-cache-transfer-20260720
