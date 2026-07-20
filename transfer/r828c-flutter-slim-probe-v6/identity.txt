@@ -1,0 +1,6 @@
+full_head=ee80f08bbf97172ec030b8751ceab557177a34a6
+full_branch=stable
+slim_head=ee80f08bbf97172ec030b8751ceab557177a34a6
+slim_git_status=0
+slim_uncompressed_bytes=1280852960
+slim_file_count=11222
