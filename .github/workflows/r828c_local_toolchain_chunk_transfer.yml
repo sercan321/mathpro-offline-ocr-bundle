@@ -1,0 +1,149 @@
+name: R828C Local Toolchain Chunk Transfer
+
+on:
+  push:
+    branches: [r828c-pub-cache-transfer-20260720]
+    paths:
+      - "transfer/triggers/r828c_local_toolchain_chunk_transfer.trigger"
+
+permissions:
+  contents: write
+
+jobs:
+  transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      TAG: r828c-flutter-pub-20260720-v1
+      GH_TOKEN: ${{ github.token }}
+      OUT: transfer/r828c-local-toolchain-v1
+      CHUNK_BYTES: "900000"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: r828c-pub-cache-transfer-20260720
+          fetch-depth: 1
+      - name: Rebuild and validate exact slim toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf work "$OUT"
+          mkdir -p work/downloads work/full work/slim work/transfer "$OUT/manifests"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir work/downloads --pattern 'r828c-flutter-sdk.part-*'
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir work/downloads --pattern 'r828c-pub-cache.tar.zst'
+          sha256sum work/downloads/* | sort > "$OUT/manifests/source_release_assets.sha256"
+          stat -c '%n\t%s' work/downloads/* | sort > "$OUT/manifests/source_release_assets.size"
+          cat work/downloads/r828c-flutter-sdk.part-* | tar --zstd -xf - -C work/full
+          tar --zstd -xf work/downloads/r828c-pub-cache.tar.zst -C work
+
+          full="$GITHUB_WORKSPACE/work/full/flutter"
+          full_head=$(git -C "$full" rev-parse HEAD)
+          git -C "$full" config uploadpack.allowFilter true
+          git clone --depth 1 --filter=blob:none --sparse --branch stable "file://$full" work/slim/flutter
+          sdk="$GITHUB_WORKSPACE/work/slim/flutter"
+          git -C "$sdk" sparse-checkout set bin packages dev examples
+          test "$(git -C "$sdk" rev-parse HEAD)" = "$full_head"
+          rm -rf "$sdk/bin" "$sdk/packages" "$sdk/dev" "$sdk/examples"
+          cp -a "$full/bin" "$sdk/bin"
+          cp -a "$full/packages" "$sdk/packages"
+          cp -a "$full/dev" "$sdk/dev"
+          cp -a "$full/examples" "$sdk/examples"
+          if test -d "$full/.dart_tool"; then cp -a "$full/.dart_tool" "$sdk/.dart_tool"; fi
+          rm -rf "$sdk/bin/cache/flutter_web_sdk"
+          rm -rf "$sdk/bin/cache/artifacts/engine/linux-x64-profile" "$sdk/bin/cache/artifacts/engine/linux-x64-release"
+          engine="$sdk/bin/cache/artifacts/engine"
+          for d in "$engine"/*; do
+            name=$(basename "$d")
+            case "$name" in
+              common|linux-x64|android-arm64|android-arm64-profile|android-arm64-release) ;;
+              *) rm -rf "$d" ;;
+            esac
+          done
+
+          export FLUTTER_ROOT="$sdk"
+          export PATH="$FLUTTER_ROOT/bin:$PATH"
+          export PUB_CACHE="$GITHUB_WORKSPACE/work/pub-cache"
+          export FLUTTER_SUPPRESS_ANALYTICS=true
+          export CI=true
+          flutter --version | tee "$OUT/manifests/flutter_version.txt"
+          dart --version 2>&1 | tee "$OUT/manifests/dart_version.txt"
+          grep -q 'Flutter 3.44.6' "$OUT/manifests/flutter_version.txt"
+          grep -q 'Dart 3.12.2' "$OUT/manifests/flutter_version.txt"
+
+          rm -rf work/seed
+          flutter create --no-pub --platforms=android --project-name=r828c_transfer_seed work/seed > "$OUT/manifests/flutter_create.log"
+          sed -i 's/flutter_lints: \^6\.0\.0/flutter_lints: ^4.0.0/' work/seed/pubspec.yaml
+          cat > work/seed/lib/main.dart <<'DART'
+          import 'package:flutter/material.dart';
+          void main() => runApp(const MaterialApp(home: Text('R828C')));
+          DART
+          cat > work/seed/test/widget_test.dart <<'DART'
+          import 'package:flutter_test/flutter_test.dart';
+          import 'package:r828c_transfer_seed/main.dart' as app;
+          void main() {
+            testWidgets('seed boots', (tester) async {
+              app.main();
+              await tester.pump();
+              expect(find.text('R828C'), findsOneWidget);
+            });
+          }
+          DART
+          (cd work/seed && flutter pub get --offline) > "$OUT/manifests/pub_get.log"
+          (cd work/seed && flutter analyze --no-pub) > "$OUT/manifests/analyze.log"
+          (cd work/seed && flutter test --no-pub --concurrency=1) > "$OUT/manifests/test.log"
+          (cd work/seed && flutter build apk --release --target-platform android-arm64 --no-pub) > "$OUT/manifests/build_apk.log"
+          test -f work/seed/build/app/outputs/flutter-apk/app-release.apk
+          sha256sum work/seed/build/app/outputs/flutter-apk/app-release.apk > "$OUT/manifests/seed_apk.sha256"
+          stat -c '%s' work/seed/build/app/outputs/flutter-apk/app-release.apk > "$OUT/manifests/seed_apk.size"
+
+          tar --zstd -cf work/transfer/r828c-flutter-slim.tar.zst -C work/slim flutter
+          cp work/downloads/r828c-pub-cache.tar.zst work/transfer/r828c-pub-cache.tar.zst
+          (cd work/transfer && sha256sum *.tar.zst | sort) > "$OUT/manifests/archives.sha256"
+          (cd work/transfer && stat -c '%n\t%s' *.tar.zst | sort) > "$OUT/manifests/archives.size"
+          {
+            echo "flutter_head=$full_head"
+            echo "flutter_git_status_count=$(git -C "$sdk" status --porcelain | wc -l)"
+            echo "flutter_uncompressed_bytes=$(du -sb "$sdk" | awk '{print $1}')"
+            echo "flutter_file_count=$(find "$sdk" -type f | wc -l)"
+            echo "pub_package_count=$(find "$PUB_CACHE/hosted/pub.dev" -mindepth 1 -maxdepth 1 -type d | wc -l)"
+            echo "chunk_bytes=$CHUNK_BYTES"
+          } > "$OUT/manifests/identity.txt"
+
+          mkdir -p "$OUT/chunks/flutter" "$OUT/chunks/pub"
+          split -b "$CHUNK_BYTES" -d -a 5 work/transfer/r828c-flutter-slim.tar.zst "$OUT/chunks/flutter/chunk-"
+          split -b "$CHUNK_BYTES" -d -a 5 work/transfer/r828c-pub-cache.tar.zst "$OUT/chunks/pub/chunk-"
+          (cd "$OUT" && find chunks -type f -print0 | sort -z | xargs -0 sha256sum) > "$OUT/manifests/chunks.sha256"
+          (cd "$OUT" && find chunks -type f -print0 | sort -z | xargs -0 stat -c '%n\t%s') > "$OUT/manifests/chunks.size"
+          cat "$OUT"/chunks/flutter/chunk-* > work/reassembled-flutter.tar.zst
+          cat "$OUT"/chunks/pub/chunk-* > work/reassembled-pub.tar.zst
+          test "$(sha256sum work/reassembled-flutter.tar.zst | awk '{print $1}')" = "$(sha256sum work/transfer/r828c-flutter-slim.tar.zst | awk '{print $1}')"
+          test "$(sha256sum work/reassembled-pub.tar.zst | awk '{print $1}')" = "$(sha256sum work/transfer/r828c-pub-cache.tar.zst | awk '{print $1}')"
+          printf 'PREPARED\n' > "$OUT/status.txt"
+      - name: Commit manifests and chunks in bounded batches
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name r828c-ci
+          git config user.email r828c-ci@users.noreply.github.com
+          git config http.postBuffer 524288000
+          git add "$OUT/manifests" "$OUT/status.txt"
+          git commit -m 'ci: record R828C local toolchain transfer manifests'
+          git push origin HEAD:r828c-pub-cache-transfer-20260720
+          mapfile -t files < <(find "$OUT/chunks" -type f | sort)
+          batch=0
+          for ((i=0; i<${#files[@]}; i+=25)); do
+            group=("${files[@]:i:25}")
+            git add -- "${group[@]}"
+            git commit -m "ci: transfer R828C local toolchain chunk batch $batch"
+            git push origin HEAD:r828c-pub-cache-transfer-20260720
+            batch=$((batch+1))
+          done
+          printf 'PASS\n' > "$OUT/status.txt"
+          {
+            echo "batch_count=$batch"
+            echo "chunk_count=${#files[@]}"
+            echo "completed_commit=$(git rev-parse HEAD)"
+          } > "$OUT/manifests/completion.txt"
+          git add "$OUT/status.txt" "$OUT/manifests/completion.txt"
+          git commit -m 'ci: complete R828C local toolchain chunk transfer'
+          git push origin HEAD:r828c-pub-cache-transfer-20260720
