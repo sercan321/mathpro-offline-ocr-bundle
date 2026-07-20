@@ -1,0 +1,132 @@
+Cloning into 'work/slim/flutter'...
+Building flutter tool...
+Resolving dependencies...
+Downloading packages...
++ _fe_analyzer_shared 95.0.0 (105.0.0 available)
++ analyzer 10.1.0 (14.1.0 available)
++ archive 3.6.1 (4.0.9 available)
++ args 2.7.0
++ async 2.13.1
++ boolean_selector 2.1.2
++ browser_launcher 1.1.3
++ built_collection 5.1.1
++ built_value 8.12.5 (8.12.6 available)
++ checked_yaml 2.0.4
++ cli_config 0.2.0
++ clock 1.1.2
++ code_assets 1.0.0 (1.2.1 available)
++ code_builder 4.11.1
++ collection 1.19.1
++ completion 1.0.2
++ convert 3.1.2
++ coverage 1.15.0 (1.15.1 available)
++ crypto 3.0.7
++ csslib 1.0.2
++ dap 1.4.0
++ dart_service_protocol_shared 0.0.3
++ dart_style 3.1.7 (3.1.12 available)
++ data_assets 0.19.6 (0.20.0 available)
++ dds 5.3.0 (5.4.0 available)
++ dds_service_extensions 2.1.0
++ devtools_shared 12.1.0 (14.0.0 available)
++ dtd 4.0.0
++ dwds 26.2.5 (27.1.2 available)
++ extension_discovery 2.1.0
++ fake_async 1.3.3
++ ffi 2.2.0
++ file 7.0.1
++ file_testing 3.0.2
++ fixnum 1.1.1
++ flutter_template_images 5.0.0 (5.0.1 available)
++ frontend_server_client 4.0.0
++ glob 2.1.3
++ graphs 2.3.2
++ hooks 1.0.2 (2.1.0 available)
++ hooks_runner 1.1.1 (1.6.1 available)
++ html 0.15.6
++ http 1.6.0
++ http_multi_server 3.2.2
++ http_parser 4.1.2
++ intl 0.20.2 (0.20.3 available)
++ io 1.0.5
++ js 0.7.2 (discontinued)
++ json_annotation 4.11.0 (4.12.0 available)
++ json_rpc_2 4.1.0
++ logging 1.3.0
++ matcher 0.12.19 (0.12.20 available)
++ meta 1.18.0 (1.19.0 available)
++ mime 2.0.0
++ multicast_dns 0.3.3 (0.3.3+1 available)
++ mustache_template 2.0.4 (2.0.5 available)
++ native_stack_traces 0.6.1
++ node_preamble 2.0.2
++ package_config 2.2.0 (3.0.0 available)
++ path 1.9.1
++ petitparser 7.0.2
++ platform 3.1.6
++ pool 1.5.2
++ process 5.0.5
++ pub_semver 2.2.0
++ pubspec_parse 1.5.0
++ record_use 0.6.0 (1.0.0 available)
++ shelf 1.4.2
++ shelf_packages_handler 3.0.2
++ shelf_proxy 1.0.4 (1.0.5 available)
++ shelf_static 1.1.3
++ shelf_web_socket 3.0.0
++ source_map_stack_trace 2.1.2
++ source_maps 0.10.13
++ source_span 1.10.2
++ sprintf 7.0.0
++ sse 4.1.8 (4.2.0 available)
++ stack_trace 1.12.1
++ standard_message_codec 0.0.1+4 (0.0.1+5 available)
++ stream_channel 2.1.4
++ string_scanner 1.4.1
++ sync_http 0.3.1
++ term_glyph 1.2.2
++ test 1.31.0 (1.31.2 available)
++ test_api 0.7.11 (0.7.13 available)
++ test_core 0.6.17 (0.6.19 available)
++ typed_data 1.4.0
++ unified_analytics 8.0.14 (8.0.16 available)
++ usage 4.1.1 (discontinued)
++ uuid 4.5.3 (4.6.0 available)
++ vm_service 15.0.2 (15.2.0 available)
++ vm_service_interface 2.0.1
++ vm_snapshot_analysis 0.7.6
++ watcher 1.2.1
++ web 1.1.1
++ web_socket 1.0.1
++ web_socket_channel 3.0.3
++ webdriver 3.1.0
++ webkit_inspection_protocol 1.2.1
++ xml 6.6.1 (7.0.1 available)
++ yaml 3.1.3
++ yaml_edit 2.2.4
+Changed 102 dependencies!
+2 packages are discontinued.
+32 packages have newer versions incompatible with dependency constraints.
+Try `dart pub outdated` for more information.
+
+Exception: Could not find directory at /home/runner/work/mathpro-offline-ocr-bundle/mathpro-offline-ocr-bundle/work/slim/flutter/bin/cache/dart-sdk/bin/resources/devtools
+#0      Cache.devToolsVersion (package:flutter_tools/src/cache.dart:435:9)
+#1      _FlutterVersionGit.devToolsVersion (package:flutter_tools/src/version.dart:675:47)
+#2      FlutterVersion.toJson (package:flutter_tools/src/version.dart:289:24)
+#3      _FlutterVersionGit.ensureVersionFile (package:flutter_tools/src/version.dart:706:56)
+#4      FlutterCommandRunner.runCommand.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:449:32)
+<asynchronous suspension>
+#5      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#6      FlutterCommandRunner.runCommand (package:flutter_tools/src/runner/flutter_command_runner.dart:431:5)
+<asynchronous suspension>
+#7      FlutterCommandRunner.run.<anonymous closure> (package:flutter_tools/src/runner/flutter_command_runner.dart:307:33)
+<asynchronous suspension>
+#8      run.<anonymous closure>.<anonymous closure> (package:flutter_tools/runner.dart:104:11)
+<asynchronous suspension>
+#9      AppContext.run.<anonymous closure> (package:flutter_tools/src/base/context.dart:154:19)
+<asynchronous suspension>
+#10     main (package:flutter_tools/executable.dart:103:3)
+<asynchronous suspension>
+
+Feature flags enabled: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-native-assets, enable-swift-package-manager, omit-legacy-version-file, enable-lldb-debugging, enable-uiscene-migration
