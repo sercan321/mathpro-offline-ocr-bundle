@@ -16,7 +16,7 @@ jobs:
     env:
       TAG: r828c-flutter-pub-20260720-v1
       GH_TOKEN: ${{ github.token }}
-      OUT: transfer/r828c-flutter-slim-probe-v5
+      OUT: transfer/r828c-flutter-slim-probe-v6
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,30 +31,27 @@ jobs:
           rm -rf work "$OUT"
           mkdir -p work/downloads work/full work/slim "$OUT"
           exec > >(tee "$OUT/probe.stdout") 2> >(tee "$OUT/probe.stderr" >&2)
-
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir work/downloads --pattern 'r828c-flutter-sdk.part-*'
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir work/downloads --pattern 'r828c-pub-cache.tar.zst'
           sha256sum work/downloads/* | sort > "$OUT/downloads.sha256"
           stat -c '%n\t%s' work/downloads/* | sort > "$OUT/downloads.size"
           cat work/downloads/r828c-flutter-sdk.part-* | tar --zstd -xf - -C work/full
           tar --zstd -xf work/downloads/r828c-pub-cache.tar.zst -C work
-
           full="$GITHUB_WORKSPACE/work/full/flutter"
           full_head=$(git -C "$full" rev-parse HEAD)
           full_branch=$(git -C "$full" branch --show-current)
           git -C "$full" config uploadpack.allowFilter true
           git clone --depth 1 --filter=blob:none --sparse --branch stable "file://$full" work/slim/flutter
           sdk="$GITHUB_WORKSPACE/work/slim/flutter"
-          git -C "$sdk" sparse-checkout set bin packages dev
+          git -C "$sdk" sparse-checkout set bin packages dev examples
           slim_head=$(git -C "$sdk" rev-parse HEAD)
           test "$slim_head" = "$full_head"
-
-          rm -rf "$sdk/bin" "$sdk/packages" "$sdk/dev"
+          rm -rf "$sdk/bin" "$sdk/packages" "$sdk/dev" "$sdk/examples"
           cp -a "$full/bin" "$sdk/bin"
           cp -a "$full/packages" "$sdk/packages"
           cp -a "$full/dev" "$sdk/dev"
+          cp -a "$full/examples" "$sdk/examples"
           if test -d "$full/.dart_tool"; then cp -a "$full/.dart_tool" "$sdk/.dart_tool"; fi
-
           rm -rf "$sdk/bin/cache/flutter_web_sdk"
           rm -rf "$sdk/bin/cache/artifacts/engine/linux-x64-profile" "$sdk/bin/cache/artifacts/engine/linux-x64-release"
           engine="$sdk/bin/cache/artifacts/engine"
@@ -65,7 +62,6 @@ jobs:
               *) rm -rf "$d" ;;
             esac
           done
-
           export FLUTTER_ROOT="$sdk"
           export PATH="$FLUTTER_ROOT/bin:$PATH"
           export PUB_CACHE="$GITHUB_WORKSPACE/work/pub-cache"
@@ -75,12 +71,8 @@ jobs:
           dart --version 2>&1 | tee "$OUT/dart_version.txt"
           grep -q 'Flutter 3.44.6' "$OUT/flutter_version.txt"
           grep -q 'Dart 3.12.2' "$OUT/flutter_version.txt"
-          if grep -q 'Building flutter tool' "$OUT/probe.stderr"; then
-            echo 'FAIL: slim SDK attempted to rebuild flutter_tools' >&2
-            exit 91
-          fi
+          if grep -q 'Building flutter tool' "$OUT/probe.stderr"; then echo 'FAIL: slim SDK attempted to rebuild flutter_tools' >&2; exit 91; fi
           test "$(find "$PUB_CACHE/hosted/pub.dev" -mindepth 1 -maxdepth 1 -type d | wc -l)" -ge 74
-
           rm -rf work/seed
           flutter create --no-pub --platforms=android --project-name=r828c_slim_seed work/seed | tee "$OUT/flutter_create.txt"
           sed -i 's/flutter_lints: \^6\.0\.0/flutter_lints: ^4.0.0/' work/seed/pubspec.yaml
@@ -107,7 +99,6 @@ jobs:
           test -f work/seed/build/app/outputs/flutter-apk/app-release.apk
           sha256sum work/seed/build/app/outputs/flutter-apk/app-release.apk > "$OUT/seed_apk.sha256"
           stat -c '%s' work/seed/build/app/outputs/flutter-apk/app-release.apk > "$OUT/seed_apk.size"
-
           {
             echo "full_head=$full_head"
             echo "full_branch=$full_branch"
@@ -131,5 +122,5 @@ jobs:
           git config user.name r828c-ci
           git config user.email r828c-ci@users.noreply.github.com
           git add "$OUT"
-          git commit -m 'ci: record exact sparse Flutter SDK validation v5' || true
+          git commit -m 'ci: record exact sparse Flutter SDK validation v6' || true
           git push origin HEAD:r828c-pub-cache-transfer-20260720
