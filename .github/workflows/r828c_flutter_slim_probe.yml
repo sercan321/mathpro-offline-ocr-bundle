@@ -1,0 +1,101 @@
+name: R828C Exact Flutter Slim Probe
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/r828c_flutter_slim_probe.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      TAG: r828c-flutter-pub-20260720-v1
+      GH_TOKEN: ${{ github.token }}
+      OUT: transfer/r828c-flutter-slim-probe
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: r828c-pub-cache-transfer-20260720
+          fetch-depth: 1
+      - name: Probe exact slim SDK
+        id: probe
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf work "$OUT"
+          mkdir -p work/downloads work/full work/slim "$OUT"
+          exec > >(tee "$OUT/probe.stdout") 2> >(tee "$OUT/probe.stderr" >&2)
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir work/downloads --pattern 'r828c-flutter-sdk.part-*'
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir work/downloads --pattern 'r828c-pub-cache.tar.zst'
+          cat work/downloads/r828c-flutter-sdk.part-* | tar --zstd -xf - -C work/full
+          tar --zstd -xf work/downloads/r828c-pub-cache.tar.zst -C work
+          cp -a work/full/flutter work/slim/flutter
+          sdk="$GITHUB_WORKSPACE/work/slim/flutter"
+          rm -rf \
+            "$sdk/.git" "$sdk/.pub-preload-cache" "$sdk/dev" "$sdk/examples" "$sdk/docs" \
+            "$sdk/engine" "$sdk/.github" "$sdk/.idea" "$sdk/.vscode" "$sdk/.agents" \
+            "$sdk/.gemini" "$sdk/.claude" "$sdk/agent-artifacts"
+          rm -rf "$sdk/bin/cache/flutter_web_sdk"
+          engine="$sdk/bin/cache/artifacts/engine"
+          for d in "$engine"/*; do
+            name=$(basename "$d")
+            case "$name" in
+              common|linux-x64|android-arm64|android-arm64-profile|android-arm64-release) ;;
+              *) rm -rf "$d" ;;
+            esac
+          done
+          rm -rf "$sdk/bin/cache/dart-sdk/bin/resources/devtools"
+          export FLUTTER_ROOT="$sdk"
+          export PATH="$FLUTTER_ROOT/bin:$PATH"
+          export PUB_CACHE="$GITHUB_WORKSPACE/work/pub-cache"
+          export FLUTTER_SUPPRESS_ANALYTICS=true
+          flutter --version | tee "$OUT/flutter_version.txt"
+          dart --version 2>&1 | tee "$OUT/dart_version.txt"
+          test "$(find "$PUB_CACHE/hosted/pub.dev" -mindepth 1 -maxdepth 1 -type d | wc -l)" -ge 74
+          rm -rf work/seed
+          flutter create --platforms=android --project-name=r828c_slim_seed work/seed | tee "$OUT/flutter_create.txt"
+          cat > work/seed/lib/main.dart <<'DART'
+          import 'package:flutter/material.dart';
+          void main() => runApp(const MaterialApp(home: Text('R828C')));
+          DART
+          cat > work/seed/test/widget_test.dart <<'DART'
+          import 'package:flutter_test/flutter_test.dart';
+          import 'package:r828c_slim_seed/main.dart' as app;
+          void main() {
+            testWidgets('seed boots', (tester) async {
+              app.main();
+              await tester.pump();
+              expect(find.text('R828C'), findsOneWidget);
+            });
+          }
+          DART
+          (cd work/seed && flutter pub get --offline) | tee "$OUT/pub_get.txt"
+          (cd work/seed && flutter analyze --no-pub) | tee "$OUT/analyze.txt"
+          (cd work/seed && flutter test --no-pub --concurrency=1) | tee "$OUT/test.txt"
+          (cd work/seed && flutter build apk --release --target-platform android-arm64 --no-pub) | tee "$OUT/build_apk.txt"
+          test -f work/seed/build/app/outputs/flutter-apk/app-release.apk
+          sha256sum work/seed/build/app/outputs/flutter-apk/app-release.apk > "$OUT/seed_apk.sha256"
+          stat -c '%s' work/seed/build/app/outputs/flutter-apk/app-release.apk > "$OUT/seed_apk.size"
+          du -sb "$sdk" | tee "$OUT/slim_uncompressed.size"
+          find "$sdk" -type f | wc -l | tee "$OUT/slim_file_count.txt"
+          tar --zstd -cf work/r828c-flutter-slim.tar.zst -C work/slim flutter
+          sha256sum work/r828c-flutter-slim.tar.zst | tee "$OUT/slim_archive.sha256"
+          stat -c '%s' work/r828c-flutter-slim.tar.zst | tee "$OUT/slim_archive.size"
+          echo PASS > "$OUT/status.txt"
+      - name: Commit probe evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "probe_outcome=${{ steps.probe.outcome }}" > "$OUT/outcome.txt"
+          git config user.name r828c-ci
+          git config user.email r828c-ci@users.noreply.github.com
+          git add "$OUT"
+          git commit -m 'ci: record exact Flutter slim probe evidence' || true
+          git push origin HEAD:r828c-pub-cache-transfer-20260720
