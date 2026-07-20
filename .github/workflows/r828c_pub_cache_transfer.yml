@@ -22,7 +22,7 @@ jobs:
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: "3.12.2"
-      - name: Resolve exact hosted packages and commit verified transfer parts
+      - name: Resolve exact hosted packages and commit verified transfer
         shell: bash
         run: |
           set -euo pipefail
@@ -47,9 +47,10 @@ jobs:
             grep -Fxq "${package}-${version}" "$out/cache-directories.txt"
           done < "$inventory"
           tar --zstd -cf "$work/r828c-pub-cache.tar.zst" -C "$work" pub-cache
-          sha256sum "$work/r828c-pub-cache.tar.zst" | tee "$out/archive.sha256"
-          stat -c '%s' "$work/r828c-pub-cache.tar.zst" | tee "$out/archive.size"
-          split -b 10000000 -d -a 3 "$work/r828c-pub-cache.tar.zst" "$out/archive.part-"
+          cp "$work/r828c-pub-cache.tar.zst" "$out/r828c-pub-cache.tar.zst"
+          sha256sum "$out/r828c-pub-cache.tar.zst" | tee "$out/archive.sha256"
+          stat -c '%s' "$out/r828c-pub-cache.tar.zst" | tee "$out/archive.size"
+          split -b 10000000 -d -a 3 "$out/r828c-pub-cache.tar.zst" "$out/archive.part-"
           sha256sum "$out"/archive.part-* | sort > "$out/parts.sha256"
           stat -c '%n\t%s' "$out"/archive.part-* | sort > "$out/parts.size"
           printf 'required_packages=%s\n' "$count" > "$out/identity.txt"
@@ -58,5 +59,5 @@ jobs:
           git config user.email r828c-ci@users.noreply.github.com
           git config http.postBuffer 524288000
           git add transfer/r828c-pub-cache/archive
-          git commit -m "ci: transfer exact R828C Pub cache"
+          git commit -m "ci: transfer exact R828C Pub cache as a single verified archive"
           git push origin HEAD:r828c-pub-cache-transfer-20260720
