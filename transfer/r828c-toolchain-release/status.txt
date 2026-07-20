@@ -1,0 +1,6 @@
+tag=r828c-flutter-pub-20260720-v1
+status=PASS
+flutter=3.44.6
+dart=3.12.2
+pub_required=74
+pub_missing=0

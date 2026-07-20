@@ -1,0 +1,10 @@
+{
+  "archive": "stable/linux/flutter_linux_3.44.6-stable.tar.xz",
+  "archiveSha256": "a6320fd72e9a2690c08e2a6a70874a30cb120dee7c78f49d2c628bd7c9e20525",
+  "archiveSize": 1544352104,
+  "archiveUrl": "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.44.6-stable.tar.xz",
+  "channel": "stable",
+  "dartVersion": "3.12.2",
+  "frameworkHash": "ee80f08bbf97172ec030b8751ceab557177a34a6",
+  "version": "3.44.6"
+}
