@@ -1,0 +1,4 @@
+Cloning into 'work/slim/flutter'...
+Flutter failed to list directory at "/home/runner/work/mathpro-offline-ocr-bundle/mathpro-offline-ocr-bundle/work/slim/flutter/examples". The file or directory could not be found.
+PathNotFoundException: Directory listing failed, path = '/home/runner/work/mathpro-offline-ocr-bundle/mathpro-offline-ocr-bundle/work/slim/flutter/examples/' (OS Error: No such file or directory, errno = 2)
+This can sometimes happen if the file was deleted or moved while the tool was running. Try running "flutter clean" and try again.
