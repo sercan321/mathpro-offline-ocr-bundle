@@ -1,0 +1,36 @@
+name: R828C Transfer Canary
+
+on:
+  push:
+    branches: [r828c-pub-cache-transfer-20260720]
+    paths:
+      - "transfer/triggers/r828c_transfer_canary.trigger"
+
+permissions:
+  contents: write
+
+jobs:
+  canary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: r828c-pub-cache-transfer-20260720
+          fetch-depth: 1
+      - name: Commit 900 KB verified binary canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          src=transfer/r828c-pub-cache/archive/archive.part-000
+          out=transfer/r828c-transfer-canary/canary.bin
+          rm -rf "$(dirname "$out")"
+          mkdir -p "$(dirname "$out")"
+          head -c 900000 "$src" > "$out"
+          test "$(stat -c '%s' "$out")" = 900000
+          sha256sum "$out" > transfer/r828c-transfer-canary/canary.sha256
+          git config user.name r828c-ci
+          git config user.email r828c-ci@users.noreply.github.com
+          git add transfer/r828c-transfer-canary
+          git commit -m 'ci: commit sub-megabyte binary transfer canary'
+          git push origin HEAD:r828c-pub-cache-transfer-20260720
