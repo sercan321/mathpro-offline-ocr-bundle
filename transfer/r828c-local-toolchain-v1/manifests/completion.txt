@@ -1,0 +1,3 @@
+batch_count=30
+chunk_count=750
+completed_commit=979c2fef37ce75e920777da5b9db46ed00751f76
