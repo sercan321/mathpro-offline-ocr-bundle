@@ -1,0 +1,56 @@
+name: R828C Exact Flutter SDK Inventory
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/r828c_flutter_sdk_inventory.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TAG: r828c-flutter-pub-20260720-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: r828c-pub-cache-transfer-20260720
+          fetch-depth: 1
+      - name: Restore and inventory exact Flutter SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf work transfer/r828c-flutter-sdk-inventory
+          mkdir -p work/downloads work/sdk transfer/r828c-flutter-sdk-inventory
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir work/downloads --pattern 'r828c-flutter-sdk.part-*'
+          sha256sum work/downloads/* | sort > transfer/r828c-flutter-sdk-inventory/downloaded_parts.sha256
+          stat -c '%n\t%s' work/downloads/* | sort > transfer/r828c-flutter-sdk-inventory/downloaded_parts.size
+          cat work/downloads/r828c-flutter-sdk.part-* | tar --zstd -xf - -C work/sdk
+          sdk=$(find work/sdk -mindepth 1 -maxdepth 2 -type f -path '*/bin/flutter' -printf '%h/..\n' | head -1)
+          test -n "$sdk"
+          sdk=$(realpath "$sdk")
+          "$sdk/bin/flutter" --version > transfer/r828c-flutter-sdk-inventory/flutter_version.txt
+          "$sdk/bin/dart" --version > transfer/r828c-flutter-sdk-inventory/dart_version.txt 2>&1
+          {
+            echo "sdk=$sdk"
+            echo "total_bytes=$(du -sb "$sdk" | awk '{print $1}')"
+            echo "file_count=$(find "$sdk" -type f | wc -l)"
+            echo "dir_count=$(find "$sdk" -type d | wc -l)"
+          } > transfer/r828c-flutter-sdk-inventory/identity.txt
+          du -x -B1 -d 1 "$sdk" | sort -nr > transfer/r828c-flutter-sdk-inventory/du_depth1.tsv
+          du -x -B1 -d 2 "$sdk" | sort -nr > transfer/r828c-flutter-sdk-inventory/du_depth2.tsv
+          du -x -B1 -d 4 "$sdk/bin/cache" | sort -nr | head -400 > transfer/r828c-flutter-sdk-inventory/cache_du_top400.tsv
+          find "$sdk/bin/cache" -maxdepth 5 -type f -printf '%s\t%P\n' | sort -nr | head -500 > transfer/r828c-flutter-sdk-inventory/cache_files_top500.tsv
+          find "$sdk" -type f -printf '%s\t%P\n' | sort -nr | head -500 > transfer/r828c-flutter-sdk-inventory/all_files_top500.tsv
+          find "$sdk/bin/cache/artifacts/engine" -mindepth 1 -maxdepth 2 -type d -printf '%P\n' | sort > transfer/r828c-flutter-sdk-inventory/engine_dirs.txt
+          find "$sdk/bin/cache/artifacts/engine" -type f -printf '%s\t%P\n' | sort -nr > transfer/r828c-flutter-sdk-inventory/engine_files.tsv
+          git config user.name r828c-ci
+          git config user.email r828c-ci@users.noreply.github.com
+          git add transfer/r828c-flutter-sdk-inventory
+          git commit -m 'ci: record exact Flutter SDK size inventory'
+          git push origin HEAD:r828c-pub-cache-transfer-20260720
