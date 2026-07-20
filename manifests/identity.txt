@@ -1,0 +1,6 @@
+flutter_head=ee80f08bbf97172ec030b8751ceab557177a34a6
+flutter_git_status_count=0
+flutter_uncompressed_bytes=1280855367
+flutter_file_count=11222
+pub_package_count=149
+chunk_bytes=900000
