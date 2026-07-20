@@ -1,0 +1,7 @@
+Cloning into 'work/slim/flutter'...
+Because r828c_slim_seed depends on flutter_lints ^6.0.0 which doesn't match any versions, version solving failed.
+
+
+You can try the following suggestion to make the pubspec resolve:
+* Consider downgrading your constraint on flutter_lints: flutter pub add dev:flutter_lints:^4.0.0
+Failed to update packages.
