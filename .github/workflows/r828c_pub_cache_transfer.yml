@@ -1,8 +1,9 @@
 name: R828C Exact Pub Cache Transfer
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches:
+      - r828c-pub-cache-transfer-20260720
     paths:
       - ".github/workflows/r828c_pub_cache_transfer.yml"
       - "transfer/r828c-pub-cache/packages.tsv"
@@ -46,8 +47,7 @@ jobs:
           while IFS=$'\t' read -r package version; do
             grep -Fxq "${package}-${version}" "$out/cache-directories.txt"
           done < "$inventory"
-          tar --zstd -cf "$work/r828c-pub-cache.tar.zst" -C "$work" pub-cache
-          cp "$work/r828c-pub-cache.tar.zst" "$out/r828c-pub-cache.tar.zst"
+          tar --zstd -cf "$out/r828c-pub-cache.tar.zst" -C "$work" pub-cache
           sha256sum "$out/r828c-pub-cache.tar.zst" | tee "$out/archive.sha256"
           stat -c '%s' "$out/r828c-pub-cache.tar.zst" | tee "$out/archive.size"
           split -b 10000000 -d -a 3 "$out/r828c-pub-cache.tar.zst" "$out/archive.part-"
