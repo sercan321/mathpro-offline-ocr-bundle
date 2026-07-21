@@ -1,0 +1,53 @@
+name: R830 Temporary Public Source Export
+
+on:
+  push:
+    branches:
+      - agent/r830-source-export
+    paths:
+      - .github/workflows/r830_source_export.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      TAG: r830-source-export-20260721-v1
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Package public MathPro source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p export
+          git rev-parse HEAD | tee export/source_commit.txt
+          git status --short | tee export/source_status.txt
+          find . -path './.git' -prune -o -type f -printf '%P\n' | sort > export/source_files.txt
+          tar --zstd -cf export/public_mathpro_source.tar.zst --exclude='.git' -C . .
+          sha256sum export/public_mathpro_source.tar.zst | tee export/source_sha256.txt
+          stat -c '%s' export/public_mathpro_source.tar.zst | tee export/source_size.txt
+      - name: Publish temporary source export release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target main \
+            --title 'R830 temporary public source export' \
+            --notes 'Temporary open-source source-tree transfer for R830 exact delta computation. No secrets, signing material, or private source.' \
+            --prerelease
+          gh release upload "$TAG" \
+            export/public_mathpro_source.tar.zst \
+            export/source_commit.txt \
+            export/source_files.txt \
+            export/source_sha256.txt \
+            export/source_size.txt \
+            --repo "$GITHUB_REPOSITORY" --clobber
+          echo "DOWNLOAD=https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/public_mathpro_source.tar.zst"
