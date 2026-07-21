@@ -1,0 +1,6 @@
+tag=r830-source-export-20260721-v1
+source_commit=37955489f603f61c3bb5e4f4e772f65cc5c65303
+sha256=44507ad39fad8bca43d82200a699cd3839a0e978064583e3078ac2b5f9d882f4
+size=11558685
+download=https://github.com/sercan321/mathpro-offline-ocr-bundle/releases/download/r830-source-export-20260721-v1/public_mathpro_source.tar.zst
+status=PASS
