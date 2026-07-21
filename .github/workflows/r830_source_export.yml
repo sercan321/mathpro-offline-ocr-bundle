@@ -50,4 +50,24 @@ jobs:
             export/source_sha256.txt \
             export/source_size.txt \
             --repo "$GITHUB_REPOSITORY" --clobber
-          echo "DOWNLOAD=https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/public_mathpro_source.tar.zst"
+          {
+            echo "tag=$TAG"
+            echo "source_commit=$(cat export/source_commit.txt)"
+            echo "sha256=$(awk '{print $1}' export/source_sha256.txt)"
+            echo "size=$(cat export/source_size.txt)"
+            echo "download=https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/public_mathpro_source.tar.zst"
+            echo "status=PASS"
+          } > /tmp/r830_source_export_status.txt
+      - name: Commit export status to temporary branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin agent/r830-source-export
+          git checkout -B agent/r830-source-export origin/agent/r830-source-export
+          mkdir -p transfer/r830-source-export
+          cp /tmp/r830_source_export_status.txt transfer/r830-source-export/status.txt
+          git config user.name r830-ci
+          git config user.email r830-ci@users.noreply.github.com
+          git add transfer/r830-source-export/status.txt
+          git commit -m '[skip ci] Record R830 source export identity' || true
+          git push origin HEAD:agent/r830-source-export
