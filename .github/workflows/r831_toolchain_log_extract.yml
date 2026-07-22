@@ -18,7 +18,7 @@ jobs:
       - name: Extract exact prefetch failure
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_JOB_ID: '89018639666'
+          SOURCE_JOB_ID: '89020845574'
         run: |
           set -Eeuo pipefail
           curl --fail --location --silent --show-error \
@@ -30,11 +30,11 @@ jobs:
           python3 - "$RUNNER_TEMP/source.log" <<'PY'
           import pathlib,re,sys
           lines=pathlib.Path(sys.argv[1]).read_text(encoding='utf-8-sig',errors='replace').splitlines()
-          rx=re.compile(r'(FAILURE|What went wrong|Execution failed|Couldn.t find|Could not|error:|exception|BUILD FAILED|Gradle task|Process completed)',re.I)
+          rx=re.compile(r'(FAILURE|What went wrong|Execution failed|Couldn.t find|Could not|error:|exception|BUILD FAILED|Gradle task|Process completed|Caused by)',re.I)
           print('R831_SOURCE_LINE_COUNT',len(lines))
           print('=== TARGETED_FAILURE_LINES ===')
           for i,line in enumerate(lines,1):
               if rx.search(line): print(f'{i}: {line[:20000]}')
-          print('=== FINAL_160 ===')
-          for i in range(max(0,len(lines)-160),len(lines)): print(f'{i+1}: {lines[i][:20000]}')
+          print('=== FINAL_180 ===')
+          for i in range(max(0,len(lines)-180),len(lines)): print(f'{i+1}: {lines[i][:20000]}')
           PY
