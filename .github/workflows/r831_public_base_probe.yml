@@ -33,6 +33,43 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Reconstruct exact hash-pinned secure builder
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          fetch_blob() {
+            local sha="$1" output="$2"
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/blobs/${sha}" \
+              | python3 -c 'import base64,json,sys; sys.stdout.buffer.write(base64.b64decode(json.load(sys.stdin)["content"]))' \
+              > "$output"
+            test "$(git hash-object "$output")" = "$sha"
+          }
+          fetch_blob 5761242250d402c2fccde240f41ddacd640dcdb9 "$RUNNER_TEMP/r831-builder-part-00"
+          fetch_blob 43a961989a2327807200316852a6df02dc7412eb "$RUNNER_TEMP/r831-builder-part-01"
+          fetch_blob 0194def1ac300c548ddf1b89ae376a084ec38835 "$RUNNER_TEMP/r831-builder-part-02"
+          fetch_blob b39f0705e5dde6dc792199a3573ebf83a071dabf "$RUNNER_TEMP/r831-builder-part-03"
+          test "$(sha256sum "$RUNNER_TEMP/r831-builder-part-00" | awk '{print $1}')" = 974186cf93a318dba801d638a71aed3b77910fae4f4a3f5c31ab863f091bb947
+          test "$(sha256sum "$RUNNER_TEMP/r831-builder-part-01" | awk '{print $1}')" = 7516e2d9d6f6b4de44e7d326dbf59f987f5ecc2824ce426b50e3b4aad3f48aee
+          test "$(sha256sum "$RUNNER_TEMP/r831-builder-part-02" | awk '{print $1}')" = 7ffe11222727b5612b2da327cd92ccce66846a55bb9b20f219e2886c5beab235
+          test "$(sha256sum "$RUNNER_TEMP/r831-builder-part-03" | awk '{print $1}')" = c9465e5e3e85efe1d54a6599ad84707372bb87c00385f3af0a1d3fb64cd464cd
+          cat \
+            "$RUNNER_TEMP/r831-builder-part-00" \
+            "$RUNNER_TEMP/r831-builder-part-01" \
+            "$RUNNER_TEMP/r831-builder-part-02" \
+            "$RUNNER_TEMP/r831-builder-part-03" \
+            > "$RUNNER_TEMP/r831-secure-builder.sh"
+          test "$(sha256sum "$RUNNER_TEMP/r831-secure-builder.sh" | awk '{print $1}')" = "$R831_SECURE_BUILDER_SHA256"
+          test "$(git hash-object "$RUNNER_TEMP/r831-secure-builder.sh")" = b864dc9e0a00fbb6fb5c2542b8d5b781246643fe
+          bash -n "$RUNNER_TEMP/r831-secure-builder.sh"
+          chmod 700 "$RUNNER_TEMP/r831-secure-builder.sh"
+          echo R831_SECURE_BUILDER_RECONSTRUCTION=PASS
+
       - name: Execute encrypted-source complete closure
         id: closure
         shell: bash
@@ -40,11 +77,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          set -Eeuo pipefail
-          test "$(sha256sum .github/scripts/r831_secure_builder.sh | awk '{print $1}')" = "$R831_SECURE_BUILDER_SHA256"
-          bash -n .github/scripts/r831_secure_builder.sh
           set +e
-          bash .github/scripts/r831_secure_builder.sh 2>&1 | tee "$RUNNER_TEMP/r831-secure-builder.log"
+          bash "$RUNNER_TEMP/r831-secure-builder.sh" 2>&1 | tee "$RUNNER_TEMP/r831-secure-builder.log"
           code=${PIPESTATUS[0]}
           set -e
           echo "exit_code=$code" >> "$GITHUB_OUTPUT"
