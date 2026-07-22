@@ -65,53 +65,21 @@ jobs:
           echo "$FLUTTER_ROOT/bin" >> "$GITHUB_PATH"
 
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-flutter-000-00
-          path: ${{ runner.temp }}/r831-toolchain-export/export/flutter-000.chunk-00
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-flutter-000-00, path: '${{ runner.temp }}/r831-toolchain-export/export/flutter-000.chunk-00', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-flutter-000-01
-          path: ${{ runner.temp }}/r831-toolchain-export/export/flutter-000.chunk-01
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-flutter-000-01, path: '${{ runner.temp }}/r831-toolchain-export/export/flutter-000.chunk-01', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-flutter-000-02
-          path: ${{ runner.temp }}/r831-toolchain-export/export/flutter-000.chunk-02
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-flutter-000-02, path: '${{ runner.temp }}/r831-toolchain-export/export/flutter-000.chunk-02', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-flutter-001-00
-          path: ${{ runner.temp }}/r831-toolchain-export/export/flutter-001.chunk-00
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-flutter-001-00, path: '${{ runner.temp }}/r831-toolchain-export/export/flutter-001.chunk-00', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-flutter-001-01
-          path: ${{ runner.temp }}/r831-toolchain-export/export/flutter-001.chunk-01
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-flutter-001-01, path: '${{ runner.temp }}/r831-toolchain-export/export/flutter-001.chunk-01', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-flutter-001-02
-          path: ${{ runner.temp }}/r831-toolchain-export/export/flutter-001.chunk-02
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-flutter-001-02, path: '${{ runner.temp }}/r831-toolchain-export/export/flutter-001.chunk-02', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-flutter-002
-          path: ${{ runner.temp }}/r831-toolchain-export/export/flutter-002.bin
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-flutter-002, path: '${{ runner.temp }}/r831-toolchain-export/export/flutter-002.bin', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-pub-cache
-          path: ${{ runner.temp }}/r831-toolchain-export/export/pub-cache.tar.zst
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-pub-cache, path: '${{ runner.temp }}/r831-toolchain-export/export/pub-cache.tar.zst', compression-level: 0, retention-days: 3}
 
       - name: Prefetch exact Android Gradle, Chaquopy, ONNX and Flutter dependencies
         shell: bash
@@ -151,6 +119,11 @@ jobs:
           EOF
           cd "$ROOT/prefetch"
           flutter pub get
+          CAMERA_GRADLE="$PUB_CACHE/hosted/pub.dev/camera_android-0.10.9+3/android/build.gradle"
+          test "$(grep -Fc 'compileSdk 34' "$CAMERA_GRADLE")" = 1
+          sed -i 's/compileSdk 34/compileSdk 36/' "$CAMERA_GRADLE"
+          test "$(grep -Fc 'compileSdk 36' "$CAMERA_GRADLE")" = 1
+          echo R831_PREFETCH_CAMERA_ANDROID_COMPILE_SDK_36=PASS
           python3 - <<'PY'
           from pathlib import Path
           p=Path('android/settings.gradle.kts')
@@ -179,15 +152,13 @@ jobs:
           set -Eeuo pipefail
           ROOT="$RUNNER_TEMP/r831-toolchain-export"
           SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
-          test -d "$SDK/build-tools/34.0.0"
-          test -d "$SDK/build-tools/36.0.0"
-          test -d "$SDK/platforms/android-36"
-          test -d "$SDK/ndk/28.2.13676358"
-          mkdir -p "$ROOT/android-sdk/build-tools" "$ROOT/android-sdk/platforms" "$ROOT/android-sdk/ndk"
+          for p in "$SDK/build-tools/34.0.0" "$SDK/build-tools/36.0.0" "$SDK/platforms/android-36" "$SDK/ndk/28.2.13676358" "$SDK/cmake/3.22.1"; do test -d "$p"; done
+          mkdir -p "$ROOT/android-sdk/build-tools" "$ROOT/android-sdk/platforms" "$ROOT/android-sdk/ndk" "$ROOT/android-sdk/cmake"
           cp -a "$SDK/build-tools/34.0.0" "$ROOT/android-sdk/build-tools/"
           cp -a "$SDK/build-tools/36.0.0" "$ROOT/android-sdk/build-tools/"
           cp -a "$SDK/platforms/android-36" "$ROOT/android-sdk/platforms/"
           cp -a "$SDK/ndk/28.2.13676358" "$ROOT/android-sdk/ndk/"
+          cp -a "$SDK/cmake/3.22.1" "$ROOT/android-sdk/cmake/"
           cp -a "$SDK/platform-tools" "$ROOT/android-sdk/"
           cp -a "$SDK/licenses" "$ROOT/android-sdk/"
           tar --zstd -cf "$ROOT/export/android-sdk.tar.zst" -C "$ROOT" android-sdk
@@ -203,99 +174,33 @@ jobs:
           (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'toolchain.*' -printf '%f\n' | sort | xargs stat -c '%s %n' > toolchain.size)
 
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-android-sdk-00
-          path: ${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-00
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-android-sdk-00, path: '${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-00', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-android-sdk-01
-          path: ${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-01
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-android-sdk-01, path: '${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-01', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-android-sdk-02
-          path: ${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-02
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-android-sdk-02, path: '${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-02', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-android-sdk-03
-          path: ${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-03
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-android-sdk-03, path: '${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-03', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-android-sdk-04
-          path: ${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-04
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-android-sdk-04, path: '${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-04', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-android-sdk-05
-          path: ${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-05
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-android-sdk-05, path: '${{ runner.temp }}/r831-toolchain-export/export/android-sdk.chunk-05', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-gradle-cache-00
-          path: ${{ runner.temp }}/r831-toolchain-export/export/gradle-cache.chunk-00
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-gradle-cache-00, path: '${{ runner.temp }}/r831-toolchain-export/export/gradle-cache.chunk-00', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-gradle-cache-01
-          path: ${{ runner.temp }}/r831-toolchain-export/export/gradle-cache.chunk-01
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-gradle-cache-01, path: '${{ runner.temp }}/r831-toolchain-export/export/gradle-cache.chunk-01', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-gradle-cache-02
-          path: ${{ runner.temp }}/r831-toolchain-export/export/gradle-cache.chunk-02
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-gradle-cache-02, path: '${{ runner.temp }}/r831-toolchain-export/export/gradle-cache.chunk-02', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-gradle-cache-03
-          path: ${{ runner.temp }}/r831-toolchain-export/export/gradle-cache.chunk-03
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-gradle-cache-03, path: '${{ runner.temp }}/r831-toolchain-export/export/gradle-cache.chunk-03', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-jdk17-00
-          path: ${{ runner.temp }}/r831-toolchain-export/export/jdk17.chunk-00
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-jdk17-00, path: '${{ runner.temp }}/r831-toolchain-export/export/jdk17.chunk-00', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-jdk17-01
-          path: ${{ runner.temp }}/r831-toolchain-export/export/jdk17.chunk-01
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-jdk17-01, path: '${{ runner.temp }}/r831-toolchain-export/export/jdk17.chunk-01', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-python310-00
-          path: ${{ runner.temp }}/r831-toolchain-export/export/python310.chunk-00
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-python310-00, path: '${{ runner.temp }}/r831-toolchain-export/export/python310.chunk-00', compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
-        with:
-          name: r831-python310-01
-          path: ${{ runner.temp }}/r831-toolchain-export/export/python310.chunk-01
-          if-no-files-found: ignore
-          compression-level: 0
-          retention-days: 3
+        with: {name: r831-python310-01, path: '${{ runner.temp }}/r831-toolchain-export/export/python310.chunk-01', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
       - uses: actions/upload-artifact@v4
         with:
           name: r831-toolchain-manifest
