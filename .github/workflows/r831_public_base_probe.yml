@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -15,3 +18,16 @@ jobs:
           echo R831_PUBLIC_BASE_RUNNER_PROVISIONING=PASS
           uname -a
           df -h
+
+      - name: Probe private source repository access
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            https://api.github.com/repos/sercan321/mathpro-test)"
+          echo "R831_PRIVATE_REPO_HTTP_STATUS=$code"
+          [[ "$code" == 200 ]]
