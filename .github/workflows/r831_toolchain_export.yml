@@ -24,6 +24,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.18'
+
       - name: Download and verify pinned Flutter and pub assets
         shell: bash
         run: |
@@ -57,11 +61,37 @@ jobs:
           echo "PUB_CACHE=$PUB_CACHE" >> "$GITHUB_ENV"
           echo "$FLUTTER_ROOT/bin" >> "$GITHUB_PATH"
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-flutter-part-000
+          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-flutter-sdk.part-000
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-flutter-part-001
+          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-flutter-sdk.part-001
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-flutter-part-002
+          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-flutter-sdk.part-002
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-pub-cache
+          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-pub-cache.tar.zst
+          compression-level: 0
+          retention-days: 3
+
       - name: Prefetch exact Android Gradle, Chaquopy, ONNX and Flutter dependencies
         shell: bash
         run: |
           set -Eeuo pipefail
           ROOT="$RUNNER_TEMP/r831-toolchain-export"
+          python3.10 --version
           git config --global --add safe.directory "$FLUTTER_ROOT"
           flutter config --no-analytics
           flutter precache --android
@@ -105,7 +135,7 @@ jobs:
           s=s.replace('id("dev.flutter.flutter-gradle-plugin")','id("dev.flutter.flutter-gradle-plugin")\n    id("com.chaquo.python")',1)
           s=s.replace('minSdk = flutter.minSdkVersion','minSdk = 24',1)
           s=s.replace('buildTypes {','defaultConfig {\n        ndk { abiFilters += listOf("arm64-v8a") }\n    }\n\n    buildTypes {',1)
-          s += '\nchaquopy { defaultConfig { pip { install("mpmath==1.3.0"); install("sympy==1.14.0") } } }\n'
+          s += '\nchaquopy { defaultConfig { buildPython("python3.10"); pip { install("mpmath==1.3.0"); install("sympy==1.14.0") } } }\n'
           s += '\ndependencies { implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0") }\n'
           p.write_text(s)
           PY
@@ -116,48 +146,33 @@ jobs:
           flutter --version --machine > "$ROOT/export/flutter-version.json"
           grep -RInE 'compileSdkVersion|targetSdkVersion|ndkVersion' "$FLUTTER_ROOT/packages/flutter_tools/gradle" > "$ROOT/export/flutter-android-defaults.txt" || true
 
-      - name: Package Android SDK and resolved Gradle cache
+      - name: Package exact Android SDK, JDK 17 and resolved Gradle cache
         shell: bash
         run: |
           set -Eeuo pipefail
           ROOT="$RUNNER_TEMP/r831-toolchain-export"
           SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
           test -d "$SDK"
-          mkdir -p "$ROOT/android-sdk"
-          for d in build-tools platforms platform-tools licenses ndk cmake cmdline-tools; do
-            test ! -e "$SDK/$d" || cp -a "$SDK/$d" "$ROOT/android-sdk/"
-          done
+          test -d "$SDK/build-tools/34.0.0"
+          test -d "$SDK/build-tools/36.0.0"
+          test -d "$SDK/platforms/android-36"
+          test -d "$SDK/ndk/28.2.13676358"
+          mkdir -p "$ROOT/android-sdk/build-tools" "$ROOT/android-sdk/platforms" "$ROOT/android-sdk/ndk"
+          cp -a "$SDK/build-tools/34.0.0" "$ROOT/android-sdk/build-tools/"
+          cp -a "$SDK/build-tools/36.0.0" "$ROOT/android-sdk/build-tools/"
+          cp -a "$SDK/platforms/android-36" "$ROOT/android-sdk/platforms/"
+          cp -a "$SDK/ndk/28.2.13676358" "$ROOT/android-sdk/ndk/"
+          cp -a "$SDK/platform-tools" "$ROOT/android-sdk/"
+          cp -a "$SDK/licenses" "$ROOT/android-sdk/"
           tar --zstd -cf "$ROOT/export/r831-android-sdk.tar.zst" -C "$ROOT" android-sdk
           tar --zstd -cf "$ROOT/export/r831-gradle-cache.tar.zst" -C "$HOME" .gradle
-          (cd "$ROOT/export" && sha256sum * > r831-toolchain-export.sha256 && stat -c '%s %n' * > r831-toolchain-export.size)
+          tar --zstd -cf "$ROOT/export/r831-jdk17.tar.zst" -C "$(dirname "$JAVA_HOME")" "$(basename "$JAVA_HOME")"
           split -b 600000000 -d -a 2 "$ROOT/export/r831-android-sdk.tar.zst" "$ROOT/export/android-sdk.part-"
           split -b 600000000 -d -a 2 "$ROOT/export/r831-gradle-cache.tar.zst" "$ROOT/export/gradle-cache.part-"
           rm "$ROOT/export/r831-android-sdk.tar.zst" "$ROOT/export/r831-gradle-cache.tar.zst"
+          (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'r831-toolchain-export.*' -printf '%f\n' | sort | xargs sha256sum > r831-toolchain-export.sha256)
+          (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'r831-toolchain-export.*' -printf '%f\n' | sort | xargs stat -c '%s %n' > r831-toolchain-export.size)
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: r831-flutter-part-000
-          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-flutter-sdk.part-000
-          compression-level: 0
-          retention-days: 3
-      - uses: actions/upload-artifact@v4
-        with:
-          name: r831-flutter-part-001
-          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-flutter-sdk.part-001
-          compression-level: 0
-          retention-days: 3
-      - uses: actions/upload-artifact@v4
-        with:
-          name: r831-flutter-part-002
-          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-flutter-sdk.part-002
-          compression-level: 0
-          retention-days: 3
-      - uses: actions/upload-artifact@v4
-        with:
-          name: r831-pub-cache
-          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-pub-cache.tar.zst
-          compression-level: 0
-          retention-days: 3
       - uses: actions/upload-artifact@v4
         with:
           name: r831-android-sdk
@@ -168,6 +183,12 @@ jobs:
         with:
           name: r831-gradle-cache
           path: ${{ runner.temp }}/r831-toolchain-export/export/gradle-cache.part-*
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-jdk17
+          path: ${{ runner.temp }}/r831-toolchain-export/export/r831-jdk17.tar.zst
           compression-level: 0
           retention-days: 3
       - uses: actions/upload-artifact@v4
