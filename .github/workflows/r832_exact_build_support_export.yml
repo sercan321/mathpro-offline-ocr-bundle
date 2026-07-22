@@ -1,0 +1,54 @@
+name: R832 Exact Build Support Export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/r831_toolchain_trigger/**'
+      - '.github/workflows/r832_exact_build_support_export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1, show-progress: false}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+
+      - name: Download exact Gradle 8.7 and package dereferenced JDK17
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/r832-build-support"
+          mkdir -p "$ROOT/export" "$ROOT/jdk"
+          curl --fail --location --retry 5 --retry-delay 3 --silent --show-error \
+            -o "$ROOT/export/gradle-8.7-bin.zip" \
+            https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          echo '544c35d6bd849ae8a5ed0bcea39ba677dc40f49df7d1835561582da2009b961d  gradle-8.7-bin.zip' > "$ROOT/export/expected-gradle.sha256"
+          (cd "$ROOT/export" && sha256sum -c expected-gradle.sha256)
+          REAL_JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$JAVA_HOME/bin/java")")")"
+          test -x "$REAL_JAVA_HOME/bin/java"
+          tar --zstd --dereference -cf "$ROOT/export/jdk17-real.tar.zst" -C "$(dirname "$REAL_JAVA_HOME")" "$(basename "$REAL_JAVA_HOME")"
+          "$REAL_JAVA_HOME/bin/java" -version 2> "$ROOT/export/jdk17-version.txt"
+          printf 'REAL_JAVA_HOME=%s\n' "$REAL_JAVA_HOME" > "$ROOT/export/jdk17-path.txt"
+          (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'build-support.*' -printf '%f\n' | sort | xargs sha256sum > build-support.sha256)
+          (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'build-support.*' -printf '%f\n' | sort | xargs stat -c '%s %n' > build-support.size)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r832-exact-build-support
+          path: |
+            ${{ runner.temp }}/r832-build-support/export/gradle-8.7-bin.zip
+            ${{ runner.temp }}/r832-build-support/export/jdk17-real.tar.zst
+            ${{ runner.temp }}/r832-build-support/export/expected-gradle.sha256
+            ${{ runner.temp }}/r832-build-support/export/jdk17-version.txt
+            ${{ runner.temp }}/r832-build-support/export/jdk17-path.txt
+            ${{ runner.temp }}/r832-build-support/export/build-support.sha256
+            ${{ runner.temp }}/r832-build-support/export/build-support.size
+          compression-level: 0
+          retention-days: 3
