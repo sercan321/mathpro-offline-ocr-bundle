@@ -1,33 +1,83 @@
-name: R831 Public Base Runner Probe
+name: R831 Secure Private Source Truth Closure
 
 on:
   pull_request:
     branches: [main]
+    paths:
+      - '.github/r831_secure_trigger/**'
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
+
+env:
+  R831_SECURE_BUILDER_SHA256: 5d3a88010e76ff00a9c1cb94efad45a096585c386d5d9a7368b5f601b09979a6
 
 jobs:
-  probe:
+  truth_closure:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 180
     steps:
-      - name: Runner is alive
-        run: |
-          set -Eeuo pipefail
-          echo R831_PUBLIC_BASE_RUNNER_PROVISIONING=PASS
-          uname -a
-          df -h
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          show-progress: false
 
-      - name: Probe private source repository access
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.18'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Execute encrypted-source complete closure
+        id: closure
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -Eeuo pipefail
-          code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            https://api.github.com/repos/sercan321/mathpro-test)"
-          echo "R831_PRIVATE_REPO_HTTP_STATUS=$code"
-          [[ "$code" == 200 ]]
+          test "$(sha256sum .github/scripts/r831_secure_builder.sh | awk '{print $1}')" = "$R831_SECURE_BUILDER_SHA256"
+          bash -n .github/scripts/r831_secure_builder.sh
+          set +e
+          bash .github/scripts/r831_secure_builder.sh 2>&1 | tee "$RUNNER_TEMP/r831-secure-builder.log"
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload encrypted return evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r831-secure-return-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/r831-secure-truth-closure/return/R831_MEGA_PHASE3_ENCRYPTED_RETURN.enc
+            ${{ runner.temp }}/r831-secure-truth-closure/return/R831_RETURN_KEY.enc
+            ${{ runner.temp }}/r831-secure-truth-closure/return/R831_RETURN_MANIFEST.json
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 3
+
+      - name: Enforce fail-closed decision
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          code="${{ steps.closure.outputs.exit_code }}"
+          [[ -n "$code" ]] || { echo R831_SECURE_RESULT_MISSING >&2; exit 1; }
+          if [[ "$code" == 0 ]]; then
+            echo R831_MEGA_PHASE3_PASS
+            exit 0
+          fi
+          if [[ "$code" == 3 ]]; then
+            echo R831_MEGA_PHASE3_BLOCKED_R831-P3-SIGNING-001 >&2
+            exit 3
+          fi
+          echo "R831_MEGA_PHASE3_REJECT exit=$code" >&2
+          exit "$code"
