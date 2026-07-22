@@ -1,0 +1,17 @@
+name: R831 Public Base Runner Probe
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Runner is alive
+        run: |
+          set -Eeuo pipefail
+          echo R831_PUBLIC_BASE_RUNNER_PROVISIONING=PASS
+          uname -a
+          df -h
