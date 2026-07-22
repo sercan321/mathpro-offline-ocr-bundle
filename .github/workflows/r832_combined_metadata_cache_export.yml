@@ -70,8 +70,8 @@ jobs:
 
             # First, use the stock Flutter 3.44.6 template. This is the already-proven
             # route which resolves the Flutter included-build Kotlin/AGP classpath.
-            flutter create --platforms=android --org com.mathpro.prefetch "$ROOT/flutter-prefetch"
-            cat > "$ROOT/flutter-prefetch/pubspec.yaml" <<'EOF'
+            flutter create --platforms=android --org com.mathpro.prefetch "$ROOT/flutter_prefetch"
+            cat > "$ROOT/flutter_prefetch/pubspec.yaml" <<'EOF'
           name: r832_combined_cache_prefetch
           publish_to: none
           environment:
@@ -97,8 +97,8 @@ jobs:
           flutter:
             uses-material-design: true
           EOF
-            sed -i 's/^          //' "$ROOT/flutter-prefetch/pubspec.yaml"
-            cd "$ROOT/flutter-prefetch"
+            sed -i 's/^          //' "$ROOT/flutter_prefetch/pubspec.yaml"
+            cd "$ROOT/flutter_prefetch"
             flutter pub get --offline
             python3 - <<'PY'
           from pathlib import Path
@@ -155,8 +155,8 @@ jobs:
           EOF
             sed -i 's/^          //' "$ROOT/exact-plugins/build.gradle"
             cd "$ROOT/exact-plugins"
-            "$ROOT/flutter-prefetch/android/gradlew" --no-daemon help 2>&1 | tee "$ROOT/export/exact-plugin-online-resolution.log"
-            "$ROOT/flutter-prefetch/android/gradlew" --offline --no-daemon help 2>&1 | tee "$ROOT/export/exact-plugin-offline-replay.log"
+            "$ROOT/flutter_prefetch/android/gradlew" --no-daemon help 2>&1 | tee "$ROOT/export/exact-plugin-online-resolution.log"
+            "$ROOT/flutter_prefetch/android/gradlew" --offline --no-daemon help 2>&1 | tee "$ROOT/export/exact-plugin-offline-replay.log"
 
             # Verify the exact dependency coordinates required by both Flutter's
             # included build and the production project.
