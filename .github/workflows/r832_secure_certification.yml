@@ -12,7 +12,7 @@ permissions:
   pull-requests: write
 
 env:
-  R832_SECURE_BUILDER_SHA256: 22693d880210f64820e4ab989d6685cc71dc71a370bf5a1228e396fa5818da7c
+  R832_SECURE_BUILDER_BLOB_SHA: c6451fbcd856143cadb662c6bf9c2fcb30d373d4
 
 jobs:
   certify:
@@ -48,7 +48,7 @@ jobs:
           MATHPRO_UPLOAD_CERT_SHA256: ${{ secrets.MATHPRO_UPLOAD_CERT_SHA256 }}
         run: |
           set -Eeuo pipefail
-          test "$(sha256sum .github/scripts/r832_secure_builder.sh | awk '{print $1}')" = "$R832_SECURE_BUILDER_SHA256"
+          test "$(git hash-object .github/scripts/r832_secure_builder.sh)" = "$R832_SECURE_BUILDER_BLOB_SHA"
           bash -n .github/scripts/r832_secure_builder.sh
           set +e
           bash .github/scripts/r832_secure_builder.sh 2>&1 | tee "$RUNNER_TEMP/r832-secure-certification.log"
