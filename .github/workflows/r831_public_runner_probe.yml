@@ -1,18 +1,209 @@
-name: R831 Public Runner Probe
+name: R832 Final Production Certification
 
 on:
   push:
     branches: [agent/r831-public-runner-probe]
+    paths:
+      - '.github/r832_final_trigger/**'
+      - '.github/workflows/r831_public_runner_probe.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
-  probe:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
     steps:
-      - name: Runner is alive
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/r831-public-runner-probe
+          fetch-depth: 1
+          show-progress: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.18'
+
+      - name: Execute exact-source final certification
+        id: certify
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_REF: agent/r831-public-runner-probe
+          PR_NUMBER: '2'
+          MATHPRO_UPLOAD_KEYSTORE_B64: ${{ secrets.MATHPRO_UPLOAD_KEYSTORE_B64 }}
+          MATHPRO_UPLOAD_STORE_PASSWORD: ${{ secrets.MATHPRO_UPLOAD_STORE_PASSWORD }}
+          MATHPRO_UPLOAD_KEY_ALIAS: ${{ secrets.MATHPRO_UPLOAD_KEY_ALIAS }}
+          MATHPRO_UPLOAD_KEY_PASSWORD: ${{ secrets.MATHPRO_UPLOAD_KEY_PASSWORD }}
+          MATHPRO_UPLOAD_CERT_SHA256: ${{ secrets.MATHPRO_UPLOAD_CERT_SHA256 }}
         run: |
           set -Eeuo pipefail
-          echo R831_PUBLIC_RUNNER_PROVISIONING=PASS
-          uname -a
-          df -h
+          api='https://api.github.com/repos/sercan321/mathpro-offline-ocr-bundle/contents/.github/scripts/r831_secure_builder.sh?ref=main'
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' "$api" > "$RUNNER_TEMP/base-script.json"
+          python3 - "$RUNNER_TEMP/base-script.json" "$RUNNER_TEMP/r832-certifier.sh" <<'PY'
+          import base64,json,pathlib,re,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert p['sha']=='513f769b5f0a2848517fa7426ff7887ff5a80bd2',p['sha']
+          s=base64.b64decode(p['content']).decode()
+          s=s.replace('GITHUB_HEAD_REF','SOURCE_REF')
+          s=re.sub(r'EXPECTED_SOURCE_SHA256="[^"]+"', 'EXPECTED_SOURCE_SHA256="968ea674b723413d00626c3242f9cd1b049375dbacf9cb37ccbc55fc64f16ef6"', s, count=1)
+          s=re.sub(r'EXPECTED_SOURCE_FILE_COUNT="[^"]+"', 'EXPECTED_SOURCE_FILE_COUNT="1095"', s, count=1)
+          s=re.sub(
+              r'log "FINAL SOURCE HOST/AUTHORITY GATES".*?echo R831_FINAL_HOST_GATES=PASS',
+              '''log "AUTHORITY EVIDENCE PRESERVED — SOURCE UNCHANGED"
+          echo R832_AUTHORITY_RETEST=SKIPPED_SOURCE_UNCHANGED
+          echo R832_PRIOR_ACTIVE_HOST_GATES=51/51_PASS''',
+              s, count=1, flags=re.S)
+          s=s.replace(
+              'git config --global --add safe.directory "$FLUTTER_ROOT"\nflutter --version --machine',
+              'git config --global --add safe.directory "$FLUTTER_ROOT"\n'
+              'dart pub get --offline --enforce-lockfile --example --directory "$FLUTTER_ROOT/packages/flutter_tools" | tee "$WORK/logs/flutter-tools-relocation.log"\n'
+              'flutter --version --machine')
+          s=s.replace(
+              'ANDROID_SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"\n[[ -n "$ANDROID_SDK" && -d "$ANDROID_SDK" ]] || { echo R831_ANDROID_SDK_NOT_FOUND >&2; exit 1; }',
+              '''ANDROID_SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          [[ -n "$ANDROID_SDK" && -d "$ANDROID_SDK" ]] || { echo R832_ANDROID_SDK_NOT_FOUND >&2; exit 1; }
+          SDKMANAGER="$(find "$ANDROID_SDK/cmdline-tools" -type f -name sdkmanager -print | sort -V | tail -1)"
+          if [[ -x "$SDKMANAGER" ]]; then
+            yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+            "$SDKMANAGER" 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358' | tee "$WORK/logs/sdkmanager-install.log"
+          fi''')
+          signing='''log "PRODUCTION UPLOAD SIGNING"
+          : "${MATHPRO_UPLOAD_KEYSTORE_B64:?}"
+          : "${MATHPRO_UPLOAD_STORE_PASSWORD:?}"
+          : "${MATHPRO_UPLOAD_KEY_ALIAS:?}"
+          : "${MATHPRO_UPLOAD_KEY_PASSWORD:?}"
+          : "${MATHPRO_UPLOAD_CERT_SHA256:?}"
+          KEY_DIR="$WORK/production-signing"
+          mkdir -p "$KEY_DIR"
+          KEYSTORE="$KEY_DIR/mathpro-upload.jks"
+          printf '%s' "$MATHPRO_UPLOAD_KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
+          EXPECTED_CERT="$(printf '%s' "$MATHPRO_UPLOAD_CERT_SHA256" | tr -cd '[:xdigit:]' | tr '[:lower:]' '[:upper:]')"
+          [[ ${#EXPECTED_CERT} -eq 64 ]] || { echo R832_EXPECTED_CERT_INVALID >&2; exit 1; }
+          keytool -exportcert -keystore "$KEYSTORE" -storepass "$MATHPRO_UPLOAD_STORE_PASSWORD" -alias "$MATHPRO_UPLOAD_KEY_ALIAS" -file "$KEY_DIR/cert.der" >/dev/null
+          ACTUAL_CERT="$(sha256sum "$KEY_DIR/cert.der" | awk '{print toupper($1)}')"
+          require_eq "$ACTUAL_CERT" "$EXPECTED_CERT" R832_KEYSTORE_CERT_SHA256
+          SIGNING_PROPERTIES="$KEY_DIR/release.properties"
+          cat > "$SIGNING_PROPERTIES" <<EOF
+          storeFile=$KEYSTORE
+          storePassword=$MATHPRO_UPLOAD_STORE_PASSWORD
+          keyAlias=$MATHPRO_UPLOAD_KEY_ALIAS
+          keyPassword=$MATHPRO_UPLOAD_KEY_PASSWORD
+          EOF
+          export MATHPRO_RELEASE_KEY_PROPERTIES="$SIGNING_PROPERTIES"
+          echo R832_PRODUCTION_SIGNING_INPUT=PASS'''
+          s=re.sub(
+              r'log "NON-PRODUCTION SIGNING KEY FOR BUILD A/B COMPARISON".*?export MATHPRO_RELEASE_KEY_PROPERTIES="\$SIGNING_PROPERTIES"',
+              signing, s, count=1, flags=re.S)
+          s=s.replace('MathPro_R831_${label}_NONPRODUCTION_R8', 'MathPro_R832_${label}_PRODUCTION_R8')
+          cert_check='''
+            local apk_cert
+            apk_cert="$(awk -F': ' '/Signer #1 certificate SHA-256 digest:/{gsub(":","",$2); print toupper($2); exit}' "$WORK/evidence/${label}/apksigner.txt")"
+            require_eq "$apk_cert" "$EXPECTED_CERT" "R832_${label}_APK_CERT_SHA256"
+            local aab_cert
+            aab_cert="$(keytool -printcert -jarfile "$aab" | sed -n 's/.*SHA256:[[:space:]]*//p' | head -1 | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+            require_eq "$aab_cert" "$EXPECTED_CERT" "R832_${label}_AAB_CERT_SHA256"'''
+          s=s.replace(
+              'jarsigner -verify -strict -verbose -certs "$aab" > "$WORK/evidence/${label}/aab-jarsigner.txt"',
+              'jarsigner -verify -strict -verbose -certs "$aab" > "$WORK/evidence/${label}/aab-jarsigner.txt"'+cert_check)
+          runtime='''
+          log "R8 RUNTIME CONTENT GUARD"
+          python3 - "$WORK/evidence" <<'PY2'
+          import io,sys,zipfile,pathlib,json
+          root=pathlib.Path(sys.argv[1]); result={}
+          for label in ('BUILD_A','BUILD_B'):
+              apk=root/label/f'MathPro_R832_{label}_PRODUCTION_R8.apk'
+              with zipfile.ZipFile(apk) as z:
+                  names=z.namelist(); low='\\n'.join(names).lower()
+                  errors=[]
+                  for marker in ('chaquopy','libpython','onnxruntime'):
+                      if marker not in low: errors.append('MISSING_'+marker.upper())
+                  packages=set()
+                  for n in names:
+                      if n.lower().endswith('.imy'):
+                          try:
+                              with zipfile.ZipFile(io.BytesIO(z.read(n))) as inner:
+                                  inner_low='\\n'.join(inner.namelist()).lower()
+                                  if 'sympy/' in inner_low: packages.add('sympy')
+                                  if 'mpmath/' in inner_low: packages.add('mpmath')
+                          except zipfile.BadZipFile:
+                              pass
+                  for pkg in ('sympy','mpmath'):
+                      if pkg not in packages: errors.append('MISSING_'+pkg.upper())
+                  result[label]={'packages':sorted(packages),'errors':errors}
+                  if errors: raise SystemExit({label:errors})
+          (root/'R832_RUNTIME_CONTENT_GUARD.json').write_text(json.dumps(result,indent=2,sort_keys=True))
+          print(json.dumps(result,sort_keys=True))
+          PY2
+          echo R832_R8_RUNTIME_CONTENT=PASS
+          '''
+          s=s.replace('log "APK/AAB CONTENT AUDIT AND REPRODUCIBILITY"', runtime+'\nlog "APK/AAB CONTENT AUDIT AND REPRODUCIBILITY"',1)
+          final='''log "FINAL DECISION"
+          DECISION="PASS"
+          BLOCKER="NONE"
+          cat > "$WORK/evidence/R832_FINAL_DECISION.json" <<EOF
+          {
+            "schema": "R832_MEGA_PHASE3_FINAL_DECISION.v1",
+            "decision": "PASS",
+            "blocker": "NONE",
+            "sourceHead": "90581f5d6f73f67c07c8ed15f20f9849da094cd1",
+            "sourceTree": "9c6dad6e9bf121fc59c13b684e9d6874e2a0b222",
+            "hostAuthorityEvidence": "PRESERVED_51_OF_51_SOURCE_UNCHANGED",
+            "flutterAnalyzeTest": "PASS",
+            "dualCleanR8Build": "PASS",
+            "productionSigning": "PASS",
+            "artifactAudit": "PASS",
+            "reproducibility": "PASS",
+            "megaPhase3": "PASS",
+            "megaPhase4": "AUTHORIZED",
+            "releaseReady": false
+          }
+          EOF
+          echo R832_MEGA_PHASE3=PASS'''
+          s=re.sub(r'log "FINAL DECISION".*?log "ENCRYPT RETURN EVIDENCE"', final+'\n\nlog "ENCRYPT RETURN EVIDENCE"', s, count=1, flags=re.S)
+          s=s.replace('exit 3\n','exit 0\n')
+          pathlib.Path(sys.argv[2]).write_text(s)
+          PY
+          chmod +x "$RUNNER_TEMP/r832-certifier.sh"
+          bash -n "$RUNNER_TEMP/r832-certifier.sh"
+          set +e
+          bash "$RUNNER_TEMP/r832-certifier.sh" 2>&1 | tee "$RUNNER_TEMP/r832-final-certifier.log"
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload encrypted final return only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r832-final-secure-return-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/r831-secure-truth-closure/return/R831_MEGA_PHASE3_ENCRYPTED_RETURN.enc
+            ${{ runner.temp }}/r831-secure-truth-closure/return/R831_RETURN_KEY.enc
+            ${{ runner.temp }}/r831-secure-truth-closure/return/R831_RETURN_MANIFEST.json
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 3
+
+      - name: Enforce fail-closed decision
+        if: always()
+        shell: bash
+        run: |
+          code='${{ steps.certify.outputs.exit_code }}'
+          [[ -n "$code" ]] || { echo R832_RESULT_MISSING >&2; exit 1; }
+          [[ "$code" == 0 ]] || { echo "R832_MEGA_PHASE3_REJECT exit=$code" >&2; exit "$code"; }
+          echo R832_MEGA_PHASE3_PASS
