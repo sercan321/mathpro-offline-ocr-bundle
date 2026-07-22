@@ -1,0 +1,181 @@
+name: R831 Toolchain Export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/r831_toolchain_trigger/**'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download and verify pinned Flutter and pub assets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/r831-toolchain-export"
+          mkdir -p "$ROOT/download" "$ROOT/flutter" "$ROOT/pub" "$ROOT/export"
+          cd "$ROOT/download"
+          BASE='https://github.com/sercan321/mathpro-offline-ocr-bundle/releases/download/r828c-flutter-pub-20260720-v1'
+          for name in r828c-flutter-sdk.part-000 r828c-flutter-sdk.part-001 r828c-flutter-sdk.part-002 r828c-pub-cache.tar.zst; do
+            curl --fail --location --retry 5 --retry-delay 3 --silent --show-error -o "$name" "$BASE/$name"
+          done
+          echo '5249d692b8a010c5baa896156960797e496d8a82b85b1274620ee52454e335c7  r828c-flutter-sdk.part-000' > expected.sha256
+          echo '2425d14baed134099a05709381d01b690641b940e4c16ad8ba1293b007dd1455  r828c-flutter-sdk.part-001' >> expected.sha256
+          echo '1ff82df19da82d950aac9991a38ec8cd613dcdf737881b902364ec9e862fdc02  r828c-flutter-sdk.part-002' >> expected.sha256
+          echo '0adf3b6d075948408e70c13da6580f8ccd7cdeecdde06a91e545b9ca53a8a417  r828c-pub-cache.tar.zst' >> expected.sha256
+          sha256sum -c expected.sha256
+          cp r828c-flutter-sdk.part-000 "$ROOT/export/"
+          cp r828c-flutter-sdk.part-001 "$ROOT/export/"
+          cp r828c-flutter-sdk.part-002 "$ROOT/export/"
+          cp r828c-pub-cache.tar.zst "$ROOT/export/"
+          cat r828c-flutter-sdk.part-000 r828c-flutter-sdk.part-001 r828c-flutter-sdk.part-002 > flutter-sdk.tar.zst
+          tar --zstd -xf flutter-sdk.tar.zst -C "$ROOT/flutter"
+          tar --zstd -xf r828c-pub-cache.tar.zst -C "$ROOT/pub"
+          FLUTTER_BIN="$(find "$ROOT/flutter" -type f -path '*/bin/flutter' -print -quit)"
+          PUB_MARKER="$(find "$ROOT/pub" -type d -path '*/hosted/pub.dev' -print -quit)"
+          test -n "$FLUTTER_BIN"
+          test -n "$PUB_MARKER"
+          FLUTTER_ROOT="$(dirname "$(dirname "$FLUTTER_BIN")")"
+          PUB_CACHE="$(dirname "$(dirname "$PUB_MARKER")")"
+          echo "FLUTTER_ROOT=$FLUTTER_ROOT" >> "$GITHUB_ENV"
+          echo "PUB_CACHE=$PUB_CACHE" >> "$GITHUB_ENV"
+          echo "$FLUTTER_ROOT/bin" >> "$GITHUB_PATH"
+
+      - name: Prefetch exact Android Gradle, Chaquopy, ONNX and Flutter dependencies
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/r831-toolchain-export"
+          git config --global --add safe.directory "$FLUTTER_ROOT"
+          flutter config --no-analytics
+          flutter precache --android
+          flutter create --platforms=android --org com.mathpro.prefetch "$ROOT/prefetch"
+          cat > "$ROOT/prefetch/pubspec.yaml" <<'EOF'
+          name: r831_toolchain_prefetch
+          publish_to: none
+          environment:
+            sdk: '>=3.3.0 <4.0.0'
+          dependencies:
+            flutter:
+              sdk: flutter
+            cupertino_icons: ^1.0.8
+            camera: 0.10.6
+            camera_android: 0.10.9+3
+            flutter_math_fork: ^0.7.2
+            http: ^1.2.2
+            crypto: ^3.0.6
+            path_provider: ^2.1.5
+            shared_preferences: ^2.5.5
+            webview_flutter: 4.7.0
+          dev_dependencies:
+            flutter_test:
+              sdk: flutter
+            integration_test:
+              sdk: flutter
+            flutter_lints: ^4.0.0
+          flutter:
+            uses-material-design: true
+          EOF
+          cd "$ROOT/prefetch"
+          flutter pub get
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/settings.gradle.kts')
+          s=p.read_text()
+          s=s.replace('id("org.jetbrains.kotlin.android") version', 'id("com.chaquo.python") version "17.0.0" apply false\n    id("org.jetbrains.kotlin.android") version',1)
+          p.write_text(s)
+          p=Path('android/app/build.gradle.kts')
+          s=p.read_text()
+          s=s.replace('id("dev.flutter.flutter-gradle-plugin")','id("dev.flutter.flutter-gradle-plugin")\n    id("com.chaquo.python")',1)
+          s=s.replace('minSdk = flutter.minSdkVersion','minSdk = 24',1)
+          s=s.replace('buildTypes {','defaultConfig {\n        ndk { abiFilters += listOf("arm64-v8a") }\n    }\n\n    buildTypes {',1)
+          s += '\nchaquopy { defaultConfig { pip { install("mpmath==1.3.0"); install("sympy==1.14.0") } } }\n'
+          s += '\ndependencies { implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0") }\n'
+          p.write_text(s)
+          PY
+          mkdir -p android/app/src/main/python
+          echo 'def smoke(): return 1' > android/app/src/main/python/main.py
+          flutter build apk --debug --target-platform android-arm64
+          flutter build apk --release --target-platform android-arm64
+          flutter --version --machine > "$ROOT/export/flutter-version.json"
+          grep -RInE 'compileSdkVersion|targetSdkVersion|ndkVersion' "$FLUTTER_ROOT/packages/flutter_tools/gradle" > "$ROOT/export/flutter-android-defaults.txt" || true
+
+      - name: Package Android SDK and resolved Gradle cache
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/r831-toolchain-export"
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          test -d "$SDK"
+          mkdir -p "$ROOT/android-sdk"
+          for d in build-tools platforms platform-tools licenses ndk cmake cmdline-tools; do
+            test ! -e "$SDK/$d" || cp -a "$SDK/$d" "$ROOT/android-sdk/"
+          done
+          tar --zstd -cf "$ROOT/export/r831-android-sdk.tar.zst" -C "$ROOT" android-sdk
+          tar --zstd -cf "$ROOT/export/r831-gradle-cache.tar.zst" -C "$HOME" .gradle
+          (cd "$ROOT/export" && sha256sum * > r831-toolchain-export.sha256 && stat -c '%s %n' * > r831-toolchain-export.size)
+          split -b 600000000 -d -a 2 "$ROOT/export/r831-android-sdk.tar.zst" "$ROOT/export/android-sdk.part-"
+          split -b 600000000 -d -a 2 "$ROOT/export/r831-gradle-cache.tar.zst" "$ROOT/export/gradle-cache.part-"
+          rm "$ROOT/export/r831-android-sdk.tar.zst" "$ROOT/export/r831-gradle-cache.tar.zst"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-flutter-part-000
+          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-flutter-sdk.part-000
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-flutter-part-001
+          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-flutter-sdk.part-001
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-flutter-part-002
+          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-flutter-sdk.part-002
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-pub-cache
+          path: ${{ runner.temp }}/r831-toolchain-export/export/r828c-pub-cache.tar.zst
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-android-sdk
+          path: ${{ runner.temp }}/r831-toolchain-export/export/android-sdk.part-*
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-gradle-cache
+          path: ${{ runner.temp }}/r831-toolchain-export/export/gradle-cache.part-*
+          compression-level: 0
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r831-toolchain-manifest
+          path: |
+            ${{ runner.temp }}/r831-toolchain-export/export/flutter-version.json
+            ${{ runner.temp }}/r831-toolchain-export/export/flutter-android-defaults.txt
+            ${{ runner.temp }}/r831-toolchain-export/export/r831-toolchain-export.sha256
+            ${{ runner.temp }}/r831-toolchain-export/export/r831-toolchain-export.size
+          retention-days: 3
