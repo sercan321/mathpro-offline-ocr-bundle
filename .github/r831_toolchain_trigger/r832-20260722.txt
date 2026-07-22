@@ -1,0 +1,4 @@
+R832 Mega Faz 3 exact toolchain export trigger.
+Source package HEAD: 3d08b35235bbf5086f17417dcc4b8a9660c507d6
+Source tree: 864c89c356c539e0f609a3c242c24a8463dd07ae
+Truth mode: no production signing claim.
