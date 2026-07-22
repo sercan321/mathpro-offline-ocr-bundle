@@ -1,0 +1,89 @@
+name: R832 Mega Phase 3 Secure Certification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/r832_secure_trigger/**'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+env:
+  R832_SECURE_BUILDER_SHA256: 22693d880210f64820e4ab989d6685cc71dc71a370bf5a1228e396fa5818da7c
+
+jobs:
+  certify:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          show-progress: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.18'
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Execute exact-source fail-closed certification
+        id: certification
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          MATHPRO_UPLOAD_KEYSTORE_B64: ${{ secrets.MATHPRO_UPLOAD_KEYSTORE_B64 }}
+          MATHPRO_UPLOAD_STORE_PASSWORD: ${{ secrets.MATHPRO_UPLOAD_STORE_PASSWORD }}
+          MATHPRO_UPLOAD_KEY_ALIAS: ${{ secrets.MATHPRO_UPLOAD_KEY_ALIAS }}
+          MATHPRO_UPLOAD_KEY_PASSWORD: ${{ secrets.MATHPRO_UPLOAD_KEY_PASSWORD }}
+          MATHPRO_UPLOAD_CERT_SHA256: ${{ secrets.MATHPRO_UPLOAD_CERT_SHA256 }}
+        run: |
+          set -Eeuo pipefail
+          test "$(sha256sum .github/scripts/r832_secure_builder.sh | awk '{print $1}')" = "$R832_SECURE_BUILDER_SHA256"
+          bash -n .github/scripts/r832_secure_builder.sh
+          set +e
+          bash .github/scripts/r832_secure_builder.sh 2>&1 | tee "$RUNNER_TEMP/r832-secure-certification.log"
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload encrypted evidence and signed artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r832-secure-return-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/r832-secure-certification/return/R832_MEGA_PHASE3_ENCRYPTED_RETURN.enc
+            ${{ runner.temp }}/r832-secure-certification/return/R832_RETURN_KEY.enc
+            ${{ runner.temp }}/r832-secure-certification/return/R832_RETURN_MANIFEST.json
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 3
+
+      - name: Enforce fail-closed result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          code='${{ steps.certification.outputs.exit_code }}'
+          test -n "$code" || { echo R832_CERTIFICATION_RESULT_MISSING >&2; exit 1; }
+          if [[ "$code" == 0 ]]; then
+            echo R832_MEGA_PHASE3_PASS
+            exit 0
+          fi
+          if [[ "$code" == 3 ]]; then
+            echo R832_MEGA_PHASE3_BLOCKED_SIGNING >&2
+            exit 3
+          fi
+          echo "R832_MEGA_PHASE3_REJECT exit=$code" >&2
+          exit "$code"
