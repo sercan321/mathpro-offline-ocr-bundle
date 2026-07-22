@@ -1,0 +1,182 @@
+name: R832 Gradle Dependency Prefetch Export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/r831_toolchain_trigger/**'
+      - '.github/workflows/r832_gradle_prefetch_export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1, show-progress: false}
+
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.10.18'}
+
+      - name: Reconstruct pinned Flutter and pub cache
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/r832-gradle-prefetch"
+          mkdir -p "$ROOT/download" "$ROOT/flutter" "$ROOT/pub" "$ROOT/export"
+          cd "$ROOT/download"
+          BASE='https://github.com/sercan321/mathpro-offline-ocr-bundle/releases/download/r828c-flutter-pub-20260720-v1'
+          for name in r828c-flutter-sdk.part-000 r828c-flutter-sdk.part-001 r828c-flutter-sdk.part-002 r828c-pub-cache.tar.zst; do
+            curl --fail --location --retry 5 --retry-delay 3 --silent --show-error -o "$name" "$BASE/$name"
+          done
+          cat > expected.sha256 <<'EOF'
+          5249d692b8a010c5baa896156960797e496d8a82b85b1274620ee52454e335c7  r828c-flutter-sdk.part-000
+          2425d14baed134099a05709381d01b690641b940e4c16ad8ba1293b007dd1455  r828c-flutter-sdk.part-001
+          1ff82df19da82d950aac9991a38ec8cd613dcdf737881b902364ec9e862fdc02  r828c-flutter-sdk.part-002
+          0adf3b6d075948408e70c13da6580f8ccd7cdeecdde06a91e545b9ca53a8a417  r828c-pub-cache.tar.zst
+          EOF
+          sed -i 's/^          //' expected.sha256
+          sha256sum -c expected.sha256 | tee "$ROOT/export/flutter-pub-hash-verification.log"
+          cat r828c-flutter-sdk.part-000 r828c-flutter-sdk.part-001 r828c-flutter-sdk.part-002 > flutter-sdk.tar.zst
+          tar --zstd -xf flutter-sdk.tar.zst -C "$ROOT/flutter"
+          tar --zstd -xf r828c-pub-cache.tar.zst -C "$ROOT/pub"
+          FLUTTER_BIN="$(find "$ROOT/flutter" -type f -path '*/bin/flutter' -print -quit)"
+          PUB_MARKER="$(find "$ROOT/pub" -type d -path '*/hosted/pub.dev' -print -quit)"
+          test -n "$FLUTTER_BIN"; test -n "$PUB_MARKER"
+          FLUTTER_ROOT="$(dirname "$(dirname "$FLUTTER_BIN")")"
+          PUB_CACHE="$(dirname "$(dirname "$PUB_MARKER")")"
+          export FLUTTER_ROOT PUB_CACHE PATH="$FLUTTER_ROOT/bin:$PATH"
+          echo "FLUTTER_ROOT=$FLUTTER_ROOT" >> "$GITHUB_ENV"
+          echo "PUB_CACHE=$PUB_CACHE" >> "$GITHUB_ENV"
+          echo "$FLUTTER_ROOT/bin" >> "$GITHUB_PATH"
+          git config --global --add safe.directory "$FLUTTER_ROOT"
+          dart pub get --offline --enforce-lockfile --example --directory "$FLUTTER_ROOT/packages/flutter_tools" 2>&1 | tee "$ROOT/export/flutter-tools-offline-relocation.log"
+          flutter --version --machine | tee "$ROOT/export/flutter-version.json"
+
+      - name: Prefetch Gradle Chaquopy ONNX and Python dependencies
+        id: prefetch
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          ROOT="$RUNNER_TEMP/r832-gradle-prefetch"
+          {
+            set -Eeuxo pipefail
+            python3.10 --version
+            flutter config --no-analytics
+            flutter precache --android
+            flutter create --platforms=android --org com.mathpro.prefetch "$ROOT/prefetch"
+            cat > "$ROOT/prefetch/pubspec.yaml" <<'EOF'
+          name: r832_gradle_prefetch
+          publish_to: none
+          environment:
+            sdk: '>=3.12.0 <4.0.0'
+          dependencies:
+            flutter:
+              sdk: flutter
+            cupertino_icons: ^1.0.8
+            camera: 0.10.6
+            camera_android: 0.10.9+3
+            flutter_math_fork: ^0.7.2
+            http: ^1.2.2
+            crypto: ^3.0.6
+            path_provider: ^2.1.5
+            shared_preferences: ^2.5.5
+            webview_flutter: 4.7.0
+          dev_dependencies:
+            flutter_test:
+              sdk: flutter
+            integration_test:
+              sdk: flutter
+            flutter_lints: ^4.0.0
+          flutter:
+            uses-material-design: true
+          EOF
+            cd "$ROOT/prefetch"
+            flutter pub get --offline
+            python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/settings.gradle.kts')
+          s=p.read_text()
+          s=s.replace('id("org.jetbrains.kotlin.android") version', 'id("com.chaquo.python") version "17.0.0" apply false\n    id("org.jetbrains.kotlin.android") version',1)
+          p.write_text(s)
+          p=Path('android/app/build.gradle.kts')
+          s=p.read_text()
+          s=s.replace('id("dev.flutter.flutter-gradle-plugin")','id("dev.flutter.flutter-gradle-plugin")\n    id("com.chaquo.python")',1)
+          s=s.replace('minSdk = flutter.minSdkVersion','minSdk = 24',1)
+          s=s.replace('buildTypes {','defaultConfig {\n        ndk { abiFilters += listOf("arm64-v8a") }\n    }\n\n    buildTypes {',1)
+          s += '\nchaquopy { defaultConfig { buildPython("python3.10"); pip { install("mpmath==1.3.0"); install("sympy==1.14.0") } } }\n'
+          s += '\ndependencies { implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0") }\n'
+          p.write_text(s)
+          PY
+            mkdir -p android/app/src/main/python
+            echo 'def smoke(): return 1' > android/app/src/main/python/main.py
+            flutter build apk --debug --target-platform android-arm64
+          } 2>&1 | tee "$ROOT/export/prefetch.log"
+
+      - name: Package caches and result
+        if: always()
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/r832-gradle-prefetch"
+          printf 'PREFETCH_OUTCOME=%s\n' '${{ steps.prefetch.outcome }}' | tee "$ROOT/export/prefetch-status.txt"
+          mkdir -p "$HOME/.gradle" "$HOME/.cache"
+          tar --zstd -cf "$ROOT/export/gradle-cache.tar.zst" -C "$HOME" .gradle
+          tar --zstd -cf "$ROOT/export/home-cache.tar.zst" -C "$HOME" .cache
+          split -b 300000000 -d -a 2 "$ROOT/export/gradle-cache.tar.zst" "$ROOT/export/gradle-cache.chunk-"
+          split -b 300000000 -d -a 2 "$ROOT/export/home-cache.tar.zst" "$ROOT/export/home-cache.chunk-"
+          rm "$ROOT/export/gradle-cache.tar.zst" "$ROOT/export/home-cache.tar.zst"
+          (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'prefetch-export.*' -printf '%f\n' | sort | xargs sha256sum > prefetch-export.sha256)
+          (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'prefetch-export.*' -printf '%f\n' | sort | xargs stat -c '%s %n' > prefetch-export.size)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r832-prefetch-diagnostics
+          path: |
+            ${{ runner.temp }}/r832-gradle-prefetch/export/*.log
+            ${{ runner.temp }}/r832-gradle-prefetch/export/*.json
+            ${{ runner.temp }}/r832-gradle-prefetch/export/*.txt
+            ${{ runner.temp }}/r832-gradle-prefetch/export/prefetch-export.sha256
+            ${{ runner.temp }}/r832-gradle-prefetch/export/prefetch-export.size
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: r832-gradle-prefetch-00, path: '${{ runner.temp }}/r832-gradle-prefetch/export/gradle-cache.chunk-00', compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: r832-gradle-prefetch-01, path: '${{ runner.temp }}/r832-gradle-prefetch/export/gradle-cache.chunk-01', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: r832-gradle-prefetch-02, path: '${{ runner.temp }}/r832-gradle-prefetch/export/gradle-cache.chunk-02', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: r832-gradle-prefetch-03, path: '${{ runner.temp }}/r832-gradle-prefetch/export/gradle-cache.chunk-03', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: r832-gradle-prefetch-04, path: '${{ runner.temp }}/r832-gradle-prefetch/export/gradle-cache.chunk-04', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: r832-gradle-prefetch-05, path: '${{ runner.temp }}/r832-gradle-prefetch/export/gradle-cache.chunk-05', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: r832-home-cache-00, path: '${{ runner.temp }}/r832-gradle-prefetch/export/home-cache.chunk-00', compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: r832-home-cache-01, path: '${{ runner.temp }}/r832-gradle-prefetch/export/home-cache.chunk-01', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: r832-home-cache-02, path: '${{ runner.temp }}/r832-gradle-prefetch/export/home-cache.chunk-02', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+
+      - name: Fail closed if prefetch failed
+        if: always()
+        shell: bash
+        run: test '${{ steps.prefetch.outcome }}' = 'success'
