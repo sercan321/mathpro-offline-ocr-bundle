@@ -60,6 +60,7 @@ jobs:
           echo "FLUTTER_ROOT=$FLUTTER_ROOT" >> "$GITHUB_ENV"
           echo "PUB_CACHE=$PUB_CACHE" >> "$GITHUB_ENV"
           echo "$FLUTTER_ROOT/bin" >> "$GITHUB_PATH"
+          export PATH="$FLUTTER_ROOT/bin:$PATH"
           git config --global --add safe.directory "$FLUTTER_ROOT"
           dart pub get --offline --enforce-lockfile --example --directory "$FLUTTER_ROOT/packages/flutter_tools" | tee "$ROOT/export/flutter-tools-offline-relocation.log"
           flutter --version --machine | tee "$ROOT/export/flutter-version.json"
