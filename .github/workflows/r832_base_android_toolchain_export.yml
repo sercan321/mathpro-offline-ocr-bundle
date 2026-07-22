@@ -1,0 +1,92 @@
+name: R832 Base Android Toolchain Export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/r831_toolchain_trigger/**'
+      - '.github/workflows/r832_base_android_toolchain_export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.18'
+
+      - name: Package exact runner Android SDK JDK17 and Python310
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/r832-base-toolchain"
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          test -d "$SDK/build-tools/34.0.0"
+          test -d "$SDK/build-tools/36.0.0"
+          test -d "$SDK/platforms/android-36"
+          test -d "$SDK/ndk/28.2.13676358"
+          mkdir -p "$ROOT/android-sdk/build-tools" "$ROOT/android-sdk/platforms" "$ROOT/android-sdk/ndk" "$ROOT/export"
+          cp -a "$SDK/build-tools/34.0.0" "$ROOT/android-sdk/build-tools/"
+          cp -a "$SDK/build-tools/36.0.0" "$ROOT/android-sdk/build-tools/"
+          cp -a "$SDK/platforms/android-36" "$ROOT/android-sdk/platforms/"
+          cp -a "$SDK/ndk/28.2.13676358" "$ROOT/android-sdk/ndk/"
+          cp -a "$SDK/platform-tools" "$ROOT/android-sdk/"
+          cp -a "$SDK/licenses" "$ROOT/android-sdk/"
+          tar --zstd -cf "$ROOT/export/android-sdk.tar.zst" -C "$ROOT" android-sdk
+          tar --zstd -cf "$ROOT/export/jdk17.tar.zst" -C "$(dirname "$JAVA_HOME")" "$(basename "$JAVA_HOME")"
+          tar --zstd -cf "$ROOT/export/python310.tar.zst" -C "$(dirname "$pythonLocation")" "$(basename "$pythonLocation")"
+          split -b 300000000 -d -a 2 "$ROOT/export/android-sdk.tar.zst" "$ROOT/export/android-sdk.chunk-"
+          split -b 300000000 -d -a 2 "$ROOT/export/jdk17.tar.zst" "$ROOT/export/jdk17.chunk-"
+          split -b 300000000 -d -a 2 "$ROOT/export/python310.tar.zst" "$ROOT/export/python310.chunk-"
+          rm "$ROOT/export/android-sdk.tar.zst" "$ROOT/export/jdk17.tar.zst" "$ROOT/export/python310.tar.zst"
+          (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'base-toolchain.*' -printf '%f\n' | sort | xargs sha256sum > base-toolchain.sha256)
+          (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'base-toolchain.*' -printf '%f\n' | sort | xargs stat -c '%s %n' > base-toolchain.size)
+          printf 'ANDROID_SDK_ROOT=%s\nJAVA_HOME=%s\nPYTHON_LOCATION=%s\n' "$SDK" "$JAVA_HOME" "$pythonLocation" > "$ROOT/export/base-toolchain-environment.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r832-base-toolchain-manifest
+          path: |
+            ${{ runner.temp }}/r832-base-toolchain/export/base-toolchain.sha256
+            ${{ runner.temp }}/r832-base-toolchain/export/base-toolchain.size
+            ${{ runner.temp }}/r832-base-toolchain/export/base-toolchain-environment.txt
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-android-sdk-00, path: '${{ runner.temp }}/r832-base-toolchain/export/android-sdk.chunk-00', compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-android-sdk-01, path: '${{ runner.temp }}/r832-base-toolchain/export/android-sdk.chunk-01', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-android-sdk-02, path: '${{ runner.temp }}/r832-base-toolchain/export/android-sdk.chunk-02', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-android-sdk-03, path: '${{ runner.temp }}/r832-base-toolchain/export/android-sdk.chunk-03', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-android-sdk-04, path: '${{ runner.temp }}/r832-base-toolchain/export/android-sdk.chunk-04', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-android-sdk-05, path: '${{ runner.temp }}/r832-base-toolchain/export/android-sdk.chunk-05', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-android-sdk-06, path: '${{ runner.temp }}/r832-base-toolchain/export/android-sdk.chunk-06', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-android-sdk-07, path: '${{ runner.temp }}/r832-base-toolchain/export/android-sdk.chunk-07', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-jdk17-00, path: '${{ runner.temp }}/r832-base-toolchain/export/jdk17.chunk-00', compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-jdk17-01, path: '${{ runner.temp }}/r832-base-toolchain/export/jdk17.chunk-01', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-python310-00, path: '${{ runner.temp }}/r832-base-toolchain/export/python310.chunk-00', compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-base-python310-01, path: '${{ runner.temp }}/r832-base-toolchain/export/python310.chunk-01', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
