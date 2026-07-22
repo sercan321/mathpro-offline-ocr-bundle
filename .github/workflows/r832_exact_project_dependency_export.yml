@@ -1,0 +1,143 @@
+name: R832 Exact Project Dependency Export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/r831_toolchain_trigger/**'
+      - '.github/workflows/r832_exact_project_dependency_export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1, show-progress: false}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '17'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.10.18'}
+
+      - name: Build exact AGP Kotlin Chaquopy ONNX dependency closure
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ROOT="$RUNNER_TEMP/r832-exact-project-deps"
+          mkdir -p "$ROOT/project/app/src/main/java/com/mathpro/prefetch" "$ROOT/project/app/src/main/python" "$ROOT/export"
+          curl --fail --location --retry 5 --retry-delay 3 --silent --show-error \
+            -o "$ROOT/gradle-8.7-bin.zip" https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          echo '544c35d6bd849ae8a5ed0bcea39ba677dc40f49df7d1835561582da2009b961d  gradle-8.7-bin.zip' > "$ROOT/expected.sha256"
+          (cd "$ROOT" && sha256sum -c expected.sha256)
+          unzip -q "$ROOT/gradle-8.7-bin.zip" -d "$ROOT"
+          cat > "$ROOT/project/settings.gradle" <<'EOF'
+          pluginManagement {
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories { google(); mavenCentral() }
+          }
+          plugins {
+              id 'com.android.application' version '8.6.1' apply false
+              id 'org.jetbrains.kotlin.android' version '2.1.0' apply false
+              id 'com.chaquo.python' version '17.0.0' apply false
+          }
+          rootProject.name = 'r832_exact_project_deps'
+          include ':app'
+          EOF
+          sed -i 's/^          //' "$ROOT/project/settings.gradle"
+          cat > "$ROOT/project/build.gradle" <<'EOF'
+          plugins {
+              id 'com.android.application' apply false
+              id 'org.jetbrains.kotlin.android' apply false
+              id 'com.chaquo.python' apply false
+          }
+          EOF
+          sed -i 's/^          //' "$ROOT/project/build.gradle"
+          cat > "$ROOT/project/app/build.gradle" <<'EOF'
+          plugins {
+              id 'com.android.application'
+              id 'org.jetbrains.kotlin.android'
+              id 'com.chaquo.python'
+          }
+          android {
+              namespace 'com.mathpro.prefetch'
+              compileSdk 36
+              ndkVersion '28.2.13676358'
+              defaultConfig {
+                  applicationId 'com.mathpro.prefetch'
+                  minSdk 24
+                  targetSdk 36
+                  versionCode 1
+                  versionName '1.0'
+                  ndk { abiFilters 'arm64-v8a' }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+              kotlinOptions { jvmTarget = '17' }
+          }
+          chaquopy {
+              defaultConfig {
+                  buildPython 'python3.10'
+                  pip {
+                      install 'mpmath==1.3.0'
+                      install 'sympy==1.14.0'
+                  }
+                  pyc { src = false }
+              }
+          }
+          dependencies {
+              implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.20.0'
+          }
+          EOF
+          sed -i 's/^          //' "$ROOT/project/app/build.gradle"
+          cat > "$ROOT/project/app/src/main/AndroidManifest.xml" <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:theme="@style/AppTheme"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>
+          EOF
+          mkdir -p "$ROOT/project/app/src/main/res/values"
+          cat > "$ROOT/project/app/src/main/res/values/styles.xml" <<'EOF'
+          <resources><style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar"/></resources>
+          EOF
+          cat > "$ROOT/project/app/src/main/java/com/mathpro/prefetch/MainActivity.kt" <<'EOF'
+          package com.mathpro.prefetch
+          import android.app.Activity
+          class MainActivity : Activity()
+          EOF
+          echo 'def smoke(): return 1' > "$ROOT/project/app/src/main/python/main.py"
+          export GRADLE_USER_HOME="$HOME/.gradle"
+          cd "$ROOT/project"
+          "$ROOT/gradle-8.7/bin/gradle" --no-daemon --stacktrace :app:assembleDebug 2>&1 | tee "$ROOT/export/exact-project-dependency-build.log"
+          test -f app/build/outputs/apk/debug/app-debug.apk
+          "$ROOT/gradle-8.7/bin/gradle" --offline --no-daemon :app:assembleDebug 2>&1 | tee "$ROOT/export/exact-project-offline-replay.log"
+          tar --zstd -cf "$ROOT/export/gradle-cache.tar.zst" -C "$HOME" .gradle
+          split -b 300000000 -d -a 2 "$ROOT/export/gradle-cache.tar.zst" "$ROOT/export/gradle-cache.chunk-"
+          rm "$ROOT/export/gradle-cache.tar.zst"
+          (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'exact-deps.*' -printf '%f\n' | sort | xargs sha256sum > exact-deps.sha256)
+          (cd "$ROOT/export" && find . -maxdepth 1 -type f ! -name 'exact-deps.*' -printf '%f\n' | sort | xargs stat -c '%s %n' > exact-deps.size)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r832-exact-project-dependency-diagnostics
+          path: |
+            ${{ runner.temp }}/r832-exact-project-deps/export/*.log
+            ${{ runner.temp }}/r832-exact-project-deps/export/exact-deps.sha256
+            ${{ runner.temp }}/r832-exact-project-deps/export/exact-deps.size
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-exact-deps-00, path: '${{ runner.temp }}/r832-exact-project-deps/export/gradle-cache.chunk-00', compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-exact-deps-01, path: '${{ runner.temp }}/r832-exact-project-deps/export/gradle-cache.chunk-01', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-exact-deps-02, path: '${{ runner.temp }}/r832-exact-project-deps/export/gradle-cache.chunk-02', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-exact-deps-03, path: '${{ runner.temp }}/r832-exact-project-deps/export/gradle-cache.chunk-03', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-exact-deps-04, path: '${{ runner.temp }}/r832-exact-project-deps/export/gradle-cache.chunk-04', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
+      - uses: actions/upload-artifact@v4
+        with: {name: r832-exact-deps-05, path: '${{ runner.temp }}/r832-exact-project-deps/export/gradle-cache.chunk-05', if-no-files-found: ignore, compression-level: 0, retention-days: 3}
