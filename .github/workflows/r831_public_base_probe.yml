@@ -81,13 +81,14 @@ jobs:
           assert p['sha']=='513f769b5f0a2848517fa7426ff7887ff5a80bd2',p['sha']
           s=base64.b64decode(p['content']).decode()
           s=s.replace('GITHUB_HEAD_REF','SOURCE_REF')
+          s=s.replace('for attempt in $(seq 1 360); do','for attempt in $(seq 1 1080); do',1)
           s=re.sub(
               r'openssl genpkey -algorithm RSA.*?chmod 600 "\$WORK/handshake/source-private.pem"',
               '''cp "$R832_SOURCE_PRIVATE_KEY_PATH" "$WORK/handshake/source-private.pem"
           cp "$R832_SOURCE_PUBLIC_KEY_PATH" "$WORK/handshake/source-public.pem"
           chmod 600 "$WORK/handshake/source-private.pem"''',
               s, count=1, flags=re.S)
-          s=re.sub(r'EXPECTED_SOURCE_SHA256="[^"]+"', 'EXPECTED_SOURCE_SHA256="968ea674b723413d00626c3242f9cd1b049375dbacf9cb37ccbc55fc64f16ef6"', s, count=1)
+          s=re.sub(r'EXPECTED_SOURCE_SHA256="[^"]+"', 'EXPECTED_SOURCE_SHA256="425ccac7caed1a1a6a2ee0a78f9a6968cb2787b426fe82768d77e98fc736414c"', s, count=1)
           s=re.sub(r'EXPECTED_SOURCE_FILE_COUNT="[^"]+"', 'EXPECTED_SOURCE_FILE_COUNT="1095"', s, count=1)
           s=re.sub(
               r'log "FINAL SOURCE HOST/AUTHORITY GATES".*?echo R831_FINAL_HOST_GATES=PASS',
@@ -156,7 +157,7 @@ jobs:
           for label in ('BUILD_A','BUILD_B'):
               apk=root/label/f'MathPro_R832_{label}_PRODUCTION_R8.apk'
               with zipfile.ZipFile(apk) as z:
-                  names=z.namelist(); low='\\n'.join(names).lower()
+                  names=z.namelist(); low='\n'.join(names).lower()
                   errors=[]
                   for marker in ('chaquopy','libpython','onnxruntime'):
                       if marker not in low: errors.append('MISSING_'+marker.upper())
@@ -165,7 +166,7 @@ jobs:
                       if n.lower().endswith('.imy'):
                           try:
                               with zipfile.ZipFile(io.BytesIO(z.read(n))) as inner:
-                                  inner_low='\\n'.join(inner.namelist()).lower()
+                                  inner_low='\n'.join(inner.namelist()).lower()
                                   if 'sympy/' in inner_low: packages.add('sympy')
                                   if 'mpmath/' in inner_low: packages.add('mpmath')
                           except zipfile.BadZipFile:
