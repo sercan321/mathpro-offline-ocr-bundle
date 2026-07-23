@@ -15,13 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Extract R832 final certification terminal evidence
+      - name: Extract current R832 final certification failure
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_JOB_ID: '89068874729'
+          SOURCE_JOB_ID: '89083899481'
         run: |
           set -Eeuo pipefail
-          out="$RUNNER_TEMP/r832-final-certification-terminal.txt"
+          out="$RUNNER_TEMP/r832-current-final-failure.txt"
           curl --fail --location --silent --show-error \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
@@ -31,22 +31,22 @@ jobs:
           python3 - "$RUNNER_TEMP/source.log" "$out" <<'PY'
           import pathlib,re,sys
           lines=pathlib.Path(sys.argv[1]).read_text(encoding='utf-8-sig',errors='replace').splitlines()
-          rx=re.compile(r'(R832_|MISMATCH|FAIL|ERROR|BLOCKER|Exception|What went wrong|Could not|Process completed|exit code|manifest|source|signing|flutter test|flutter build|Gradle task|BUILD_[AB])',re.I)
+          rx=re.compile(r'(R832_|MISMATCH|FAIL|ERROR|BLOCKER|Exception|What went wrong|Could not|Process completed|exit code|manifest|source|signing|flutter test|flutter build|Gradle task|BUILD_[AB]|sha256|file_count|toolchain|pub get|analyz)',re.I)
           hits=[]
           for i,line in enumerate(lines,1):
               if rx.search(line): hits.append(f'{i}: {line[:30000]}')
-          final=[f'{i+1}: {lines[i][:30000]}' for i in range(max(0,len(lines)-160),len(lines))]
+          final=[f'{i+1}: {lines[i][:30000]}' for i in range(max(0,len(lines)-220),len(lines))]
           text='\n'.join([
               f'SOURCE_JOB_ID={sys.argv[1]}',
               f'LINE_COUNT={len(lines)}',
               '=== TARGETED_LINES ===',*hits,
-              '=== FINAL_160 ===',*final,
+              '=== FINAL_220 ===',*final,
           ])+'\n'
           pathlib.Path(sys.argv[2]).write_text(text,encoding='utf-8')
           print(text)
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: r832-final-certification-terminal-evidence-${{ github.run_id }}
-          path: ${{ runner.temp }}/r832-final-certification-terminal.txt
+          name: r832-current-final-failure-${{ github.run_id }}
+          path: ${{ runner.temp }}/r832-current-final-failure.txt
           retention-days: 1
