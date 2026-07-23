@@ -78,7 +78,7 @@ jobs:
           python3 - "$RUNNER_TEMP/base-script.json" "$RUNNER_TEMP/r832-certifier.sh" <<'PY'
           import base64,json,pathlib,re,sys
           p=json.load(open(sys.argv[1],encoding='utf-8'))
-          assert p['sha']=='513f769b5f0a2848517fa7426ff7887ff5a80bd2',p['sha']
+          assert p['sha']=='513f769b5f0a2848517fa7426ff7887b4d29b23db71',p['sha']
           s=base64.b64decode(p['content']).decode()
           s=s.replace('GITHUB_HEAD_REF','SOURCE_REF')
           s=s.replace('for attempt in $(seq 1 360); do','for attempt in $(seq 1 1080); do',1)
@@ -90,6 +90,57 @@ jobs:
               s, count=1, flags=re.S)
           s=re.sub(r'EXPECTED_SOURCE_SHA256="[^"]+"', 'EXPECTED_SOURCE_SHA256="425ccac7caed1a1a6a2ee0a78f9a6968cb2787b426fe82768d77e98fc736414c"', s, count=1)
           s=re.sub(r'EXPECTED_SOURCE_FILE_COUNT="[^"]+"', 'EXPECTED_SOURCE_FILE_COUNT="1095"', s, count=1)
+
+          old_test_parser = '''  python3 - "$WORK/logs/${label}-test-machine.log" "$WORK/evidence/${label}-test-summary.json" "$label" <<'PY'
+          import json,pathlib,sys
+          rows=[]
+          for line in pathlib.Path(sys.argv[1]).read_text(encoding='utf-8',errors='replace').splitlines():
+              try: e=json.loads(line)
+              except Exception: continue
+              if e.get('type')=='testDone' and not e.get('hidden',False): rows.append(e)
+          out={'schema':'R831_FLUTTER_TEST_SUMMARY.v1','label':sys.argv[3],'testDoneCount':len(rows),'success':sum(e.get('result')=='success' for e in rows),'skipped':sum(e.get('skipped') is True for e in rows),'failed':sum(e.get('result') not in ('success',None) for e in rows)}
+          if not rows or out['failed']: raise SystemExit(out)
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(out,indent=2,sort_keys=True),encoding='utf-8')
+          print(json.dumps(out,sort_keys=True))
+          PY'''
+          new_test_parser = '''  python3 - "$WORK/logs/${label}-test-machine.log" "$WORK/evidence/${label}-test-summary.json" "$label" <<'PY'
+          import json,pathlib,sys
+          rows=[]
+          done=None
+          for line in pathlib.Path(sys.argv[1]).read_text(encoding='utf-8',errors='replace').splitlines():
+              try:
+                  value=json.loads(line)
+              except Exception:
+                  continue
+              if isinstance(value,dict):
+                  events=(value,)
+              elif isinstance(value,list):
+                  events=tuple(item for item in value if isinstance(item,dict))
+              else:
+                  events=()
+              for event in events:
+                  if event.get('type')=='testDone' and not event.get('hidden',False):
+                      rows.append(event)
+                  elif event.get('type')=='done':
+                      done=event
+          out={
+              'schema':'R832_FLUTTER_TEST_SUMMARY.v2',
+              'label':sys.argv[3],
+              'testDoneCount':len(rows),
+              'success':sum(event.get('result')=='success' for event in rows),
+              'skipped':sum(event.get('skipped') is True for event in rows),
+              'failed':sum(event.get('result') not in ('success',None) for event in rows),
+              'doneSeen':done is not None,
+              'doneSuccess':bool(done and done.get('success') is True),
+          }
+          if not rows or out['failed'] or not out['doneSuccess']:
+              raise SystemExit(out)
+          pathlib.Path(sys.argv[2]).write_text(json.dumps(out,indent=2,sort_keys=True),encoding='utf-8')
+          print(json.dumps(out,sort_keys=True))
+          PY'''
+          assert old_test_parser in s, 'R832_TEST_PARSER_PATCH_TARGET_MISSING'
+          s=s.replace(old_test_parser,new_test_parser,1)
+
           s=re.sub(
               r'log "FINAL SOURCE HOST/AUTHORITY GATES".*?echo R831_FINAL_HOST_GATES=PASS',
               '''log "AUTHORITY EVIDENCE PRESERVED — SOURCE UNCHANGED"
