@@ -15,13 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Extract current R832 final certification failure
+      - name: Extract final R832 run terminal evidence
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_JOB_ID: '89083899481'
+          SOURCE_JOB_ID: '89086881068'
         run: |
           set -Eeuo pipefail
-          out="$RUNNER_TEMP/r832-current-final-failure.txt"
+          out="$RUNNER_TEMP/r832-final-manual-upload-terminal.txt"
           curl --fail --location --silent --show-error \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
@@ -31,22 +31,22 @@ jobs:
           python3 - "$RUNNER_TEMP/source.log" "$out" <<'PY'
           import pathlib,re,sys
           lines=pathlib.Path(sys.argv[1]).read_text(encoding='utf-8-sig',errors='replace').splitlines()
-          rx=re.compile(r'(R832_|MISMATCH|FAIL|ERROR|BLOCKER|Exception|What went wrong|Could not|Process completed|exit code|manifest|source|signing|flutter test|flutter build|Gradle task|BUILD_[AB]|sha256|file_count|toolchain|pub get|analyz)',re.I)
+          rx=re.compile(r'(R832_|R831_|MISMATCH|FAIL|ERROR|BLOCKER|Exception|Traceback|What went wrong|Could not|Process completed|exit code|manifest|source|signing|flutter test|flutter build|Gradle task|BUILD_[AB]|sha256|file_count|toolchain|pub get|analyz|assembleRelease|bundleRelease|R8|proguard)',re.I)
           hits=[]
           for i,line in enumerate(lines,1):
               if rx.search(line): hits.append(f'{i}: {line[:30000]}')
-          final=[f'{i+1}: {lines[i][:30000]}' for i in range(max(0,len(lines)-220),len(lines))]
+          final=[f'{i+1}: {lines[i][:30000]}' for i in range(max(0,len(lines)-260),len(lines))]
           text='\n'.join([
               f'SOURCE_JOB_ID={sys.argv[1]}',
               f'LINE_COUNT={len(lines)}',
               '=== TARGETED_LINES ===',*hits,
-              '=== FINAL_220 ===',*final,
+              '=== FINAL_260 ===',*final,
           ])+'\n'
           pathlib.Path(sys.argv[2]).write_text(text,encoding='utf-8')
           print(text)
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: r832-current-final-failure-${{ github.run_id }}
-          path: ${{ runner.temp }}/r832-current-final-failure.txt
+          name: r832-final-manual-upload-terminal-${{ github.run_id }}
+          path: ${{ runner.temp }}/r832-final-manual-upload-terminal.txt
           retention-days: 1
