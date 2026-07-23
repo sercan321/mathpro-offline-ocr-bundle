@@ -78,7 +78,7 @@ jobs:
           python3 - "$RUNNER_TEMP/base-script.json" "$RUNNER_TEMP/r832-certifier.sh" <<'PY'
           import base64,json,pathlib,re,sys
           p=json.load(open(sys.argv[1],encoding='utf-8'))
-          assert p['sha']=='513f769b5f0a2848517fa7426ff7887b4d29b23db71',p['sha']
+          assert p['sha']=='513f769b5f0a2848517fa7426ff7887ff5a80bd2',p['sha']
           s=base64.b64decode(p['content']).decode()
           s=s.replace('GITHUB_HEAD_REF','SOURCE_REF')
           s=s.replace('for attempt in $(seq 1 360); do','for attempt in $(seq 1 1080); do',1)
