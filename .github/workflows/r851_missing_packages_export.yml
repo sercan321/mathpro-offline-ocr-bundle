@@ -81,7 +81,9 @@ jobs:
               if not pubspec.is_file():
                   raise SystemExit(f'package pubspec missing after extraction: {name} {version}')
               hash_file = root / 'hosted-hashes' / 'pub.dev' / f'{name}-{version}.sha256'
-              hash_file.write_text(actual_sha + '\n')
+              hash_file.write_text(actual_sha)
+              if hash_file.stat().st_size != 64:
+                  raise SystemExit(f'cache hash serialization mismatch: {hash_file}')
               evidence.append({
                   'index': index,
                   'name': name,
@@ -100,10 +102,13 @@ jobs:
           expected_hashes = sorted(f"{item['name']}-{item['version']}.sha256" for item in packages)
           if actual_hashes != expected_hashes:
               raise SystemExit('cache hash file set mismatch')
+          if any(p.stat().st_size != 64 for p in (root / 'hosted-hashes' / 'pub.dev').glob('*.sha256')):
+              raise SystemExit('cache hash files must be exactly 64 bytes')
 
           pathlib.Path('evidence/package-archives.json').write_text(json.dumps({
-              'schema': 'R851_MISSING_PACKAGE_CACHE_EVIDENCE.v1',
+              'schema': 'R851_MISSING_PACKAGE_CACHE_EVIDENCE.v2',
               'projectLockSha256': manifest['projectLockSha256'],
+              'hashSerializationBytes': 64,
               'packageCount': len(evidence),
               'packages': evidence,
           }, sort_keys=True, indent=2) + '\n')
