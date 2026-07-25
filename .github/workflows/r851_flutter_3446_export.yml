@@ -1,0 +1,98 @@
+name: R851 Flutter 3.44.6 Exact Export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/r851_flutter_3446_export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r851-flutter-3446-export-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      FLUTTER_VERSION: '3.44.6'
+      DART_VERSION: '3.12.2'
+      FRAMEWORK_REVISION: 'ee80f08bbf97172ec030b8751ceab557177a34a6'
+      ARCHIVE_PATH: 'stable/linux/flutter_linux_3.44.6-stable.tar.xz'
+      ARCHIVE_SHA256: 'a6320fd72e9a2690c08e2a6a70874a30cb120dee7c78f49d2c628bd7c9e20525'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Download and verify official exact archive
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work parts evidence
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, urllib.request
+          index='https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json'
+          with urllib.request.urlopen(index, timeout=60) as r: data=json.load(r)
+          rows=[x for x in data['releases'] if x.get('version')==os.environ['FLUTTER_VERSION'] and x.get('channel')=='stable' and x.get('archive')==os.environ['ARCHIVE_PATH']]
+          if len(rows)!=1: raise SystemExit(f'release cardinality {len(rows)}')
+          row=rows[0]
+          expected={'hash':os.environ['FRAMEWORK_REVISION'],'dart_sdk_version':os.environ['DART_VERSION'],'sha256':os.environ['ARCHIVE_SHA256']}
+          for k,v in expected.items():
+              if row.get(k)!=v: raise SystemExit(f'metadata mismatch {k}: {row.get(k)!r} != {v!r}')
+          url=data['base_url'].rstrip('/')+'/'+os.environ['ARCHIVE_PATH']
+          target=pathlib.Path('work/flutter.tar.xz'); h=hashlib.sha256()
+          req=urllib.request.Request(url,headers={'User-Agent':'MathPro-R851-Flutter-Export/1.0'})
+          with urllib.request.urlopen(req,timeout=300) as r,target.open('wb') as o:
+              while True:
+                  b=r.read(1024*1024)
+                  if not b: break
+                  o.write(b); h.update(b)
+          if h.hexdigest()!=os.environ['ARCHIVE_SHA256']: raise SystemExit('archive SHA mismatch')
+          pathlib.Path('evidence/release.json').write_text(json.dumps({'version':row['version'],'hash':row['hash'],'dart':row['dart_sdk_version'],'archive':row['archive'],'sha256':h.hexdigest(),'bytes':target.stat().st_size},sort_keys=True,indent=2)+'\n')
+          PY
+          split -b 380000000 -d -a 3 work/flutter.tar.xz parts/flutter-3.44.6.part-
+          test "$(find parts -type f | wc -l)" -eq 4
+          sha256sum parts/* | tee evidence/parts.sha256
+          stat -c '%n %s' parts/* | tee evidence/parts.size.txt
+          cat parts/* | sha256sum | tee evidence/reassembled.sha256
+          grep -F "$ARCHIVE_SHA256" evidence/reassembled.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-part-000
+          path: parts/flutter-3.44.6.part-000
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-part-001
+          path: parts/flutter-3.44.6.part-001
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-part-002
+          path: parts/flutter-3.44.6.part-002
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-part-003
+          path: parts/flutter-3.44.6.part-003
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-evidence
+          path: evidence/
+          compression-level: 0
+          retention-days: 1
+
+      - name: Terminal marker
+        run: echo R851_FLUTTER_3446_EXPORT_PASS
