@@ -30,38 +30,59 @@ jobs:
           fetch-depth: 1
           show-progress: false
 
-      - name: Download and verify official exact archive
+      - name: Resolve and verify exact release metadata
         shell: bash
         run: |
           set -Eeuo pipefail
           mkdir -p work parts evidence
           python3 - <<'PY'
-          import hashlib, json, os, pathlib, urllib.request
+          import json, os, pathlib, urllib.request
           index='https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json'
-          with urllib.request.urlopen(index, timeout=60) as r: data=json.load(r)
+          with urllib.request.urlopen(index, timeout=60) as r:
+              data=json.load(r)
           rows=[x for x in data['releases'] if x.get('version')==os.environ['FLUTTER_VERSION'] and x.get('channel')=='stable' and x.get('archive')==os.environ['ARCHIVE_PATH']]
-          if len(rows)!=1: raise SystemExit(f'release cardinality {len(rows)}')
+          print('MATCHING_RELEASE_COUNT',len(rows))
+          if len(rows)!=1:
+              raise SystemExit(f'release cardinality {len(rows)}')
           row=rows[0]
+          selected={k:row.get(k) for k in ('version','channel','hash','dart_sdk_version','archive','sha256')}
+          print(json.dumps(selected,sort_keys=True))
           expected={'hash':os.environ['FRAMEWORK_REVISION'],'dart_sdk_version':os.environ['DART_VERSION'],'sha256':os.environ['ARCHIVE_SHA256']}
-          for k,v in expected.items():
-              if row.get(k)!=v: raise SystemExit(f'metadata mismatch {k}: {row.get(k)!r} != {v!r}')
+          for key,value in expected.items():
+              if row.get(key)!=value:
+                  raise SystemExit(f'metadata mismatch {key}: {row.get(key)!r} != {value!r}')
           url=data['base_url'].rstrip('/')+'/'+os.environ['ARCHIVE_PATH']
-          target=pathlib.Path('work/flutter.tar.xz'); h=hashlib.sha256()
-          req=urllib.request.Request(url,headers={'User-Agent':'MathPro-R851-Flutter-Export/1.0'})
-          with urllib.request.urlopen(req,timeout=300) as r,target.open('wb') as o:
-              while True:
-                  b=r.read(1024*1024)
-                  if not b: break
-                  o.write(b); h.update(b)
-          if h.hexdigest()!=os.environ['ARCHIVE_SHA256']: raise SystemExit('archive SHA mismatch')
-          pathlib.Path('evidence/release.json').write_text(json.dumps({'version':row['version'],'hash':row['hash'],'dart':row['dart_sdk_version'],'archive':row['archive'],'sha256':h.hexdigest(),'bytes':target.stat().st_size},sort_keys=True,indent=2)+'\n')
+          pathlib.Path('evidence/release-metadata.json').write_text(json.dumps({'selected':selected,'archiveUrl':url},sort_keys=True,indent=2)+'\n')
+          pathlib.Path('work/archive-url.txt').write_text(url+'\n')
+          print('R851_RELEASE_METADATA_PASS')
           PY
+
+      - name: Download official archive and verify SHA-256
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          URL="$(cat work/archive-url.txt)"
+          curl --fail --location --retry 5 --retry-delay 3 --continue-at - --progress-bar \
+            --output work/flutter.tar.xz "$URL"
+          ACTUAL_SHA="$(sha256sum work/flutter.tar.xz | awk '{print $1}')"
+          ACTUAL_SIZE="$(stat -c %s work/flutter.tar.xz)"
+          printf 'archive_sha256=%s\narchive_bytes=%s\n' "$ACTUAL_SHA" "$ACTUAL_SIZE" | tee evidence/archive-identity.txt
+          test "$ACTUAL_SHA" = "$ARCHIVE_SHA256"
+          echo R851_ARCHIVE_SHA256_PASS
+
+      - name: Split archive and prove exact reassembly
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           split -b 380000000 -d -a 3 work/flutter.tar.xz parts/flutter-3.44.6.part-
-          test "$(find parts -type f | wc -l)" -eq 4
+          PART_COUNT="$(find parts -type f | wc -l)"
+          echo "part_count=$PART_COUNT" | tee evidence/part-count.txt
+          test "$PART_COUNT" -eq 4
           sha256sum parts/* | tee evidence/parts.sha256
           stat -c '%n %s' parts/* | tee evidence/parts.size.txt
           cat parts/* | sha256sum | tee evidence/reassembled.sha256
           grep -F "$ARCHIVE_SHA256" evidence/reassembled.sha256
+          echo R851_ARCHIVE_REASSEMBLY_PASS
 
       - uses: actions/upload-artifact@v4
         with:
