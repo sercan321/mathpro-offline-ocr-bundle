@@ -27,20 +27,28 @@ jobs:
         with:
           fetch-depth: 1
           show-progress: false
-      - name: Download and verify immutable exact pub cache
+      - name: Download immutable exact pub cache and verify SHA-256
         shell: bash
         run: |
           set -Eeuo pipefail
           mkdir -p work parts evidence
           URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${CACHE_TAG}/${CACHE_ASSET}"
+          echo "asset_url=$URL"
           curl --fail --location --retry 5 --retry-delay 3 --continue-at - --progress-bar \
             --output "work/${CACHE_ASSET}" "$URL"
           ACTUAL_SHA="$(sha256sum "work/${CACHE_ASSET}" | awk '{print $1}')"
           ACTUAL_SIZE="$(stat -c %s "work/${CACHE_ASSET}")"
           printf 'cache_sha256=%s\ncache_bytes=%s\n' "$ACTUAL_SHA" "$ACTUAL_SIZE" | tee evidence/cache-identity.txt
           test "$ACTUAL_SHA" = "$CACHE_SHA256"
+          echo R851_PUB_CACHE_SHA256_PASS
+      - name: Split cache and prove exact reassembly
+        shell: bash
+        run: |
+          set -Eeuo pipefail
           split -n 4 -d -a 3 "work/${CACHE_ASSET}" parts/r851-pub-cache.part-
-          test "$(find parts -type f | wc -l)" -eq 4
+          PART_COUNT="$(find parts -type f | wc -l)"
+          echo "part_count=$PART_COUNT" | tee evidence/part-count.txt
+          test "$PART_COUNT" -eq 4
           sha256sum parts/* | tee evidence/parts.sha256
           stat -c '%n %s' parts/* | tee evidence/parts.size.txt
           cat parts/* | sha256sum | tee evidence/reassembled.sha256
