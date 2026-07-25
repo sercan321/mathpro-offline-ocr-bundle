@@ -1,0 +1,159 @@
+name: R851 Complete Lock-Derived Hosted Cache Export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/r851_cache_input/all-hosted-package-archives.json'
+      - '.github/workflows/r851_all_hosted_cache_export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r851-all-hosted-cache-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Build exact 74-package Pub cache from lock-derived archives
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work/cache/hosted/pub.dev work/cache/hosted-hashes/pub.dev work/archives evidence
+          python3 - <<'PY'
+          import hashlib, json, pathlib, shutil, tarfile, urllib.parse, urllib.request
+          manifest = json.loads(pathlib.Path('.github/r851_cache_input/all-hosted-package-archives.json').read_text())
+          if manifest.get('schema') != 'R851_ALL_HOSTED_PACKAGE_ARCHIVES.v1':
+              raise SystemExit('manifest schema mismatch')
+          packages = manifest.get('packages')
+          if manifest.get('packageCount') != 74 or not isinstance(packages, list) or len(packages) != 74:
+              raise SystemExit('package cardinality mismatch')
+          if len({x['name'] for x in packages}) != 74:
+              raise SystemExit('duplicate package name')
+
+          root = pathlib.Path('work/cache')
+          archives = pathlib.Path('work/archives')
+          evidence = []
+          for index, item in enumerate(packages, 1):
+              name, version, expected_sha = item['name'], item['version'], item['sha256'].lower()
+              archive_name = f'{name}-{version}.tar.gz'
+              encoded = urllib.parse.quote(archive_name, safe='-._~')
+              url = f'https://pub.dev/api/archives/{encoded}'
+              archive_path = archives / archive_name
+              digest = hashlib.sha256()
+              request = urllib.request.Request(url, headers={'User-Agent':'MathPro-R851-Complete-Lock-Cache/1.0'})
+              with urllib.request.urlopen(request, timeout=120) as response, archive_path.open('wb') as output:
+                  while True:
+                      block = response.read(1024 * 1024)
+                      if not block:
+                          break
+                      output.write(block)
+                      digest.update(block)
+              actual_sha = digest.hexdigest()
+              if actual_sha != expected_sha:
+                  raise SystemExit(f'archive SHA mismatch {name} {version}: {actual_sha} != {expected_sha}')
+
+              target = root / 'hosted' / 'pub.dev' / f'{name}-{version}'
+              target.mkdir(parents=True)
+              with tarfile.open(archive_path, 'r:gz') as tf:
+                  target_resolved = target.resolve()
+                  for member in tf.getmembers():
+                      resolved = (target / member.name).resolve()
+                      if target_resolved not in resolved.parents and resolved != target_resolved:
+                          raise SystemExit(f'unsafe archive path {archive_name}: {member.name}')
+                  tf.extractall(target, filter='data')
+              if not (target / 'pubspec.yaml').is_file():
+                  raise SystemExit(f'package pubspec missing: {name} {version}')
+
+              hash_file = root / 'hosted-hashes' / 'pub.dev' / f'{name}-{version}.sha256'
+              hash_file.write_text(actual_sha)
+              if hash_file.stat().st_size != 64:
+                  raise SystemExit(f'hash serialization must be exactly 64 bytes: {hash_file}')
+              evidence.append({
+                  'index': index,
+                  'name': name,
+                  'version': version,
+                  'sha256': actual_sha,
+                  'archiveBytes': archive_path.stat().st_size,
+                  'cacheFileCount': sum(1 for p in target.rglob('*') if p.is_file()),
+              })
+              print(f'R851_PACKAGE_PASS {index:02d}/74 {name} {version} {actual_sha}')
+
+          expected_dirs = sorted(f"{x['name']}-{x['version']}" for x in packages)
+          actual_dirs = sorted(p.name for p in (root/'hosted/pub.dev').iterdir() if p.is_dir())
+          if actual_dirs != expected_dirs:
+              raise SystemExit('hosted package directory set mismatch')
+          hashes = sorted((root/'hosted-hashes/pub.dev').glob('*.sha256'))
+          if len(hashes) != 74 or any(p.stat().st_size != 64 for p in hashes):
+              raise SystemExit('hosted hash set or serialization mismatch')
+
+          pathlib.Path('evidence/package-archives.json').write_text(json.dumps({
+              'schema':'R851_ALL_HOSTED_CACHE_EVIDENCE.v1',
+              'projectLockSha256':manifest['projectLockSha256'],
+              'packageCount':74,
+              'hashSerializationBytes':64,
+              'packages':evidence,
+          },sort_keys=True,indent=2)+'\n')
+          print('R851_ALL_74_PACKAGE_ARCHIVES_PASS')
+          PY
+
+      - name: Build deterministic complete cache and prove reassembly
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          tar --sort=name --mtime='UTC 2026-07-25 00:00:00' --owner=0 --group=0 --numeric-owner \
+            --zstd -cf work/r851-all-hosted-cache.tar.zst -C work/cache hosted hosted-hashes
+          CACHE_SHA="$(sha256sum work/r851-all-hosted-cache.tar.zst | awk '{print $1}')"
+          CACHE_SIZE="$(stat -c %s work/r851-all-hosted-cache.tar.zst)"
+          printf 'cache_sha256=%s\ncache_bytes=%s\n' "$CACHE_SHA" "$CACHE_SIZE" | tee evidence/cache-identity.txt
+          split -n 4 -d -a 3 work/r851-all-hosted-cache.tar.zst work/r851-all-hosted-cache.part-
+          test "$(find work -maxdepth 1 -name 'r851-all-hosted-cache.part-*' -type f | wc -l)" -eq 4
+          sha256sum work/r851-all-hosted-cache.part-* | tee evidence/parts.sha256
+          stat -c '%n %s' work/r851-all-hosted-cache.part-* | tee evidence/parts.size.txt
+          cat work/r851-all-hosted-cache.part-* | sha256sum | tee evidence/reassembled.sha256
+          grep -F "$CACHE_SHA" evidence/reassembled.sha256
+          echo R851_ALL_HOSTED_CACHE_REASSEMBLY_PASS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-all-hosted-cache-part-000
+          path: work/r851-all-hosted-cache.part-000
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-all-hosted-cache-part-001
+          path: work/r851-all-hosted-cache.part-001
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-all-hosted-cache-part-002
+          path: work/r851-all-hosted-cache.part-002
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-all-hosted-cache-part-003
+          path: work/r851-all-hosted-cache.part-003
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-all-hosted-cache-evidence
+          path: evidence/
+          compression-level: 0
+          retention-days: 1
+
+      - name: Terminal marker
+        run: echo R851_COMPLETE_LOCK_DERIVED_HOSTED_CACHE_PASS
