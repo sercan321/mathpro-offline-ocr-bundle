@@ -1,0 +1,49 @@
+name: mathpro_flutter_phase17
+description: "MathPro Flutter Phase 17 R849 property fuzz pedagogical truth closure."
+publish_to: 'none'
+version: 0.850.0+85000
+
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  camera: 0.10.6
+  camera_android: 0.10.9+3
+  flutter_math_fork: ^0.7.2
+  http: ^1.2.2
+  crypto: ^3.0.6
+  path_provider: ^2.1.5
+  shared_preferences: ^2.5.5
+  webview_flutter: 4.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/branding/gauss_app_icon_1024.png
+    - assets/branding/gauss_splash_screen.png
+    - assets/mathlive/
+    - assets/mathlive/vendor/mathlive/
+    - assets/mathlive/vendor/mathlive/fonts/
+    - assets/keyfaces/mathlive_r203b/
+    - assets/keyfaces/mathlive_r203c/
+    - assets/keyfaces/mathlive_r205/
+    - assets/keyfaces/mathlive_r206_domcss/
+    - assets/ocr_golden/
+
+# R600F_OTHER_LEGACY_FAMILY_PRUNE_AUTHORITY_LOCK
+
+# R600G_DART_PUBLISH_AUTHORITY_LOCK
+
+# R633_LOG_SEMANTICS_FIX_LOCK: single-argument log semantics fixed for evaluate/logarithm routes.

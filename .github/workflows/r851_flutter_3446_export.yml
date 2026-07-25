@@ -1,0 +1,131 @@
+name: R851 Flutter 3.44.6 Exact Export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/r851_flutter_3446_export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r851-flutter-3446-export-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      FLUTTER_VERSION: '3.44.6'
+      DART_VERSION: '3.12.2'
+      FRAMEWORK_REVISION: 'ee80f08bbf97172ec030b8751ceab557177a34a6'
+      ARCHIVE_PATH: 'stable/linux/flutter_linux_3.44.6-stable.tar.xz'
+      ARCHIVE_SHA256: 'a6320fd72e9a2690c08e2a6a70874a30cb120dee7c78f49d2c628bd7c9e20525'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Resolve and verify exact release metadata
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work parts evidence
+          python3 - <<'PY'
+          import json, os, pathlib, urllib.request
+          index='https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json'
+          with urllib.request.urlopen(index, timeout=60) as r:
+              data=json.load(r)
+          rows=[x for x in data['releases'] if x.get('version')==os.environ['FLUTTER_VERSION'] and x.get('channel')=='stable' and x.get('archive')==os.environ['ARCHIVE_PATH']]
+          print('MATCHING_RELEASE_COUNT',len(rows))
+          if len(rows)!=1:
+              raise SystemExit(f'release cardinality {len(rows)}')
+          row=rows[0]
+          selected={k:row.get(k) for k in ('version','channel','hash','dart_sdk_version','archive','sha256')}
+          print(json.dumps(selected,sort_keys=True))
+          expected={'hash':os.environ['FRAMEWORK_REVISION'],'dart_sdk_version':os.environ['DART_VERSION'],'sha256':os.environ['ARCHIVE_SHA256']}
+          for key,value in expected.items():
+              if row.get(key)!=value:
+                  raise SystemExit(f'metadata mismatch {key}: {row.get(key)!r} != {value!r}')
+          url=data['base_url'].rstrip('/')+'/'+os.environ['ARCHIVE_PATH']
+          pathlib.Path('evidence/release-metadata.json').write_text(json.dumps({'selected':selected,'archiveUrl':url},sort_keys=True,indent=2)+'\n')
+          pathlib.Path('work/archive-url.txt').write_text(url+'\n')
+          print('R851_RELEASE_METADATA_PASS')
+          PY
+
+      - name: Download official archive and verify SHA-256
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          URL="$(cat work/archive-url.txt)"
+          curl --fail --location --retry 5 --retry-delay 3 --continue-at - --progress-bar \
+            --output work/flutter.tar.xz "$URL"
+          ACTUAL_SHA="$(sha256sum work/flutter.tar.xz | awk '{print $1}')"
+          ACTUAL_SIZE="$(stat -c %s work/flutter.tar.xz)"
+          printf 'archive_sha256=%s\narchive_bytes=%s\n' "$ACTUAL_SHA" "$ACTUAL_SIZE" | tee evidence/archive-identity.txt
+          test "$ACTUAL_SHA" = "$ARCHIVE_SHA256"
+          echo R851_ARCHIVE_SHA256_PASS
+
+      - name: Split archive and prove exact reassembly
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          split -b 300000000 -d -a 3 work/flutter.tar.xz parts/flutter-3.44.6.part-
+          PART_COUNT="$(find parts -type f | wc -l)"
+          echo "part_count=$PART_COUNT" | tee evidence/part-count.txt
+          test "$PART_COUNT" -eq 6
+          sha256sum parts/* | tee evidence/parts.sha256
+          stat -c '%n %s' parts/* | tee evidence/parts.size.txt
+          cat parts/* | sha256sum | tee evidence/reassembled.sha256
+          grep -F "$ARCHIVE_SHA256" evidence/reassembled.sha256
+          echo R851_ARCHIVE_REASSEMBLY_PASS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-part-000
+          path: parts/flutter-3.44.6.part-000
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-part-001
+          path: parts/flutter-3.44.6.part-001
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-part-002
+          path: parts/flutter-3.44.6.part-002
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-part-003
+          path: parts/flutter-3.44.6.part-003
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-part-004
+          path: parts/flutter-3.44.6.part-004
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-part-005
+          path: parts/flutter-3.44.6.part-005
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-flutter-3446-evidence
+          path: evidence/
+          compression-level: 0
+          retention-days: 1
+
+      - name: Terminal marker
+        run: echo R851_FLUTTER_3446_EXPORT_PASS

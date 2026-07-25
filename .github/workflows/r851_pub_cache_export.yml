@@ -1,0 +1,88 @@
+name: R851 Exact Pub Cache Export
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/r851_pub_cache_export.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r851-pub-cache-export-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CACHE_TAG: 'r828c-flutter-pub-20260720-v1'
+      CACHE_ASSET: 'r828c-pub-cache.tar.zst'
+      CACHE_SHA256: '12a6c820be4fb3926b10ec75c534b073028d2445e6d1c90ac1a26fcf537aaef0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+      - name: Download immutable exact pub cache and verify SHA-256
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p work parts evidence
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${CACHE_TAG}/${CACHE_ASSET}"
+          echo "asset_url=$URL"
+          curl --fail --location --retry 5 --retry-delay 3 --continue-at - --progress-bar \
+            --output "work/${CACHE_ASSET}" "$URL"
+          ACTUAL_SHA="$(sha256sum "work/${CACHE_ASSET}" | awk '{print $1}')"
+          ACTUAL_SIZE="$(stat -c %s "work/${CACHE_ASSET}")"
+          printf 'cache_sha256=%s\ncache_bytes=%s\n' "$ACTUAL_SHA" "$ACTUAL_SIZE" | tee evidence/cache-identity.txt
+          test "$ACTUAL_SHA" = "$CACHE_SHA256"
+          echo R851_PUB_CACHE_SHA256_PASS
+      - name: Split cache and prove exact reassembly
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          split -n 4 -d -a 3 "work/${CACHE_ASSET}" parts/r851-pub-cache.part-
+          PART_COUNT="$(find parts -type f | wc -l)"
+          echo "part_count=$PART_COUNT" | tee evidence/part-count.txt
+          test "$PART_COUNT" -eq 4
+          sha256sum parts/* | tee evidence/parts.sha256
+          stat -c '%n %s' parts/* | tee evidence/parts.size.txt
+          cat parts/* | sha256sum | tee evidence/reassembled.sha256
+          grep -F "$CACHE_SHA256" evidence/reassembled.sha256
+          echo R851_PUB_CACHE_REASSEMBLY_PASS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-pub-cache-part-000
+          path: parts/r851-pub-cache.part-000
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-pub-cache-part-001
+          path: parts/r851-pub-cache.part-001
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-pub-cache-part-002
+          path: parts/r851-pub-cache.part-002
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-pub-cache-part-003
+          path: parts/r851-pub-cache.part-003
+          compression-level: 0
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r851-pub-cache-evidence
+          path: evidence/
+          compression-level: 0
+          retention-days: 1
+      - name: Terminal marker
+        run: echo R851_EXACT_PUB_CACHE_EXPORT_PASS
